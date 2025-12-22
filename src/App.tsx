@@ -81,7 +81,7 @@ function App() {
         onLogout={handleLogout}
       />
       <main className="app-content">
-        {currentPage === 'home' && <Home />}
+        {currentPage === 'home' && <Home onNavigate={handlePageChange} />}
         {currentPage === 'live' && <LiveTV />}
         {currentPage === 'movies' && <PlaceholderPage title="Filmes" icon="🎬" />}
         {currentPage === 'series' && <PlaceholderPage title="Séries" icon="📺" />}

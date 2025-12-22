@@ -1,114 +1,301 @@
-// Home Page - TV Style with content carousels
+// Home Page - Inspired by NeoStream Desktop
 
 import { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import type { LiveStream, VODStream, Series } from '../types';
-import { ContentRow } from '../components/ContentRow';
+import { useTVNavigation } from '../hooks/useTVNavigation';
 import './Home.css';
 
-export function Home() {
-    const [liveChannels, setLiveChannels] = useState<LiveStream[]>([]);
-    const [movies, setMovies] = useState<VODStream[]>([]);
-    const [series, setSeries] = useState<Series[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
+interface HomeProps {
+    onNavigate?: (page: string) => void;
+}
 
+interface ContentCounts {
+    live: number;
+    vod: number;
+    series: number;
+}
+
+export function Home({ onNavigate }: HomeProps) {
+    const [loading, setLoading] = useState(true);
+    const [counts, setCounts] = useState<ContentCounts>({ live: 0, vod: 0, series: 0 });
+    const [recentChannels, setRecentChannels] = useState<LiveStream[]>([]);
+    const [recentMovies, setRecentMovies] = useState<VODStream[]>([]);
+    const [recentSeries, setRecentSeries] = useState<Series[]>([]);
+    const [currentTime, setCurrentTime] = useState(new Date());
+    const [focusedSection, setFocusedSection] = useState(0);
+    const [focusedItem, setFocusedItem] = useState(0);
+
+    // Update clock every minute
     useEffect(() => {
-        loadContent();
+        const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+        return () => clearInterval(timer);
     }, []);
 
-    const loadContent = async () => {
-        try {
-            setLoading(true);
-            const [live, vod, ser] = await Promise.all([
-                api.getLiveStreams().catch(() => []),
-                api.getVODStreams().catch(() => []),
-                api.getSeries().catch(() => []),
-            ]);
+    // Fetch data
+    useEffect(() => {
+        async function fetchData() {
+            try {
+                setLoading(true);
+                const [streams, movies, series] = await Promise.all([
+                    api.getLiveStreams(),
+                    api.getVODStreams(),
+                    api.getSeries()
+                ]);
 
-            setLiveChannels(live.slice(0, 20)); // Limit for home
-            setMovies(vod.slice(0, 20));
-            setSeries(ser.slice(0, 20));
-        } catch (err: any) {
-            setError(err.message || 'Erro ao carregar conteúdo');
-        } finally {
-            setLoading(false);
+                setCounts({
+                    live: streams.length,
+                    vod: movies.length,
+                    series: series.length
+                });
+
+                // Get recent items (first 10)
+                setRecentChannels(streams.slice(0, 10));
+                setRecentMovies(movies.slice(0, 10));
+                setRecentSeries(series.slice(0, 10));
+            } catch (error) {
+                console.error('Failed to fetch data:', error);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        fetchData();
+    }, []);
+
+    // Time formatting
+    const formatTime = (date: Date) => {
+        return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    };
+
+    const formatDate = (date: Date) => {
+        return date.toLocaleDateString('pt-BR', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long'
+        });
+    };
+
+    const getGreeting = () => {
+        const hour = currentTime.getHours();
+        if (hour < 12) return 'Bom dia';
+        if (hour < 18) return 'Boa tarde';
+        return 'Boa noite';
+    };
+
+    // TV Navigation
+    const sections = [
+        { id: 'stats', items: 3 },
+        { id: 'channels', items: recentChannels.length },
+        { id: 'movies', items: recentMovies.length },
+        { id: 'series', items: recentSeries.length },
+        { id: 'quick', items: 5 }
+    ];
+
+    const handleNavigate = (direction: 'up' | 'down' | 'left' | 'right') => {
+        if (direction === 'up') {
+            setFocusedSection(prev => Math.max(0, prev - 1));
+            setFocusedItem(0);
+        } else if (direction === 'down') {
+            setFocusedSection(prev => Math.min(sections.length - 1, prev + 1));
+            setFocusedItem(0);
+        } else if (direction === 'left') {
+            setFocusedItem(prev => Math.max(0, prev - 1));
+        } else if (direction === 'right') {
+            const maxItems = sections[focusedSection]?.items || 0;
+            setFocusedItem(prev => Math.min(maxItems - 1, prev + 1));
         }
     };
 
-    if (loading) {
-        return (
-            <div className="home-loading">
-                <div className="loading-spinner" />
-                <p>Carregando conteúdo...</p>
-            </div>
-        );
-    }
+    const handleEnter = () => {
+        const section = sections[focusedSection];
+        if (section?.id === 'stats') {
+            const pages = ['live', 'movies', 'series'];
+            onNavigate?.(pages[focusedItem] || 'live');
+        } else if (section?.id === 'quick') {
+            const pages = ['live', 'movies', 'series', 'favorites', 'settings'];
+            onNavigate?.(pages[focusedItem] || 'live');
+        } else if (section?.id === 'channels') {
+            onNavigate?.('live');
+        } else if (section?.id === 'movies') {
+            onNavigate?.('movies');
+        } else if (section?.id === 'series') {
+            onNavigate?.('series');
+        }
+    };
 
-    if (error) {
-        return (
-            <div className="home-error">
-                <p>{error}</p>
-                <button className="tv-button" onClick={loadContent}>
-                    Tentar novamente
-                </button>
-            </div>
-        );
-    }
+    useTVNavigation({
+        onNavigate: handleNavigate,
+        onEnter: handleEnter,
+    });
 
     return (
-        <div className="home">
-            {/* Hero Section */}
-            <section className="home-hero">
-                <div className="home-hero-bg" />
-                <div className="home-hero-content">
-                    <h1 className="home-hero-title">Bem-vindo ao NeoStream</h1>
-                    <p className="home-hero-subtitle">
-                        {liveChannels.length} canais • {movies.length} filmes • {series.length} séries
-                    </p>
+        <div className="home-page">
+            {/* Background decorations */}
+            <div className="home-bg-decoration home-bg-decoration-1" />
+            <div className="home-bg-decoration home-bg-decoration-2" />
+
+            {/* Header */}
+            <header className="home-header">
+                <div className="home-header-left">
+                    <div className="home-date">{formatDate(currentTime)}</div>
+                    <h1 className="home-greeting">
+                        {getGreeting()}! <span className="waving-hand">👋</span>
+                    </h1>
+                    <p className="home-subtitle">O que você quer assistir hoje?</p>
                 </div>
+                <div className="home-clock">{formatTime(currentTime)}</div>
+            </header>
+
+            {/* Stats Cards */}
+            <section className="home-stats">
+                <button
+                    className={`stat-card stat-card-live ${focusedSection === 0 && focusedItem === 0 ? 'tv-focused' : ''}`}
+                    onClick={() => onNavigate?.('live')}
+                >
+                    <div className="stat-icon">📺</div>
+                    <div className="stat-value">{loading ? '...' : counts.live.toLocaleString()}</div>
+                    <div className="stat-label">Canais</div>
+                </button>
+
+                <button
+                    className={`stat-card stat-card-vod ${focusedSection === 0 && focusedItem === 1 ? 'tv-focused' : ''}`}
+                    onClick={() => onNavigate?.('movies')}
+                >
+                    <div className="stat-icon">🎬</div>
+                    <div className="stat-value">{loading ? '...' : counts.vod.toLocaleString()}</div>
+                    <div className="stat-label">Filmes</div>
+                </button>
+
+                <button
+                    className={`stat-card stat-card-series ${focusedSection === 0 && focusedItem === 2 ? 'tv-focused' : ''}`}
+                    onClick={() => onNavigate?.('series')}
+                >
+                    <div className="stat-icon">📺</div>
+                    <div className="stat-value">{loading ? '...' : counts.series.toLocaleString()}</div>
+                    <div className="stat-label">Séries</div>
+                </button>
             </section>
 
             {/* Content Rows */}
-            <div className="home-content">
-                {liveChannels.length > 0 && (
-                    <ContentRow
-                        title="📺 Canais ao Vivo"
-                        items={liveChannels.map(ch => ({
-                            id: ch.stream_id,
-                            title: ch.name,
-                            image: ch.stream_icon,
-                            type: 'live' as const,
-                        }))}
-                    />
-                )}
+            <section className="home-content">
+                {/* Recent Channels */}
+                <div className="content-section">
+                    <h2 className="section-title">📺 Canais Populares</h2>
+                    <div className="content-row">
+                        {recentChannels.map((channel, index) => (
+                            <button
+                                key={channel.stream_id}
+                                className={`content-card ${focusedSection === 1 && focusedItem === index ? 'tv-focused' : ''}`}
+                                onClick={() => onNavigate?.('live')}
+                            >
+                                <div className="card-image">
+                                    <img
+                                        src={channel.stream_icon}
+                                        alt={channel.name}
+                                        onError={(e) => { (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%231a1a2e" width="100" height="100"/><text x="50" y="55" text-anchor="middle" fill="%23666" font-size="40">📺</text></svg>'; }}
+                                    />
+                                </div>
+                                <div className="card-title">{channel.name}</div>
+                            </button>
+                        ))}
+                    </div>
+                </div>
 
-                {movies.length > 0 && (
-                    <ContentRow
-                        title="🎬 Filmes em Destaque"
-                        items={movies.map(m => ({
-                            id: m.stream_id,
-                            title: m.name,
-                            image: m.cover,
-                            type: 'movie' as const,
-                            rating: m.rating_5based,
-                        }))}
-                    />
-                )}
+                {/* Recent Movies */}
+                <div className="content-section">
+                    <h2 className="section-title">🎬 Filmes Recentes</h2>
+                    <div className="content-row">
+                        {recentMovies.map((movie, index) => (
+                            <button
+                                key={movie.stream_id}
+                                className={`content-card ${focusedSection === 2 && focusedItem === index ? 'tv-focused' : ''}`}
+                                onClick={() => onNavigate?.('movies')}
+                            >
+                                <div className="card-image card-image-poster">
+                                    <img
+                                        src={movie.cover}
+                                        alt={movie.name}
+                                        onError={(e) => { (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 150"><rect fill="%231a1a2e" width="100" height="150"/><text x="50" y="80" text-anchor="middle" fill="%23666" font-size="40">🎬</text></svg>'; }}
+                                    />
+                                </div>
+                                <div className="card-title">{movie.name}</div>
+                            </button>
+                        ))}
+                    </div>
+                </div>
 
-                {series.length > 0 && (
-                    <ContentRow
-                        title="📺 Séries Populares"
-                        items={series.map(s => ({
-                            id: s.series_id,
-                            title: s.name,
-                            image: s.cover,
-                            type: 'series' as const,
-                            rating: s.rating_5based,
-                        }))}
-                    />
-                )}
-            </div>
+                {/* Recent Series */}
+                <div className="content-section">
+                    <h2 className="section-title">📺 Séries Populares</h2>
+                    <div className="content-row">
+                        {recentSeries.map((series, index) => (
+                            <button
+                                key={series.series_id}
+                                className={`content-card ${focusedSection === 3 && focusedItem === index ? 'tv-focused' : ''}`}
+                                onClick={() => onNavigate?.('series')}
+                            >
+                                <div className="card-image card-image-poster">
+                                    <img
+                                        src={series.cover}
+                                        alt={series.name}
+                                        onError={(e) => { (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 150"><rect fill="%231a1a2e" width="100" height="150"/><text x="50" y="80" text-anchor="middle" fill="%23666" font-size="40">📺</text></svg>'; }}
+                                    />
+                                </div>
+                                <div className="card-title">{series.name}</div>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* Quick Access */}
+            <section className="home-quick-access">
+                <h2 className="section-title">⚡ Acesso Rápido</h2>
+                <div className="quick-grid">
+                    <button
+                        className={`quick-item ${focusedSection === 4 && focusedItem === 0 ? 'tv-focused' : ''}`}
+                        onClick={() => onNavigate?.('live')}
+                    >
+                        <span className="quick-icon">🔴</span>
+                        <span className="quick-label">TV ao Vivo</span>
+                    </button>
+                    <button
+                        className={`quick-item ${focusedSection === 4 && focusedItem === 1 ? 'tv-focused' : ''}`}
+                        onClick={() => onNavigate?.('movies')}
+                    >
+                        <span className="quick-icon">🎥</span>
+                        <span className="quick-label">Filmes</span>
+                    </button>
+                    <button
+                        className={`quick-item ${focusedSection === 4 && focusedItem === 2 ? 'tv-focused' : ''}`}
+                        onClick={() => onNavigate?.('series')}
+                    >
+                        <span className="quick-icon">📺</span>
+                        <span className="quick-label">Séries</span>
+                    </button>
+                    <button
+                        className={`quick-item ${focusedSection === 4 && focusedItem === 3 ? 'tv-focused' : ''}`}
+                        onClick={() => onNavigate?.('favorites')}
+                    >
+                        <span className="quick-icon">❤️</span>
+                        <span className="quick-label">Favoritos</span>
+                    </button>
+                    <button
+                        className={`quick-item ${focusedSection === 4 && focusedItem === 4 ? 'tv-focused' : ''}`}
+                        onClick={() => onNavigate?.('settings')}
+                    >
+                        <span className="quick-icon">⚙️</span>
+                        <span className="quick-label">Configurações</span>
+                    </button>
+                </div>
+            </section>
+
+            {/* Footer */}
+            <footer className="home-footer">
+                <span>NeoStream TV</span>
+                <span>v1.0.0</span>
+            </footer>
         </div>
     );
 }
