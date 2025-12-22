@@ -1,73 +1,111 @@
-# React + TypeScript + Vite
+# 📺 NeoStream TV
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> IPTV streaming app optimized for Samsung Tizen and LG webOS Smart TVs
 
-Currently, two official plugins are available:
+![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)
+![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite)
+![License](https://img.shields.io/badge/License-MIT-green)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## ✨ Features
 
-## React Compiler
+- 📺 **Live TV** - 1900+ channels with category filtering
+- 🎬 **Movies & Series** - VOD catalog browsing
+- 🎮 **TV Navigation** - Full D-pad/remote control support
+- 🌙 **Dark Theme** - Premium TV-optimized interface
+- 🔐 **Xtream Codes API** - Compatible with IPTV providers
+- 💾 **Local Storage** - Saved credentials and favorites
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 📸 Screenshots
 
-## Expanding the ESLint configuration
+| Login | Live TV | Sidebar |
+|-------|---------|---------|
+| Dark themed login | Channel grid | Animated navigation |
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 🚀 Quick Start
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+```bash
+# Clone the repository
+git clone https://github.com/Rakjsu/NeoStream-TV.git
+cd NeoStream-TV
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+# Install dependencies
+npm install
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Start development server
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Open http://localhost:5173 in your browser.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 🛠️ Tech Stack
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+| Technology | Purpose |
+|------------|---------|
+| React 18 | UI Framework |
+| TypeScript | Type Safety |
+| Vite | Build Tool |
+| Vanilla CSS | Styling |
+| HLS.js | Video Streaming |
+
+## 📁 Project Structure
+
 ```
+src/
+├── components/         # Reusable UI components
+│   ├── Sidebar/       # Navigation sidebar
+│   └── ContentRow/    # Content carousel
+├── pages/             # Application pages
+│   ├── Login.tsx      # Authentication
+│   ├── Home.tsx       # Dashboard
+│   └── LiveTV.tsx     # Channel grid
+├── services/          # Business logic
+│   ├── api.ts         # Xtream Codes API
+│   └── storage.ts     # LocalStorage
+├── hooks/             # Custom React hooks
+│   └── useTVNavigation.ts  # D-pad controls
+└── types/             # TypeScript definitions
+```
+
+## 🎮 TV Navigation
+
+| Key | Action |
+|-----|--------|
+| ↑ ↓ ← → | Navigate |
+| Enter/OK | Select |
+| Back | Go back |
+| Play/Pause | Media control |
+
+## 📦 Build for Production
+
+```bash
+npm run build
+```
+
+Output will be in `dist/` folder.
+
+## 🎯 Roadmap
+
+- [ ] Video Player Component
+- [ ] EPG (Electronic Program Guide)
+- [ ] VOD Pages (Movies/Series)
+- [ ] Samsung Tizen Packaging
+- [ ] LG webOS Packaging
+- [ ] Favorites System
+- [ ] Search Functionality
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) file.
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing`)
+5. Open a Pull Request
+
+---
+
+Made with ❤️ for Smart TV enthusiasts
