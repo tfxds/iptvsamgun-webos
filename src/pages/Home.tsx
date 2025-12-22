@@ -1,8 +1,8 @@
-// Home Page - Inspired by NeoStream Desktop
+// Home Page - Matching NeoStream Desktop
 
 import { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import type { LiveStream, VODStream, Series } from '../types';
+import type { VODStream, Series } from '../types';
 import { useTVNavigation } from '../hooks/useTVNavigation';
 import './Home.css';
 
@@ -19,9 +19,9 @@ interface ContentCounts {
 export function Home({ onNavigate }: HomeProps) {
     const [loading, setLoading] = useState(true);
     const [counts, setCounts] = useState<ContentCounts>({ live: 0, vod: 0, series: 0 });
-    const [recentChannels, setRecentChannels] = useState<LiveStream[]>([]);
     const [recentMovies, setRecentMovies] = useState<VODStream[]>([]);
     const [recentSeries, setRecentSeries] = useState<Series[]>([]);
+    const [recommendations, setRecommendations] = useState<(VODStream | Series)[]>([]);
     const [currentTime, setCurrentTime] = useState(new Date());
     const [focusedSection, setFocusedSection] = useState(0);
     const [focusedItem, setFocusedItem] = useState(0);
@@ -49,10 +49,23 @@ export function Home({ onNavigate }: HomeProps) {
                     series: series.length
                 });
 
-                // Get recent items (first 10)
-                setRecentChannels(streams.slice(0, 10));
-                setRecentMovies(movies.slice(0, 10));
-                setRecentSeries(series.slice(0, 10));
+                // Get recent items (newest first based on 'added' field)
+                const sortedMovies = [...movies].sort((a, b) =>
+                    parseInt(b.added || '0') - parseInt(a.added || '0')
+                ).slice(0, 15);
+
+                const sortedSeries = [...series].sort((a, b) =>
+                    new Date(b.last_modified || 0).getTime() - new Date(a.last_modified || 0).getTime()
+                ).slice(0, 15);
+
+                setRecentMovies(sortedMovies);
+                setRecentSeries(sortedSeries);
+
+                // Recommendations: mix of random movies and series
+                const randomMovies = [...movies].sort(() => Math.random() - 0.5).slice(0, 8);
+                const randomSeries = [...series].sort(() => Math.random() - 0.5).slice(0, 7);
+                setRecommendations([...randomMovies, ...randomSeries].sort(() => Math.random() - 0.5));
+
             } catch (error) {
                 console.error('Failed to fetch data:', error);
             } finally {
@@ -76,6 +89,7 @@ export function Home({ onNavigate }: HomeProps) {
         });
     };
 
+    // Greeting based on time of day (as per original app)
     const getGreeting = () => {
         const hour = currentTime.getHours();
         if (hour < 12) return 'Bom dia';
@@ -83,12 +97,12 @@ export function Home({ onNavigate }: HomeProps) {
         return 'Boa noite';
     };
 
-    // TV Navigation
+    // TV Navigation - Updated sections
     const sections = [
         { id: 'stats', items: 3 },
-        { id: 'channels', items: recentChannels.length },
-        { id: 'movies', items: recentMovies.length },
+        { id: 'recommendations', items: recommendations.length },
         { id: 'series', items: recentSeries.length },
+        { id: 'movies', items: recentMovies.length },
         { id: 'quick', items: 5 }
     ];
 
@@ -115,9 +129,7 @@ export function Home({ onNavigate }: HomeProps) {
         } else if (section?.id === 'quick') {
             const pages = ['live', 'movies', 'series', 'favorites', 'settings'];
             onNavigate?.(pages[focusedItem] || 'live');
-        } else if (section?.id === 'channels') {
-            onNavigate?.('live');
-        } else if (section?.id === 'movies') {
+        } else if (section?.id === 'movies' || section?.id === 'recommendations') {
             onNavigate?.('movies');
         } else if (section?.id === 'series') {
             onNavigate?.('series');
@@ -128,6 +140,19 @@ export function Home({ onNavigate }: HomeProps) {
         onNavigate: handleNavigate,
         onEnter: handleEnter,
     });
+
+    // Helper to get cover image
+    const getCover = (item: VODStream | Series) => {
+        return 'cover' in item ? item.cover : '';
+    };
+
+    const getName = (item: VODStream | Series) => {
+        return item.name;
+    };
+
+    const getId = (item: VODStream | Series) => {
+        return 'stream_id' in item ? item.stream_id : item.series_id;
+    };
 
     return (
         <div className="home-page">
@@ -177,26 +202,52 @@ export function Home({ onNavigate }: HomeProps) {
                 </button>
             </section>
 
-            {/* Content Rows */}
+            {/* Content Rows - Matching Original App */}
             <section className="home-content">
-                {/* Recent Channels */}
+                {/* Continue Watching - Placeholder for now */}
+                {/* This would need watchProgressService implementation */}
+
+                {/* Recommendations */}
                 <div className="content-section">
-                    <h2 className="section-title">📺 Canais Populares</h2>
+                    <h2 className="section-title">💡 Recomendados Para Você</h2>
                     <div className="content-row">
-                        {recentChannels.map((channel, index) => (
+                        {recommendations.map((item, index) => (
                             <button
-                                key={channel.stream_id}
+                                key={getId(item)}
                                 className={`content-card ${focusedSection === 1 && focusedItem === index ? 'tv-focused' : ''}`}
-                                onClick={() => onNavigate?.('live')}
+                                onClick={() => onNavigate?.('stream_id' in item ? 'movies' : 'series')}
                             >
-                                <div className="card-image">
+                                <div className="card-image card-image-poster">
                                     <img
-                                        src={channel.stream_icon}
-                                        alt={channel.name}
-                                        onError={(e) => { (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%231a1a2e" width="100" height="100"/><text x="50" y="55" text-anchor="middle" fill="%23666" font-size="40">📺</text></svg>'; }}
+                                        src={getCover(item)}
+                                        alt={getName(item)}
+                                        onError={(e) => { (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 150"><rect fill="%231a1a2e" width="100" height="150"/><text x="50" y="80" text-anchor="middle" fill="%23666" font-size="40">🎬</text></svg>'; }}
                                     />
                                 </div>
-                                <div className="card-title">{channel.name}</div>
+                                <div className="card-title">{getName(item)}</div>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Recent Series */}
+                <div className="content-section">
+                    <h2 className="section-title">🆕 Séries Recentes</h2>
+                    <div className="content-row">
+                        {recentSeries.map((series, index) => (
+                            <button
+                                key={series.series_id}
+                                className={`content-card ${focusedSection === 2 && focusedItem === index ? 'tv-focused' : ''}`}
+                                onClick={() => onNavigate?.('series')}
+                            >
+                                <div className="card-image card-image-poster">
+                                    <img
+                                        src={series.cover}
+                                        alt={series.name}
+                                        onError={(e) => { (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 150"><rect fill="%231a1a2e" width="100" height="150"/><text x="50" y="80" text-anchor="middle" fill="%23666" font-size="40">📺</text></svg>'; }}
+                                    />
+                                </div>
+                                <div className="card-title">{series.name}</div>
                             </button>
                         ))}
                     </div>
@@ -209,7 +260,7 @@ export function Home({ onNavigate }: HomeProps) {
                         {recentMovies.map((movie, index) => (
                             <button
                                 key={movie.stream_id}
-                                className={`content-card ${focusedSection === 2 && focusedItem === index ? 'tv-focused' : ''}`}
+                                className={`content-card ${focusedSection === 3 && focusedItem === index ? 'tv-focused' : ''}`}
                                 onClick={() => onNavigate?.('movies')}
                             >
                                 <div className="card-image card-image-poster">
@@ -220,29 +271,6 @@ export function Home({ onNavigate }: HomeProps) {
                                     />
                                 </div>
                                 <div className="card-title">{movie.name}</div>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Recent Series */}
-                <div className="content-section">
-                    <h2 className="section-title">📺 Séries Populares</h2>
-                    <div className="content-row">
-                        {recentSeries.map((series, index) => (
-                            <button
-                                key={series.series_id}
-                                className={`content-card ${focusedSection === 3 && focusedItem === index ? 'tv-focused' : ''}`}
-                                onClick={() => onNavigate?.('series')}
-                            >
-                                <div className="card-image card-image-poster">
-                                    <img
-                                        src={series.cover}
-                                        alt={series.name}
-                                        onError={(e) => { (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 150"><rect fill="%231a1a2e" width="100" height="150"/><text x="50" y="80" text-anchor="middle" fill="%23666" font-size="40">📺</text></svg>'; }}
-                                    />
-                                </div>
-                                <div className="card-title">{series.name}</div>
                             </button>
                         ))}
                     </div>
