@@ -8,6 +8,7 @@ import { Home } from './pages/Home';
 import { LiveTV } from './pages/LiveTV';
 import { Movies } from './pages/Movies';
 import { Series } from './pages/Series';
+import { Favorites } from './pages/Favorites';
 import { Sidebar } from './components/Sidebar';
 import './index.css';
 
@@ -87,7 +88,7 @@ function App() {
         {currentPage === 'live' && <LiveTV />}
         {currentPage === 'movies' && <Movies />}
         {currentPage === 'series' && <Series />}
-        {currentPage === 'favorites' && <PlaceholderPage title="Favoritos" icon="❤️" />}
+        {currentPage === 'favorites' && <Favorites />}
         {currentPage === 'settings' && <PlaceholderPage title="Configurações" icon="⚙️" />}
       </main>
     </div>

@@ -2,6 +2,16 @@
 
 import type { Credentials } from '../types';
 
+interface FavoriteItem {
+    id: string;
+    type: 'movie' | 'series' | 'channel';
+    title: string;
+    poster?: string;
+    rating?: string;
+    year?: string;
+    addedAt: number;
+}
+
 const STORAGE_KEYS = {
     CREDENTIALS: 'neostream_credentials',
     FAVORITES: 'neostream_favorites',
@@ -36,27 +46,31 @@ class StorageService {
         localStorage.removeItem(STORAGE_KEYS.CREDENTIALS);
     }
 
-    // Favorites
-    getFavorites(): number[] {
+    // Favorites (full item storage)
+    getFavorites(): FavoriteItem[] {
         const data = localStorage.getItem(STORAGE_KEYS.FAVORITES);
         return data ? JSON.parse(data) : [];
     }
 
-    addFavorite(streamId: number): void {
+    addFavorite(item: FavoriteItem): void {
         const favorites = this.getFavorites();
-        if (!favorites.includes(streamId)) {
-            favorites.push(streamId);
+        if (!favorites.some(f => f.id === item.id)) {
+            favorites.push({ ...item, addedAt: Date.now() });
             localStorage.setItem(STORAGE_KEYS.FAVORITES, JSON.stringify(favorites));
         }
     }
 
-    removeFavorite(streamId: number): void {
-        const favorites = this.getFavorites().filter(id => id !== streamId);
+    removeFavorite(id: string): void {
+        const favorites = this.getFavorites().filter(f => f.id !== id);
         localStorage.setItem(STORAGE_KEYS.FAVORITES, JSON.stringify(favorites));
     }
 
-    isFavorite(streamId: number): boolean {
-        return this.getFavorites().includes(streamId);
+    isFavorite(id: string): boolean {
+        return this.getFavorites().some(f => f.id === id);
+    }
+
+    clearFavorites(): void {
+        localStorage.setItem(STORAGE_KEYS.FAVORITES, JSON.stringify([]));
     }
 
     // Last channel
