@@ -36,14 +36,16 @@ export function Sidebar({ activeItem, onItemSelect, onLogout }: SidebarProps) {
         if (direction === 'up') {
             setFocusedIndex(prev => Math.max(0, prev - 1));
         } else if (direction === 'down') {
-            setFocusedIndex(prev => Math.min(menuItems.length, prev + 1)); // +1 for logout
+            setFocusedIndex(prev => Math.min(menuItems.length + 1, prev + 1)); // +1 profile, +1 logout
         }
     };
 
     const handleEnter = () => {
-        if (focusedIndex === menuItems.length) {
+        if (focusedIndex === menuItems.length + 1) {
             // Logout button
             onLogout();
+        } else if (focusedIndex === menuItems.length) {
+            // Profile button - could open profile menu in future
         } else {
             const item = menuItems[focusedIndex];
             if (item) {
@@ -136,13 +138,41 @@ export function Sidebar({ activeItem, onItemSelect, onLogout }: SidebarProps) {
 
                 {/* Bottom Section */}
                 <div className="bottom-section">
+                    {/* Profile Button */}
+                    <button
+                        className={`profile-btn ${focusedIndex === menuItems.length ? 'tv-focused' : ''}`}
+                        onMouseEnter={() => setHoveredItem('profile')}
+                        onMouseLeave={() => setHoveredItem(null)}
+                        onFocus={() => setFocusedIndex(menuItems.length)}
+                        data-focusable="true"
+                    >
+                        <div className="profile-ring" />
+                        <div className="profile-inner">
+                            <svg width="26" height="26" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <linearGradient id="profileGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stopColor="#a855f7" />
+                                        <stop offset="100%" stopColor="#ec4899" />
+                                    </linearGradient>
+                                </defs>
+                                <circle cx="50" cy="35" r="14" fill="none" stroke="url(#profileGrad)" strokeWidth="6" />
+                                <path d="M 20,85 C 20,65 30,55 50,55 C 70,55 80,65 80,85" fill="none" stroke="url(#profileGrad)" strokeWidth="6" strokeLinecap="round" />
+                            </svg>
+                        </div>
+                        {/* Profile Tooltip */}
+                        <div className={`tooltip ${focusedIndex === menuItems.length || hoveredItem === 'profile' ? 'visible' : ''}`}>
+                            <span className="tooltip-emoji">👤</span>
+                            <span className="tooltip-label">Perfil</span>
+                        </div>
+                    </button>
+
                     {/* Logout */}
                     <button
-                        className={`logout-btn ${focusedIndex === menuItems.length ? 'tv-focused' : ''}`}
+                        className={`logout-btn ${focusedIndex === menuItems.length + 1 ? 'tv-focused' : ''}`}
                         onClick={onLogout}
                         onMouseEnter={() => setHoveredItem('logout')}
                         onMouseLeave={() => setHoveredItem(null)}
-                        onFocus={() => setFocusedIndex(menuItems.length)}
+                        onFocus={() => setFocusedIndex(menuItems.length + 1)}
                         data-focusable="true"
                     >
                         <svg className="logout-icon" viewBox="0 0 24 24" fill="none" width="22" height="22">
@@ -151,7 +181,7 @@ export function Sidebar({ activeItem, onItemSelect, onLogout }: SidebarProps) {
                             <path d="M21 12H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                         </svg>
                         {/* Logout Tooltip */}
-                        <div className={`tooltip danger ${focusedIndex === menuItems.length || hoveredItem === 'logout' ? 'visible' : ''}`}>
+                        <div className={`tooltip danger ${focusedIndex === menuItems.length + 1 || hoveredItem === 'logout' ? 'visible' : ''}`}>
                             <span className="tooltip-emoji">🚪</span>
                             <span className="tooltip-label">Sair</span>
                         </div>
