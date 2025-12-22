@@ -156,6 +156,8 @@
 }
 
 .close-btn {
+    position: relative;
+    z-index: 10;
     width: 36px;
     height: 36px;
     background: rgba(255, 255, 255, 0.05);
@@ -171,8 +173,9 @@
 }
 
 .close-btn:hover {
-    background: rgba(239, 68, 68, 0.2);
+    background: rgba(239, 68, 68, 0.3);
     border-color: #ef4444;
+    color: #ef4444;
     transform: scale(1.1);
 }
 
@@ -232,8 +235,9 @@
 
 .category-item:hover {
     transform: translateX(8px) scale(1.02);
-    background: rgba(99, 102, 241, 0.1);
-    border-color: rgba(99, 102, 241, 0.4);
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #ef4444;
 }
 
 .category-item.selected {
@@ -261,7 +265,7 @@
 }
 
 .category-item:hover .category-icon {
-    background: rgba(99, 102, 241, 0.2);
+    background: rgba(239, 68, 68, 0.2);
 }
 
 .category-name {
