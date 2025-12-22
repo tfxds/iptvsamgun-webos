@@ -5,6 +5,7 @@ import { api } from './services/api';
 import { storage } from './services/storage';
 import { Login } from './pages/Login';
 import { Home } from './pages/Home';
+import { LiveTV } from './pages/LiveTV';
 import { Sidebar } from './components/Sidebar';
 import './index.css';
 
@@ -81,7 +82,7 @@ function App() {
       />
       <main className="app-content">
         {currentPage === 'home' && <Home />}
-        {currentPage === 'live' && <PlaceholderPage title="TV ao Vivo" icon="📺" />}
+        {currentPage === 'live' && <LiveTV />}
         {currentPage === 'movies' && <PlaceholderPage title="Filmes" icon="🎬" />}
         {currentPage === 'series' && <PlaceholderPage title="Séries" icon="📺" />}
         {currentPage === 'favorites' && <PlaceholderPage title="Favoritos" icon="❤️" />}
