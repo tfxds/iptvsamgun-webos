@@ -1,6 +1,7 @@
 // Category Menu Component - Hamburger Button + Slide Panel
+// Matching Original App Animations
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { Category } from '../types';
 import './CategoryMenu.css';
 
@@ -18,6 +19,35 @@ export function CategoryMenu({
     type = 'vod'
 }: CategoryMenuProps) {
     const [isOpen, setIsOpen] = useState(false);
+    const [isClosing, setIsClosing] = useState(false);
+    const panelRef = useRef<HTMLDivElement>(null);
+
+    const handleClose = () => {
+        setIsClosing(true);
+        // Wait for closing animation to finish
+        setTimeout(() => {
+            setIsOpen(false);
+            setIsClosing(false);
+        }, 300);
+    };
+
+    const handleOpen = () => {
+        setIsClosing(false);
+        setIsOpen(true);
+    };
+
+    const handleToggle = () => {
+        if (isOpen) {
+            handleClose();
+        } else {
+            handleOpen();
+        }
+    };
+
+    const handleSelectCategory = (categoryId: string) => {
+        onSelectCategory(categoryId);
+        handleClose();
+    };
 
     const getCategoryIcon = (name: string): string => {
         const lower = name.toLowerCase();
@@ -66,7 +96,7 @@ export function CategoryMenu({
             {/* Hamburger Toggle Button */}
             <button
                 className={`category-toggle-btn ${isOpen ? 'active' : ''}`}
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={handleToggle}
             >
                 <span className="hamburger-line line-1" />
                 <span className="hamburger-line line-2" />
@@ -74,56 +104,59 @@ export function CategoryMenu({
             </button>
 
             {/* Backdrop */}
-            {isOpen && (
-                <div className="category-backdrop" onClick={() => setIsOpen(false)} />
+            {(isOpen || isClosing) && (
+                <div
+                    className="category-backdrop"
+                    onClick={handleClose}
+                    style={{ opacity: isClosing ? 0 : 1, transition: 'opacity 0.3s ease' }}
+                />
             )}
 
             {/* Category Panel */}
-            <div className={`category-panel ${isOpen ? 'open' : ''}`}>
-                {/* Header */}
-                <div className="category-panel-header">
-                    <div className="header-content">
-                        <h2>Categorias</h2>
-                        <p>Explore por gênero</p>
-                    </div>
-                    <button className="close-btn" onClick={() => setIsOpen(false)}>
-                        ✕
-                    </button>
-                </div>
-
-                {/* Category List */}
-                <div className="category-list">
-                    {/* All Items Option */}
-                    <button
-                        className={`category-item ${selectedCategory === 'all' ? 'selected' : ''}`}
-                        onClick={() => {
-                            onSelectCategory('all');
-                            setIsOpen(false);
-                        }}
-                    >
-                        <div className="category-icon">📺</div>
-                        <span className="category-name">{getTypeLabel()}</span>
-                        {selectedCategory === 'all' && <div className="selected-dot" />}
-                    </button>
-
-                    {/* Dynamic Categories */}
-                    {categories.map((cat, index) => (
-                        <button
-                            key={cat.category_id}
-                            className={`category-item ${selectedCategory === cat.category_id ? 'selected' : ''}`}
-                            style={{ animationDelay: `${index * 0.03}s` }}
-                            onClick={() => {
-                                onSelectCategory(cat.category_id);
-                                setIsOpen(false);
-                            }}
-                        >
-                            <div className="category-icon">{getCategoryIcon(cat.category_name)}</div>
-                            <span className="category-name">{cat.category_name}</span>
-                            {selectedCategory === cat.category_id && <div className="selected-dot" />}
+            {(isOpen || isClosing) && (
+                <div
+                    ref={panelRef}
+                    className={`category-panel ${isOpen && !isClosing ? 'open' : ''} ${isClosing ? 'closing' : ''}`}
+                >
+                    {/* Header */}
+                    <div className="category-panel-header">
+                        <div className="header-content">
+                            <h2>Categorias</h2>
+                            <p>Explore por gênero</p>
+                        </div>
+                        <button className="close-btn" onClick={handleClose}>
+                            ✕
                         </button>
-                    ))}
+                    </div>
+
+                    {/* Category List */}
+                    <div className="category-list">
+                        {/* All Items Option */}
+                        <button
+                            className={`category-item ${selectedCategory === 'all' ? 'selected' : ''}`}
+                            onClick={() => handleSelectCategory('all')}
+                        >
+                            <div className="category-icon">📺</div>
+                            <span className="category-name">{getTypeLabel()}</span>
+                            {selectedCategory === 'all' && <div className="selected-dot" />}
+                        </button>
+
+                        {/* Dynamic Categories */}
+                        {categories.map((cat, index) => (
+                            <button
+                                key={cat.category_id}
+                                className={`category-item ${selectedCategory === cat.category_id ? 'selected' : ''}`}
+                                style={{ animationDelay: `${0.1 + index * 0.03}s` }}
+                                onClick={() => handleSelectCategory(cat.category_id)}
+                            >
+                                <div className="category-icon">{getCategoryIcon(cat.category_name)}</div>
+                                <span className="category-name">{cat.category_name}</span>
+                                {selectedCategory === cat.category_id && <div className="selected-dot" />}
+                            </button>
+                        ))}
+                    </div>
                 </div>
-            </div>
+            )}
         </>
     );
 }
