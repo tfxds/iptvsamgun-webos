@@ -7,6 +7,7 @@ import { Login } from './pages/Login';
 import { Home } from './pages/Home';
 import { LiveTV } from './pages/LiveTV';
 import { Movies } from './pages/Movies';
+import { Series } from './pages/Series';
 import { Sidebar } from './components/Sidebar';
 import './index.css';
 
@@ -85,7 +86,7 @@ function App() {
         {currentPage === 'home' && <Home onNavigate={handlePageChange} />}
         {currentPage === 'live' && <LiveTV />}
         {currentPage === 'movies' && <Movies />}
-        {currentPage === 'series' && <PlaceholderPage title="Séries" icon="📺" />}
+        {currentPage === 'series' && <Series />}
         {currentPage === 'favorites' && <PlaceholderPage title="Favoritos" icon="❤️" />}
         {currentPage === 'settings' && <PlaceholderPage title="Configurações" icon="⚙️" />}
       </main>
