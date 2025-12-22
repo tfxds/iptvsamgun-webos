@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
 import type { VODStream, Category } from '../types';
 import { useTVNavigation } from '../hooks/useTVNavigation';
+import { CategoryMenu } from '../components/CategoryMenu';
 import './Movies.css';
 
 export function Movies() {
@@ -189,24 +190,13 @@ export function Movies() {
                 )}
             </div>
 
-            {/* Category Menu */}
-            <div className="movies-categories">
-                <button
-                    className={`category-btn ${selectedCategory === 'all' ? 'active' : ''} ${focusArea === 'categories' && focusedCategoryIndex === 0 ? 'tv-focused' : ''}`}
-                    onClick={() => setSelectedCategory('all')}
-                >
-                    Todos ({streams.length})
-                </button>
-                {categories.map((cat, index) => (
-                    <button
-                        key={cat.category_id}
-                        className={`category-btn ${selectedCategory === cat.category_id ? 'active' : ''} ${focusArea === 'categories' && focusedCategoryIndex === index + 1 ? 'tv-focused' : ''}`}
-                        onClick={() => setSelectedCategory(cat.category_id)}
-                    >
-                        {cat.category_name}
-                    </button>
-                ))}
-            </div>
+            {/* Category Menu (Hamburger Button) */}
+            <CategoryMenu
+                categories={categories}
+                selectedCategory={selectedCategory}
+                onSelectCategory={setSelectedCategory}
+                type="vod"
+            />
 
             {/* Movie Preview Panel */}
             {selectedMovie && (
