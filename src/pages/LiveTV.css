@@ -3,6 +3,8 @@
 .livetv {
     min-height: 100vh;
     padding: var(--spacing-lg);
+    margin-left: 80px;
+    /* Clear the sidebar */
 }
 
 /* Loading/Error */
