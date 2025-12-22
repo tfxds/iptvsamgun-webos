@@ -1,26 +1,35 @@
 # 📺 NeoStream TV
 
-> IPTV streaming app optimized for Samsung Tizen and LG webOS Smart TVs
+> IPTV Player for Samsung Tizen and LG webOS Smart TVs
 
 ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)
 ![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
+## ⚠️ Disclaimer
+
+**NeoStream TV is just a player application.** It does not provide, host, or distribute any content. Users must have their own IPTV subscription and are solely responsible for the content they access through their providers.
+
+This application:
+- ❌ Does NOT include any channels or streams
+- ❌ Does NOT store or distribute any media content
+- ❌ Does NOT have any affiliation with IPTV providers
+- ✅ Only connects to user-provided Xtream Codes servers
+- ✅ Is a tool to play playlists from the user's own subscription
+
+**Use at your own risk. The developers are not responsible for how this application is used.**
+
+---
+
 ## ✨ Features
 
-- 📺 **Live TV** - 1900+ channels with category filtering
-- 🎬 **Movies & Series** - VOD catalog browsing
+- 📺 **Live TV Player** - Watch your IPTV subscription
+- 🎬 **VOD Support** - Movies & Series from your provider
 - 🎮 **TV Navigation** - Full D-pad/remote control support
 - 🌙 **Dark Theme** - Premium TV-optimized interface
-- 🔐 **Xtream Codes API** - Compatible with IPTV providers
+- 🔐 **Xtream Codes API** - Connect to your provider
 - 💾 **Local Storage** - Saved credentials and favorites
-
-## 📸 Screenshots
-
-| Login | Live TV | Sidebar |
-|-------|---------|---------|
-| Dark themed login | Channel grid | Animated navigation |
 
 ## 🚀 Quick Start
 
@@ -56,12 +65,12 @@ src/
 │   ├── Sidebar/       # Navigation sidebar
 │   └── ContentRow/    # Content carousel
 ├── pages/             # Application pages
-│   ├── Login.tsx      # Authentication
+│   ├── Login.tsx      # User authentication
 │   ├── Home.tsx       # Dashboard
 │   └── LiveTV.tsx     # Channel grid
 ├── services/          # Business logic
-│   ├── api.ts         # Xtream Codes API
-│   └── storage.ts     # LocalStorage
+│   ├── api.ts         # Xtream Codes API client
+│   └── storage.ts     # LocalStorage service
 ├── hooks/             # Custom React hooks
 │   └── useTVNavigation.ts  # D-pad controls
 └── types/             # TypeScript definitions
@@ -76,36 +85,23 @@ src/
 | Back | Go back |
 | Play/Pause | Media control |
 
-## 📦 Build for Production
+## 📦 Build
 
 ```bash
 npm run build
 ```
 
-Output will be in `dist/` folder.
-
 ## 🎯 Roadmap
 
 - [ ] Video Player Component
-- [ ] EPG (Electronic Program Guide)
-- [ ] VOD Pages (Movies/Series)
+- [ ] EPG (Program Guide)
 - [ ] Samsung Tizen Packaging
 - [ ] LG webOS Packaging
-- [ ] Favorites System
-- [ ] Search Functionality
 
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE) file.
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing`)
-5. Open a Pull Request
-
 ---
 
-Made with ❤️ for Smart TV enthusiasts
+**Note:** This is an open-source player application. No content is provided. Users must supply their own IPTV credentials.
