@@ -1,212 +1,280 @@
-// LiveTV Page - Channel Grid with Categories
+// LiveTV Page - Matching NeoStream Desktop Style
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { storage } from '../services/storage';
 import type { LiveStream, Category } from '../types';
 import { useTVNavigation } from '../hooks/useTVNavigation';
 import './LiveTV.css';
 
-interface LiveTVProps {
-    onPlayChannel?: (channel: LiveStream) => void;
-}
-
-export function LiveTV({ onPlayChannel }: LiveTVProps) {
-    const [channels, setChannels] = useState<LiveStream[]>([]);
-    const [categories, setCategories] = useState<Category[]>([]);
-    const [selectedCategory, setSelectedCategory] = useState<string>('all');
+export function LiveTV() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [focusArea, setFocusArea] = useState<'categories' | 'channels'>('categories');
+    const [streams, setStreams] = useState<LiveStream[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [selectedCategory, setSelectedCategory] = useState<string>('all');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedChannel, setSelectedChannel] = useState<LiveStream | null>(null);
+    const [brokenImages, setBrokenImages] = useState<Set<number>>(new Set());
+
+    // Focus states for TV navigation
+    const [focusArea, setFocusArea] = useState<'categories' | 'search' | 'channels'>('channels');
     const [focusedCategoryIndex, setFocusedCategoryIndex] = useState(0);
     const [focusedChannelIndex, setFocusedChannelIndex] = useState(0);
 
-    const GRID_COLUMNS = 5;
-
+    // Fetch data
     useEffect(() => {
-        loadContent();
+        async function fetchData() {
+            try {
+                setLoading(true);
+                const [streamsData, categoriesData] = await Promise.all([
+                    api.getLiveStreams(),
+                    api.getLiveCategories()
+                ]);
+                setStreams(streamsData);
+                setCategories(categoriesData);
+            } catch (err: any) {
+                setError(err?.message || 'Erro ao carregar canais');
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchData();
     }, []);
 
-    const loadContent = async () => {
-        try {
-            setLoading(true);
-            const [channelsData, categoriesData] = await Promise.all([
-                api.getLiveStreams(),
-                api.getLiveCategories(),
-            ]);
-            setChannels(channelsData);
-            setCategories([{ category_id: 'all', category_name: 'Todos', parent_id: 0 }, ...categoriesData]);
-        } catch (err: any) {
-            setError(err.message || 'Erro ao carregar canais');
-        } finally {
-            setLoading(false);
-        }
-    };
+    // Filter streams
+    const filteredStreams = streams.filter(stream => {
+        const matchesSearch = stream.name.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesCategory = selectedCategory === 'all' || stream.category_id === selectedCategory;
+        return matchesSearch && matchesCategory;
+    });
 
-    const filteredChannels = selectedCategory === 'all'
-        ? channels
-        : channels.filter(ch => ch.category_id === selectedCategory);
-
-    const handleNavigate = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
+    // TV Navigation
+    const handleNavigate = (direction: 'up' | 'down' | 'left' | 'right') => {
         if (focusArea === 'categories') {
-            // Category navigation (horizontal)
             if (direction === 'left') {
                 setFocusedCategoryIndex(prev => Math.max(0, prev - 1));
             } else if (direction === 'right') {
-                setFocusedCategoryIndex(prev => Math.min(categories.length - 1, prev + 1));
+                setFocusedCategoryIndex(prev => Math.min(categories.length, prev + 1));
             } else if (direction === 'down') {
                 setFocusArea('channels');
                 setFocusedChannelIndex(0);
             }
-        } else {
-            // Channel grid navigation
-            const currentIndex = focusedChannelIndex;
-            let newIndex = currentIndex;
+        } else if (focusArea === 'channels') {
+            const cols = 3; // Grid columns
+            const totalChannels = filteredStreams.length;
 
-            switch (direction) {
-                case 'up':
-                    newIndex = currentIndex - GRID_COLUMNS;
-                    if (newIndex < 0) {
-                        setFocusArea('categories');
-                        return;
-                    }
-                    break;
-                case 'down':
-                    newIndex = currentIndex + GRID_COLUMNS;
-                    break;
-                case 'left':
-                    if (currentIndex % GRID_COLUMNS !== 0) {
-                        newIndex = currentIndex - 1;
-                    }
-                    break;
-                case 'right':
-                    if ((currentIndex + 1) % GRID_COLUMNS !== 0) {
-                        newIndex = currentIndex + 1;
-                    }
-                    break;
-            }
-
-            if (newIndex >= 0 && newIndex < filteredChannels.length) {
-                setFocusedChannelIndex(newIndex);
+            if (direction === 'up') {
+                if (focusedChannelIndex < cols) {
+                    setFocusArea('categories');
+                } else {
+                    setFocusedChannelIndex(prev => Math.max(0, prev - cols));
+                }
+            } else if (direction === 'down') {
+                setFocusedChannelIndex(prev => Math.min(totalChannels - 1, prev + cols));
+            } else if (direction === 'left') {
+                setFocusedChannelIndex(prev => Math.max(0, prev - 1));
+            } else if (direction === 'right') {
+                setFocusedChannelIndex(prev => Math.min(totalChannels - 1, prev + 1));
             }
         }
-    }, [focusArea, focusedChannelIndex, categories.length, filteredChannels.length]);
+    };
 
-    const handleEnter = useCallback(() => {
+    const handleEnter = () => {
         if (focusArea === 'categories') {
-            const category = categories[focusedCategoryIndex];
-            if (category) {
-                setSelectedCategory(category.category_id);
-                setFocusedChannelIndex(0);
+            if (focusedCategoryIndex === 0) {
+                setSelectedCategory('all');
+            } else {
+                setSelectedCategory(categories[focusedCategoryIndex - 1]?.category_id || 'all');
             }
-        } else {
-            const channel = filteredChannels[focusedChannelIndex];
+        } else if (focusArea === 'channels') {
+            const channel = filteredStreams[focusedChannelIndex];
             if (channel) {
-                storage.setLastChannel(channel.stream_id);
-                onPlayChannel?.(channel);
+                setSelectedChannel(channel);
             }
         }
-    }, [focusArea, focusedCategoryIndex, focusedChannelIndex, categories, filteredChannels, onPlayChannel]);
+    };
 
     useTVNavigation({
         onNavigate: handleNavigate,
         onEnter: handleEnter,
     });
 
-    // Scroll focused channel into view
-    useEffect(() => {
-        const channelEl = document.querySelector(`[data-channel-index="${focusedChannelIndex}"]`);
-        if (channelEl) {
-            channelEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-    }, [focusedChannelIndex]);
+    const handleImageError = (streamId: number) => {
+        setBrokenImages(prev => new Set(prev).add(streamId));
+    };
 
+    // Loading State with Animation
     if (loading) {
         return (
-            <div className="livetv-loading">
-                <div className="loading-spinner" />
-                <p>Carregando canais...</p>
+            <div className="livetv-loading-container">
+                <div className="livetv-bg-gradient" />
+                <div className="livetv-bg-glow" />
+
+                <div className="loading-icon-wrapper">
+                    {[0, 1, 2].map(i => (
+                        <div key={i} className="loading-ring" style={{ animationDelay: `${i * 0.5}s` }} />
+                    ))}
+                    <div className="loading-tv-icon">📺</div>
+                </div>
+
+                <div className="loading-text">
+                    <span>Carregando canais</span>
+                    <div className="loading-dots">
+                        {[0, 1, 2].map(i => (
+                            <span key={i} className="loading-dot" style={{ animationDelay: `${i * 0.2}s` }} />
+                        ))}
+                    </div>
+                </div>
+
+                <div className="loading-skeleton-grid">
+                    {[1, 2, 3, 4, 5, 6].map(i => (
+                        <div key={i} className="skeleton-card">
+                            <div className="skeleton-icon" />
+                            <div className="skeleton-text">
+                                <div className="skeleton-line skeleton-line-long" />
+                                <div className="skeleton-line skeleton-line-short" />
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
         );
     }
 
+    // Error State
     if (error) {
         return (
-            <div className="livetv-error">
+            <div className="livetv-error-container">
+                <div className="error-icon">📡</div>
+                <h2>Erro ao carregar canais</h2>
                 <p>{error}</p>
-                <button className="tv-button" onClick={loadContent}>Tentar novamente</button>
+                <button onClick={() => window.location.reload()} className="retry-button">
+                    🔄 Tentar novamente
+                </button>
             </div>
         );
     }
 
     return (
-        <div className="livetv">
-            {/* Header */}
-            <header className="livetv-header">
-                <h1 className="livetv-title">📺 TV ao Vivo</h1>
-                <span className="livetv-count">{filteredChannels.length} canais</span>
-            </header>
+        <div className="livetv-page">
+            {/* Animated Background */}
+            <div className="livetv-bg-gradient" />
+            <div className="livetv-bg-glow" />
 
-            {/* Category Filter */}
-            <div className="livetv-categories">
-                <div className="livetv-categories-scroll">
-                    {categories.map((cat, index) => (
-                        <button
-                            key={cat.category_id}
-                            className={`livetv-category ${selectedCategory === cat.category_id ? 'active' : ''} ${focusArea === 'categories' && focusedCategoryIndex === index ? 'tv-focused' : ''}`}
-                            onClick={() => {
-                                setSelectedCategory(cat.category_id);
-                                setFocusedCategoryIndex(index);
-                            }}
-                            data-focusable="true"
-                        >
-                            {cat.category_name}
-                        </button>
-                    ))}
-                </div>
+            {/* Search Bar */}
+            <div className="livetv-search-container">
+                <div className="search-icon">🔍</div>
+                <input
+                    type="text"
+                    className="livetv-search-input"
+                    placeholder="Buscar canais..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                {searchQuery && (
+                    <button className="search-clear" onClick={() => setSearchQuery('')}>✕</button>
+                )}
             </div>
 
-            {/* Channel Grid */}
-            <div className="livetv-grid">
-                {filteredChannels.map((channel, index) => (
-                    <div
-                        key={channel.stream_id}
-                        className={`livetv-channel ${focusArea === 'channels' && focusedChannelIndex === index ? 'tv-focused' : ''}`}
-                        data-channel-index={index}
-                        data-focusable="true"
-                        onClick={() => {
-                            setFocusedChannelIndex(index);
-                            onPlayChannel?.(channel);
-                        }}
+            {/* Category Menu */}
+            <div className="livetv-categories">
+                <button
+                    className={`category-btn ${selectedCategory === 'all' ? 'active' : ''} ${focusArea === 'categories' && focusedCategoryIndex === 0 ? 'tv-focused' : ''}`}
+                    onClick={() => setSelectedCategory('all')}
+                >
+                    Todos ({streams.length})
+                </button>
+                {categories.map((cat, index) => (
+                    <button
+                        key={cat.category_id}
+                        className={`category-btn ${selectedCategory === cat.category_id ? 'active' : ''} ${focusArea === 'categories' && focusedCategoryIndex === index + 1 ? 'tv-focused' : ''}`}
+                        onClick={() => setSelectedCategory(cat.category_id)}
                     >
-                        <div className="livetv-channel-image">
-                            {channel.stream_icon ? (
-                                <img
-                                    src={channel.stream_icon}
-                                    alt={channel.name}
-                                    loading="lazy"
-                                    onError={(e) => {
-                                        (e.target as HTMLImageElement).style.display = 'none';
-                                        (e.target as HTMLImageElement).parentElement!.classList.add('no-image');
-                                    }}
-                                />
-                            ) : (
-                                <div className="livetv-channel-placeholder">📺</div>
-                            )}
-                            <div className="livetv-channel-live">AO VIVO</div>
-                        </div>
-                        <div className="livetv-channel-info">
-                            <h3 className="livetv-channel-name">{channel.name}</h3>
-                        </div>
-                    </div>
+                        {cat.category_name}
+                    </button>
                 ))}
             </div>
 
-            {/* Navigation hints */}
+            {/* Channel Preview (when selected) */}
+            {selectedChannel && (
+                <div className="channel-preview">
+                    <div className="preview-header">
+                        <h2 className="preview-title">{selectedChannel.name}</h2>
+                        <button className="preview-close" onClick={() => setSelectedChannel(null)}>✕</button>
+                    </div>
+                    <div className="preview-content">
+                        <div className="preview-video">
+                            <div className="preview-placeholder">
+                                {brokenImages.has(selectedChannel.stream_id) ? (
+                                    <span className="placeholder-emoji">📺</span>
+                                ) : (
+                                    <img
+                                        src={selectedChannel.stream_icon}
+                                        alt={selectedChannel.name}
+                                        onError={() => handleImageError(selectedChannel.stream_id)}
+                                    />
+                                )}
+                            </div>
+                            <div className="live-badge">
+                                <span className="live-dot" />
+                                AO VIVO
+                            </div>
+                        </div>
+                        <div className="preview-actions">
+                            <button className="play-button">
+                                ▶ Assistir
+                            </button>
+                            <button className="info-button">
+                                ℹ Informações
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Channels Grid - Horizontal Cards */}
+            <div className="livetv-content">
+                {filteredStreams.length === 0 ? (
+                    <div className="no-results">
+                        <div className="no-results-icon">📺</div>
+                        <p>Nenhum canal encontrado</p>
+                        <span>Tente buscar por outro termo</span>
+                    </div>
+                ) : (
+                    <div className="channels-grid">
+                        {filteredStreams.map((stream, index) => (
+                            <div
+                                key={stream.stream_id}
+                                className={`channel-card ${focusArea === 'channels' && focusedChannelIndex === index ? 'tv-focused' : ''} ${selectedChannel?.stream_id === stream.stream_id ? 'selected' : ''}`}
+                                onClick={() => setSelectedChannel(stream)}
+                                style={{ animationDelay: `${Math.min(index * 0.03, 0.5)}s` }}
+                            >
+                                <div className="channel-logo">
+                                    {brokenImages.has(stream.stream_id) ? (
+                                        <span className="channel-placeholder">📺</span>
+                                    ) : (
+                                        <img
+                                            src={stream.stream_icon}
+                                            alt={stream.name}
+                                            onError={() => handleImageError(stream.stream_id)}
+                                        />
+                                    )}
+                                </div>
+                                <div className="channel-info">
+                                    <div className="channel-name">{stream.name}</div>
+                                </div>
+                                <div className="channel-live-indicator" />
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* Footer Hints */}
             <div className="livetv-hints">
                 <span>↑↓←→ Navegar</span>
-                <span>•</span>
-                <span>OK Assistir</span>
+                <span>OK Selecionar</span>
+                <span>← Voltar</span>
             </div>
         </div>
     );
