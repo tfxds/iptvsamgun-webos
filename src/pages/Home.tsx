@@ -143,7 +143,12 @@ export function Home({ onNavigate }: HomeProps) {
 
     // Helper to get cover image
     const getCover = (item: VODStream | Series) => {
-        return 'cover' in item ? item.cover : '';
+        if ('stream_id' in item) {
+            // VODStream - use stream_icon as primary
+            return item.stream_icon || item.cover || '';
+        }
+        // Series - use cover
+        return item.cover || '';
     };
 
     const getName = (item: VODStream | Series) => {
@@ -265,7 +270,7 @@ export function Home({ onNavigate }: HomeProps) {
                             >
                                 <div className="card-image card-image-poster">
                                     <img
-                                        src={movie.cover}
+                                        src={movie.stream_icon || movie.cover}
                                         alt={movie.name}
                                         onError={(e) => { (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 150"><rect fill="%231a1a2e" width="100" height="150"/><text x="50" y="80" text-anchor="middle" fill="%23666" font-size="40">🎬</text></svg>'; }}
                                     />

@@ -7,6 +7,7 @@ import { useTVNavigation } from '../hooks/useTVNavigation';
 import { CategoryMenu } from '../components/CategoryMenu';
 import { AnimatedSearchBar } from '../components/AnimatedSearchBar';
 import { ContentDetailModal } from '../components/ContentDetailModal';
+import { VideoPlayer } from '../components/VideoPlayer';
 import './Movies.css';
 
 export function Movies() {
@@ -18,8 +19,10 @@ export function Movies() {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedMovie, setSelectedMovie] = useState<VODStream | null>(null);
     const [showModal, setShowModal] = useState(false);
+    const [showPlayer, setShowPlayer] = useState(false);
+    const [playingMovie, setPlayingMovie] = useState<VODStream | null>(null);
     const [brokenImages, setBrokenImages] = useState<Set<number>>(new Set());
-    const [visibleCount, setVisibleCount] = useState(0); // Will be calculated dynamically
+    const [visibleCount, setVisibleCount] = useState(24); // Start with reasonable default
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     // Focus states for TV navigation
@@ -52,7 +55,7 @@ export function Movies() {
         window.addEventListener('resize', calculateVisibleItems);
 
         return () => window.removeEventListener('resize', calculateVisibleItems);
-    }, []);
+    }, [loading]); // Recalculate when loading finishes
 
     // Fetch data
     useEffect(() => {
@@ -257,9 +260,23 @@ export function Movies() {
                         container_extension: selectedMovie.container_extension,
                     }}
                     onPlay={() => {
-                        // TODO: Navigate to player
-                        console.log('Play movie:', selectedMovie.name);
+                        // Start video playback
+                        setPlayingMovie(selectedMovie);
+                        setShowPlayer(true);
                         setShowModal(false);
+                    }}
+                />
+            )}
+
+            {/* Video Player */}
+            {showPlayer && playingMovie && (
+                <VideoPlayer
+                    src={api.getVodStreamUrl(playingMovie.stream_id, playingMovie.container_extension || 'mp4')}
+                    title={playingMovie.name}
+                    poster={playingMovie.stream_icon || playingMovie.cover}
+                    onClose={() => {
+                        setShowPlayer(false);
+                        setPlayingMovie(null);
                     }}
                 />
             )}

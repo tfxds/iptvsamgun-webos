@@ -7,6 +7,7 @@ import { useTVNavigation } from '../hooks/useTVNavigation';
 import { CategoryMenu } from '../components/CategoryMenu';
 import { AnimatedSearchBar } from '../components/AnimatedSearchBar';
 import { ContentDetailModal } from '../components/ContentDetailModal';
+import { VideoPlayer } from '../components/VideoPlayer';
 import './Series.css';
 
 export function Series() {
@@ -18,8 +19,10 @@ export function Series() {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedSeries, setSelectedSeries] = useState<SeriesType | null>(null);
     const [showModal, setShowModal] = useState(false);
+    const [showPlayer, setShowPlayer] = useState(false);
+    const [playerInfo, setPlayerInfo] = useState<{ url: string; title: string; poster: string } | null>(null);
     const [brokenImages, setBrokenImages] = useState<Set<number>>(new Set());
-    const [visibleCount, setVisibleCount] = useState(0); // Will be calculated dynamically
+    const [visibleCount, setVisibleCount] = useState(24); // Start with reasonable default
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     // Focus states for TV navigation
@@ -52,7 +55,7 @@ export function Series() {
         window.addEventListener('resize', calculateVisibleItems);
 
         return () => window.removeEventListener('resize', calculateVisibleItems);
-    }, []);
+    }, [loading]); // Recalculate when loading finishes
 
     // Fetch data
     useEffect(() => {
@@ -255,10 +258,42 @@ export function Series() {
                         director: selectedSeries.director,
                         release_date: selectedSeries.release_date,
                     }}
-                    onPlay={(season, episode) => {
-                        // TODO: Navigate to player
-                        console.log('Play series:', selectedSeries.name, 'Season:', season, 'Episode:', episode);
+                    onPlay={async (season, episode) => {
+                        // Get series info to find episode stream ID
+                        try {
+                            const seriesInfo = await api.getSeriesInfo(selectedSeries.series_id);
+                            const episodes = seriesInfo?.episodes?.[season || 1] || [];
+                            const episodeData = episodes.find(e => e.episode_num === episode) || episodes[0];
+
+                            if (episodeData) {
+                                const streamUrl = api.getSeriesStreamUrl(
+                                    episodeData.id,
+                                    episodeData.container_extension || 'mp4'
+                                );
+                                setPlayerInfo({
+                                    url: streamUrl,
+                                    title: `${selectedSeries.name} - T${season} E${episode}`,
+                                    poster: selectedSeries.cover
+                                });
+                                setShowPlayer(true);
+                            }
+                        } catch (err) {
+                            console.error('Error getting episode info:', err);
+                        }
                         setShowModal(false);
+                    }}
+                />
+            )}
+
+            {/* Video Player */}
+            {showPlayer && playerInfo && (
+                <VideoPlayer
+                    src={playerInfo.url}
+                    title={playerInfo.title}
+                    poster={playerInfo.poster}
+                    onClose={() => {
+                        setShowPlayer(false);
+                        setPlayerInfo(null);
                     }}
                 />
             )}

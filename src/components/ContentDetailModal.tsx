@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
+import { searchMovieByName, searchSeriesByName, getImageUrl, formatGenres, type TMDBMovieDetails, type TMDBSeriesDetails } from '../services/tmdb';
 import type { SeriesInfo } from '../types';
 import './ContentDetailModal.css';
 
@@ -48,9 +49,17 @@ const favoritesService = {
 };
 
 // Simple watch later service
+interface WatchLaterItemData {
+    id: string;
+    type: string;
+    title?: string;
+    poster?: string;
+    rating?: string;
+}
+
 const watchLaterService = {
     KEY: 'neostream_watch_later',
-    getAll(): Array<{ id: string; type: string }> {
+    getAll(): WatchLaterItemData[] {
         try {
             return JSON.parse(localStorage.getItem(this.KEY) || '[]');
         } catch { return []; }
@@ -58,13 +67,13 @@ const watchLaterService = {
     has(id: string, type: string): boolean {
         return this.getAll().some(f => f.id === id && f.type === type);
     },
-    toggle(id: string, type: string): void {
+    toggle(id: string, type: string, title?: string, poster?: string, rating?: string): void {
         const all = this.getAll();
         const index = all.findIndex(f => f.id === id && f.type === type);
         if (index >= 0) {
             all.splice(index, 1);
         } else {
-            all.push({ id, type });
+            all.push({ id, type, title, poster, rating, addedAt: Date.now() } as any);
         }
         localStorage.setItem(this.KEY, JSON.stringify(all));
     }
@@ -86,6 +95,10 @@ export function ContentDetailModal({
     const [, setRefresh] = useState(0);
     const modalRef = useRef<HTMLDivElement>(null);
 
+    // TMDB data states
+    const [tmdbData, setTmdbData] = useState<TMDBMovieDetails | TMDBSeriesDetails | null>(null);
+    const [tmdbLoading, setTmdbLoading] = useState(false);
+
     // Fetch series info
     useEffect(() => {
         if (!isOpen || contentType !== 'series') return;
@@ -103,6 +116,34 @@ export function ContentDetailModal({
             })
             .finally(() => setLoading(false));
     }, [isOpen, contentId, contentType]);
+
+    // Fetch TMDB data
+    useEffect(() => {
+        if (!isOpen || !contentData.name) return;
+
+        setTmdbLoading(true);
+        const fetchTMDB = async () => {
+            try {
+                // Extract year from release_date if available
+                const year = contentData.release_date?.split('-')[0];
+
+                if (contentType === 'movie') {
+                    const data = await searchMovieByName(contentData.name, year);
+                    setTmdbData(data);
+                } else {
+                    const data = await searchSeriesByName(contentData.name, year);
+                    setTmdbData(data);
+                }
+            } catch (err) {
+                console.error('Error fetching TMDB data:', err);
+                setTmdbData(null);
+            } finally {
+                setTmdbLoading(false);
+            }
+        };
+
+        fetchTMDB();
+    }, [isOpen, contentData.name, contentData.release_date, contentType]);
 
     // Close with animation
     const handleClose = () => {
@@ -156,9 +197,12 @@ export function ContentDetailModal({
 
     if (!isOpen) return null;
 
-    const overview = contentData.plot || 'Sem descrição disponível.';
-    const rating = contentData.rating;
-    const genres = contentData.genre;
+    // Use TMDB data if available, fallback to IPTV data
+    const overview = (tmdbData as any)?.overview || contentData.plot || 'Sem descrição disponível.';
+    const rating = tmdbData?.vote_average ? tmdbData.vote_average.toFixed(1) : contentData.rating;
+    const genres = tmdbData?.genres ? formatGenres(tmdbData.genres) : contentData.genre;
+    const backdropUrl = tmdbData?.backdrop_path ? getImageUrl(tmdbData.backdrop_path, 'w1280') : null;
+    const posterUrl = tmdbData?.poster_path ? getImageUrl(tmdbData.poster_path, 'w500') : contentData.cover;
     const seasons = seriesInfo?.episodes ? Object.keys(seriesInfo.episodes).sort((a, b) => Number(a) - Number(b)) : [];
     const episodes = seriesInfo?.episodes?.[selectedSeason] || [];
 
@@ -174,14 +218,27 @@ export function ContentDetailModal({
                     ✕
                 </button>
 
+                {/* Backdrop from TMDB */}
+                {backdropUrl && (
+                    <div
+                        className="modal-backdrop-image"
+                        style={{ backgroundImage: `url(${backdropUrl})` }}
+                    />
+                )}
+
                 {/* Poster */}
                 <div className="modal-poster">
                     <img
-                        src={contentData.cover}
+                        src={posterUrl || contentData.cover}
                         alt={contentData.name}
                         onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                     />
                     <div className="poster-gradient" />
+                    {tmdbLoading && (
+                        <div className="tmdb-loading-overlay">
+                            <div className="tmdb-loading-spinner" />
+                        </div>
+                    )}
                 </div>
 
                 {/* Content */}
@@ -293,7 +350,13 @@ export function ContentDetailModal({
                         <button
                             className={`action-btn secondary-btn ${watchLaterService.has(contentId, contentType) ? 'active' : ''}`}
                             onClick={() => {
-                                watchLaterService.toggle(contentId, contentType);
+                                watchLaterService.toggle(
+                                    contentId,
+                                    contentType,
+                                    contentData.name,
+                                    posterUrl || contentData.cover,
+                                    rating
+                                );
                                 setRefresh(r => r + 1);
                             }}
                         >

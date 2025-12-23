@@ -12,9 +12,20 @@ interface FavoriteItem {
     addedAt: number;
 }
 
+interface WatchLaterItem {
+    id: string;
+    type: 'movie' | 'series' | 'channel';
+    title: string;
+    poster?: string;
+    rating?: string;
+    year?: string;
+    addedAt: number;
+}
+
 const STORAGE_KEYS = {
     CREDENTIALS: 'neostream_credentials',
     FAVORITES: 'neostream_favorites',
+    WATCH_LATER: 'neostream_watch_later',
     LAST_CHANNEL: 'neostream_last_channel',
     SETTINGS: 'neostream_settings',
 };
@@ -71,6 +82,33 @@ class StorageService {
 
     clearFavorites(): void {
         localStorage.setItem(STORAGE_KEYS.FAVORITES, JSON.stringify([]));
+    }
+
+    // Watch Later (Minha Lista)
+    getWatchLater(): WatchLaterItem[] {
+        const data = localStorage.getItem(STORAGE_KEYS.WATCH_LATER);
+        return data ? JSON.parse(data) : [];
+    }
+
+    addWatchLater(item: WatchLaterItem): void {
+        const items = this.getWatchLater();
+        if (!items.some(i => i.id === item.id)) {
+            items.push({ ...item, addedAt: Date.now() });
+            localStorage.setItem(STORAGE_KEYS.WATCH_LATER, JSON.stringify(items));
+        }
+    }
+
+    removeWatchLater(id: string): void {
+        const items = this.getWatchLater().filter(i => i.id !== id);
+        localStorage.setItem(STORAGE_KEYS.WATCH_LATER, JSON.stringify(items));
+    }
+
+    isInWatchLater(id: string): boolean {
+        return this.getWatchLater().some(i => i.id === id);
+    }
+
+    clearWatchLater(): void {
+        localStorage.setItem(STORAGE_KEYS.WATCH_LATER, JSON.stringify([]));
     }
 
     // Last channel

@@ -9,10 +9,11 @@ import { LiveTV } from './pages/LiveTV';
 import { Movies } from './pages/Movies';
 import { Series } from './pages/Series';
 import { Favorites } from './pages/Favorites';
+import { MyList } from './pages/MyList';
 import { Sidebar } from './components/Sidebar';
 import './index.css';
 
-type Page = 'home' | 'live' | 'movies' | 'series' | 'favorites' | 'settings';
+type Page = 'home' | 'live' | 'movies' | 'series' | 'mylist' | 'favorites' | 'settings';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -88,6 +89,7 @@ function App() {
         {currentPage === 'live' && <LiveTV />}
         {currentPage === 'movies' && <Movies />}
         {currentPage === 'series' && <Series />}
+        {currentPage === 'mylist' && <MyList />}
         {currentPage === 'favorites' && <Favorites />}
         {currentPage === 'settings' && <PlaceholderPage title="Configurações" icon="⚙️" />}
       </main>
