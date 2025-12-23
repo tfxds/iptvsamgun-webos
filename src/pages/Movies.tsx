@@ -5,6 +5,8 @@ import { api } from '../services/api';
 import type { VODStream, Category } from '../types';
 import { useTVNavigation } from '../hooks/useTVNavigation';
 import { CategoryMenu } from '../components/CategoryMenu';
+import { AnimatedSearchBar } from '../components/AnimatedSearchBar';
+import { ContentDetailModal } from '../components/ContentDetailModal';
 import './Movies.css';
 
 export function Movies() {
@@ -15,14 +17,42 @@ export function Movies() {
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedMovie, setSelectedMovie] = useState<VODStream | null>(null);
+    const [showModal, setShowModal] = useState(false);
     const [brokenImages, setBrokenImages] = useState<Set<number>>(new Set());
-    const [visibleCount, setVisibleCount] = useState(30);
+    const [visibleCount, setVisibleCount] = useState(0); // Will be calculated dynamically
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     // Focus states for TV navigation
     const [focusArea, setFocusArea] = useState<'categories' | 'movies'>('movies');
     const [focusedCategoryIndex, setFocusedCategoryIndex] = useState(0);
     const [focusedMovieIndex, setFocusedMovieIndex] = useState(0);
+
+    // Calculate initial visible count based on screen size
+    useEffect(() => {
+        const calculateVisibleItems = () => {
+            const container = scrollContainerRef.current;
+            if (!container) return;
+
+            // Card dimensions (160px min width + 20px gap)
+            const cardWidth = 180;
+            const cardHeight = 290; // 2:3 aspect ratio (~240px) + title (~50px)
+
+            const containerWidth = container.clientWidth - 32; // minus padding
+            const containerHeight = window.innerHeight;
+
+            // Calculate columns and rows that fit on screen + 1 extra row
+            const cols = Math.floor(containerWidth / cardWidth);
+            const rows = Math.ceil(containerHeight / cardHeight) + 1; // +1 extra row
+
+            const initialCount = cols * rows;
+            setVisibleCount(Math.max(initialCount, 12)); // Minimum 12 items
+        };
+
+        calculateVisibleItems();
+        window.addEventListener('resize', calculateVisibleItems);
+
+        return () => window.removeEventListener('resize', calculateVisibleItems);
+    }, []);
 
     // Fetch data
     useEffect(() => {
@@ -51,15 +81,19 @@ export function Movies() {
         return matchesSearch && matchesCategory;
     });
 
-    // Lazy loading scroll
+    // Lazy loading scroll - load one more row when scrolling near bottom
     useEffect(() => {
         const container = scrollContainerRef.current;
         if (!container) return;
 
         const handleScroll = () => {
             const { scrollTop, scrollHeight, clientHeight } = container;
-            if (scrollTop + clientHeight >= scrollHeight * 0.85 && visibleCount < filteredStreams.length) {
-                setVisibleCount(prev => Math.min(prev + 20, filteredStreams.length));
+            // Load more when user scrolls to 80% of the content
+            if (scrollTop + clientHeight >= scrollHeight * 0.8 && visibleCount < filteredStreams.length) {
+                const containerWidth = container.clientWidth - 32;
+                const cols = Math.floor(containerWidth / 180);
+                // Add one row at a time
+                setVisibleCount(prev => Math.min(prev + cols, filteredStreams.length));
             }
         };
 
@@ -67,9 +101,19 @@ export function Movies() {
         return () => container.removeEventListener('scroll', handleScroll);
     }, [filteredStreams.length, visibleCount]);
 
-    // Reset on filter change
+    // Reset on filter change - recalculate visible count
     useEffect(() => {
-        setVisibleCount(30);
+        const container = scrollContainerRef.current;
+        if (!container) return;
+
+        const cardWidth = 180;
+        const cardHeight = 290;
+        const containerWidth = container.clientWidth - 32;
+        const containerHeight = window.innerHeight;
+        const cols = Math.floor(containerWidth / cardWidth);
+        const rows = Math.ceil(containerHeight / cardHeight) + 1;
+
+        setVisibleCount(Math.max(cols * rows, 12));
         setSelectedMovie(null);
     }, [searchQuery, selectedCategory]);
 
@@ -115,6 +159,7 @@ export function Movies() {
             const movie = filteredStreams[focusedMovieIndex];
             if (movie) {
                 setSelectedMovie(movie);
+                setShowModal(true);
             }
         }
     };
@@ -168,27 +213,19 @@ export function Movies() {
         <div className="movies-page">
             {/* Dynamic Background */}
             <div className="movies-bg-gradient" />
-            {selectedMovie && selectedMovie.cover && (
+            {selectedMovie && (selectedMovie.stream_icon || selectedMovie.cover) && (
                 <div
                     className="movies-backdrop"
-                    style={{ backgroundImage: `url(${selectedMovie.cover})` }}
+                    style={{ backgroundImage: `url(${selectedMovie.stream_icon || selectedMovie.cover})` }}
                 />
             )}
 
-            {/* Search Bar */}
-            <div className="movies-search-container">
-                <div className="search-icon">🔍</div>
-                <input
-                    type="text"
-                    className="movies-search-input"
-                    placeholder="Buscar filmes..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                {searchQuery && (
-                    <button className="search-clear" onClick={() => setSearchQuery('')}>✕</button>
-                )}
-            </div>
+            {/* Animated Search Bar */}
+            <AnimatedSearchBar
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Buscar filmes..."
+            />
 
             {/* Category Menu (Hamburger Button) */}
             <CategoryMenu
@@ -198,38 +235,33 @@ export function Movies() {
                 type="vod"
             />
 
-            {/* Movie Preview Panel */}
+            {/* Content Detail Modal */}
             {selectedMovie && (
-                <div className="movie-preview-panel">
-                    <div className="preview-poster">
-                        <img
-                            src={selectedMovie.cover}
-                            alt={selectedMovie.name}
-                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                        />
-                    </div>
-                    <div className="preview-info">
-                        <h2 className="preview-title">{selectedMovie.name}</h2>
-                        <div className="preview-meta">
-                            {selectedMovie.rating && (
-                                <span className="meta-badge rating-badge">⭐ {selectedMovie.rating}</span>
-                            )}
-                            {selectedMovie.release_date && (
-                                <span className="meta-badge date-badge">📅 {selectedMovie.release_date.substring(0, 4)}</span>
-                            )}
-                            {selectedMovie.genre && (
-                                <span className="meta-badge genre-badge">🎭 {selectedMovie.genre.split(',')[0]}</span>
-                            )}
-                        </div>
-                        {selectedMovie.plot && (
-                            <p className="preview-plot">{selectedMovie.plot}</p>
-                        )}
-                        <div className="preview-actions">
-                            <button className="play-button">▶ Assistir</button>
-                            <button className="close-button" onClick={() => setSelectedMovie(null)}>✕</button>
-                        </div>
-                    </div>
-                </div>
+                <ContentDetailModal
+                    isOpen={showModal}
+                    onClose={() => {
+                        setShowModal(false);
+                        setSelectedMovie(null);
+                    }}
+                    contentId={String(selectedMovie.stream_id)}
+                    contentType="movie"
+                    contentData={{
+                        name: selectedMovie.name,
+                        cover: selectedMovie.stream_icon || selectedMovie.cover,
+                        rating: selectedMovie.rating,
+                        plot: selectedMovie.plot,
+                        genre: selectedMovie.genre,
+                        cast: selectedMovie.cast,
+                        director: selectedMovie.director,
+                        release_date: selectedMovie.release_date,
+                        container_extension: selectedMovie.container_extension,
+                    }}
+                    onPlay={() => {
+                        // TODO: Navigate to player
+                        console.log('Play movie:', selectedMovie.name);
+                        setShowModal(false);
+                    }}
+                />
             )}
 
             {/* Movies Grid */}
@@ -246,7 +278,10 @@ export function Movies() {
                             <div
                                 key={movie.stream_id}
                                 className={`movie-card ${focusArea === 'movies' && focusedMovieIndex === index ? 'tv-focused' : ''} ${selectedMovie?.stream_id === movie.stream_id ? 'selected' : ''}`}
-                                onClick={() => setSelectedMovie(movie)}
+                                onClick={() => {
+                                    setSelectedMovie(movie);
+                                    setShowModal(true);
+                                }}
                                 style={{ animationDelay: `${Math.min(index * 0.03, 0.5)}s` }}
                             >
                                 <div className="movie-poster">
@@ -254,7 +289,7 @@ export function Movies() {
                                         <div className="poster-placeholder">🎬</div>
                                     ) : (
                                         <img
-                                            src={movie.cover}
+                                            src={movie.stream_icon || movie.cover}
                                             alt={movie.name}
                                             loading="lazy"
                                             onError={() => handleImageError(movie.stream_id)}

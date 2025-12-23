@@ -20,6 +20,7 @@ export interface VODStream {
   name: string;
   stream_type: string;
   stream_id: number;
+  stream_icon: string; // Actual poster image from API
   container_extension: string;
   custom_sid: string;
   direct_source: string;
@@ -30,7 +31,9 @@ export interface VODStream {
   backdrop_path: string[];
   youtube_trailer: string;
   episode_run_time: string;
-  cover: string;
+  cover: string; // May be empty in listing, use stream_icon instead
+  cover_big?: string; // Available in get_vod_info
+  movie_image?: string; // Available in get_vod_info
   plot: string;
   cast: string;
   director: string;

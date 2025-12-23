@@ -5,6 +5,7 @@ import { api } from '../services/api';
 import type { LiveStream, Category } from '../types';
 import { useTVNavigation } from '../hooks/useTVNavigation';
 import { CategoryMenu } from '../components/CategoryMenu';
+import { AnimatedSearchBar } from '../components/AnimatedSearchBar';
 import './LiveTV.css';
 
 export function LiveTV() {
@@ -162,20 +163,12 @@ export function LiveTV() {
             <div className="livetv-bg-gradient" />
             <div className="livetv-bg-glow" />
 
-            {/* Search Bar */}
-            <div className="livetv-search-container">
-                <div className="search-icon">🔍</div>
-                <input
-                    type="text"
-                    className="livetv-search-input"
-                    placeholder="Buscar canais..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                {searchQuery && (
-                    <button className="search-clear" onClick={() => setSearchQuery('')}>✕</button>
-                )}
-            </div>
+            {/* Animated Search Bar */}
+            <AnimatedSearchBar
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Buscar canais..."
+            />
 
             {/* Category Menu (Hamburger Button) */}
             <CategoryMenu

@@ -1,7 +1,7 @@
 // Category Menu Component - Hamburger Button + Slide Panel
 // Matching Original App Animations
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import type { Category } from '../types';
 import './CategoryMenu.css';
 

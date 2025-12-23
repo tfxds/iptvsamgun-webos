@@ -5,6 +5,8 @@ import { api } from '../services/api';
 import type { Series as SeriesType, Category } from '../types';
 import { useTVNavigation } from '../hooks/useTVNavigation';
 import { CategoryMenu } from '../components/CategoryMenu';
+import { AnimatedSearchBar } from '../components/AnimatedSearchBar';
+import { ContentDetailModal } from '../components/ContentDetailModal';
 import './Series.css';
 
 export function Series() {
@@ -15,14 +17,42 @@ export function Series() {
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedSeries, setSelectedSeries] = useState<SeriesType | null>(null);
+    const [showModal, setShowModal] = useState(false);
     const [brokenImages, setBrokenImages] = useState<Set<number>>(new Set());
-    const [visibleCount, setVisibleCount] = useState(30);
+    const [visibleCount, setVisibleCount] = useState(0); // Will be calculated dynamically
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     // Focus states for TV navigation
     const [focusArea, setFocusArea] = useState<'categories' | 'series'>('series');
     const [focusedCategoryIndex, setFocusedCategoryIndex] = useState(0);
     const [focusedSeriesIndex, setFocusedSeriesIndex] = useState(0);
+
+    // Calculate initial visible count based on screen size
+    useEffect(() => {
+        const calculateVisibleItems = () => {
+            const container = scrollContainerRef.current;
+            if (!container) return;
+
+            // Card dimensions (160px min width + 20px gap)
+            const cardWidth = 180;
+            const cardHeight = 290; // 2:3 aspect ratio (~240px) + title (~50px)
+
+            const containerWidth = container.clientWidth - 32; // minus padding
+            const containerHeight = window.innerHeight;
+
+            // Calculate columns and rows that fit on screen + 1 extra row
+            const cols = Math.floor(containerWidth / cardWidth);
+            const rows = Math.ceil(containerHeight / cardHeight) + 1; // +1 extra row
+
+            const initialCount = cols * rows;
+            setVisibleCount(Math.max(initialCount, 12)); // Minimum 12 items
+        };
+
+        calculateVisibleItems();
+        window.addEventListener('resize', calculateVisibleItems);
+
+        return () => window.removeEventListener('resize', calculateVisibleItems);
+    }, []);
 
     // Fetch data
     useEffect(() => {
@@ -51,15 +81,19 @@ export function Series() {
         return matchesSearch && matchesCategory;
     });
 
-    // Lazy loading scroll
+    // Lazy loading scroll - load one more row when scrolling near bottom
     useEffect(() => {
         const container = scrollContainerRef.current;
         if (!container) return;
 
         const handleScroll = () => {
             const { scrollTop, scrollHeight, clientHeight } = container;
-            if (scrollTop + clientHeight >= scrollHeight * 0.85 && visibleCount < filteredSeries.length) {
-                setVisibleCount(prev => Math.min(prev + 20, filteredSeries.length));
+            // Load more when user scrolls to 80% of the content
+            if (scrollTop + clientHeight >= scrollHeight * 0.8 && visibleCount < filteredSeries.length) {
+                const containerWidth = container.clientWidth - 32;
+                const cols = Math.floor(containerWidth / 180);
+                // Add one row at a time
+                setVisibleCount(prev => Math.min(prev + cols, filteredSeries.length));
             }
         };
 
@@ -67,9 +101,19 @@ export function Series() {
         return () => container.removeEventListener('scroll', handleScroll);
     }, [filteredSeries.length, visibleCount]);
 
-    // Reset on filter change
+    // Reset on filter change - recalculate visible count
     useEffect(() => {
-        setVisibleCount(30);
+        const container = scrollContainerRef.current;
+        if (!container) return;
+
+        const cardWidth = 180;
+        const cardHeight = 290;
+        const containerWidth = container.clientWidth - 32;
+        const containerHeight = window.innerHeight;
+        const cols = Math.floor(containerWidth / cardWidth);
+        const rows = Math.ceil(containerHeight / cardHeight) + 1;
+
+        setVisibleCount(Math.max(cols * rows, 12));
         setSelectedSeries(null);
     }, [searchQuery, selectedCategory]);
 
@@ -115,6 +159,7 @@ export function Series() {
             const item = filteredSeries[focusedSeriesIndex];
             if (item) {
                 setSelectedSeries(item);
+                setShowModal(true);
             }
         }
     };
@@ -175,20 +220,12 @@ export function Series() {
                 />
             )}
 
-            {/* Search Bar */}
-            <div className="series-search-container">
-                <div className="search-icon">🔍</div>
-                <input
-                    type="text"
-                    className="series-search-input"
-                    placeholder="Buscar séries..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                {searchQuery && (
-                    <button className="search-clear" onClick={() => setSearchQuery('')}>✕</button>
-                )}
-            </div>
+            {/* Animated Search Bar */}
+            <AnimatedSearchBar
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Buscar séries..."
+            />
 
             {/* Category Menu (Hamburger Button) */}
             <CategoryMenu
@@ -198,38 +235,32 @@ export function Series() {
                 type="series"
             />
 
-            {/* Series Preview Panel */}
+            {/* Content Detail Modal */}
             {selectedSeries && (
-                <div className="series-preview-panel">
-                    <div className="preview-poster">
-                        <img
-                            src={selectedSeries.cover}
-                            alt={selectedSeries.name}
-                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                        />
-                    </div>
-                    <div className="preview-info">
-                        <h2 className="preview-title">{selectedSeries.name}</h2>
-                        <div className="preview-meta">
-                            {selectedSeries.rating && (
-                                <span className="meta-badge rating-badge">⭐ {selectedSeries.rating}</span>
-                            )}
-                            {selectedSeries.release_date && (
-                                <span className="meta-badge date-badge">📅 {selectedSeries.release_date.substring(0, 4)}</span>
-                            )}
-                            {selectedSeries.genre && (
-                                <span className="meta-badge genre-badge">🎭 {selectedSeries.genre.split(',')[0]}</span>
-                            )}
-                        </div>
-                        {selectedSeries.plot && (
-                            <p className="preview-plot">{selectedSeries.plot}</p>
-                        )}
-                        <div className="preview-actions">
-                            <button className="play-button">▶ Assistir</button>
-                            <button className="close-button" onClick={() => setSelectedSeries(null)}>✕</button>
-                        </div>
-                    </div>
-                </div>
+                <ContentDetailModal
+                    isOpen={showModal}
+                    onClose={() => {
+                        setShowModal(false);
+                        setSelectedSeries(null);
+                    }}
+                    contentId={String(selectedSeries.series_id)}
+                    contentType="series"
+                    contentData={{
+                        name: selectedSeries.name,
+                        cover: selectedSeries.cover,
+                        rating: selectedSeries.rating,
+                        plot: selectedSeries.plot,
+                        genre: selectedSeries.genre,
+                        cast: selectedSeries.cast,
+                        director: selectedSeries.director,
+                        release_date: selectedSeries.release_date,
+                    }}
+                    onPlay={(season, episode) => {
+                        // TODO: Navigate to player
+                        console.log('Play series:', selectedSeries.name, 'Season:', season, 'Episode:', episode);
+                        setShowModal(false);
+                    }}
+                />
             )}
 
             {/* Series Grid */}
@@ -246,7 +277,10 @@ export function Series() {
                             <div
                                 key={item.series_id}
                                 className={`series-card ${focusArea === 'series' && focusedSeriesIndex === index ? 'tv-focused' : ''} ${selectedSeries?.series_id === item.series_id ? 'selected' : ''}`}
-                                onClick={() => setSelectedSeries(item)}
+                                onClick={() => {
+                                    setSelectedSeries(item);
+                                    setShowModal(true);
+                                }}
                                 style={{ animationDelay: `${Math.min(index * 0.03, 0.5)}s` }}
                             >
                                 <div className="series-poster">

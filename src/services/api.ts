@@ -94,6 +94,10 @@ class XtreamAPI {
         return this.makeRequest<SeriesInfo>('get_series_info', { series_id: String(seriesId) });
     }
 
+    async getVodInfo(vodId: number): Promise<{ info: VODStream; movie_data: any }> {
+        return this.makeRequest<{ info: VODStream; movie_data: any }>('get_vod_info', { vod_id: String(vodId) });
+    }
+
     async getLiveCategories(): Promise<Category[]> {
         return this.makeRequest<Category[]>('get_live_categories');
     }
