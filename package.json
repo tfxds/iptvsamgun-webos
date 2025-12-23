@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:tizen": "tsc -b && vite build && xcopy dist\\* tizen\\ /E /Y",
     "lint": "eslint .",
     "preview": "vite preview"
   },

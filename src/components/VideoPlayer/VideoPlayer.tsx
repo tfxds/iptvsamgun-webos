@@ -1,6 +1,6 @@
 // VideoPlayer Component - Premium player with HLS support
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { FaPlay, FaPause, FaVolumeUp, FaVolumeDown, FaVolumeOff, FaVolumeMute, FaExpand, FaCompress, FaStepForward, FaStepBackward, FaTimes } from 'react-icons/fa';
+import { FaPlay, FaPause, FaVolumeUp, FaVolumeDown, FaVolumeOff, FaVolumeMute, FaExpand, FaCompress } from 'react-icons/fa';
 import { useHls } from '../../hooks/useHls';
 import './VideoPlayer.css';
 
@@ -288,9 +288,7 @@ export function VideoPlayer({
         >
             {/* Close Button */}
             {onClose && showControls && (
-                <button className="video-player-close" onClick={handleClose}>
-                    <FaTimes />
-                </button>
+                <button className="video-player-close" onClick={handleClose}>✕</button>
             )}
 
             {/* Title */}
@@ -378,34 +376,10 @@ export function VideoPlayer({
                 {/* Controls Row */}
                 <div className="controls-row">
                     <div className="controls-left">
-                        {/* Skip Back 10s */}
-                        {!isLive && (
-                            <button
-                                className="control-btn skip-btn"
-                                onClick={() => seek(Math.max(0, currentTime - 10))}
-                                title="Voltar 10s"
-                            >
-                                <FaStepBackward />
-                                <span className="skip-label">10</span>
-                            </button>
-                        )}
-
                         {/* Play/Pause */}
-                        <button className="control-btn play-btn" onClick={togglePlay}>
+                        <button className="control-btn" onClick={togglePlay}>
                             {playing ? <FaPause /> : <FaPlay />}
                         </button>
-
-                        {/* Skip Forward 10s */}
-                        {!isLive && (
-                            <button
-                                className="control-btn skip-btn"
-                                onClick={() => seek(Math.min(duration, currentTime + 10))}
-                                title="Avançar 10s"
-                            >
-                                <FaStepForward />
-                                <span className="skip-label">10</span>
-                            </button>
-                        )}
 
                         {/* Volume */}
                         <div
