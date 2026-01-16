@@ -9,13 +9,13 @@ ZdT6Y8j2RQ==</DigestValue>
 </Reference>
 <Reference URI="assets%2Findex-legacy.js">
 <DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha512"></DigestMethod>
-<DigestValue>ehtNVVncyN2gK4FzifMjSBlbsUAthZnRimavqqTZYmAOfgSWSyrxs6K9JG6VHRl/Y/QijM1qd+ou
-tkGyKOl8IQ==</DigestValue>
+<DigestValue>XwkvHVZXmMuXHD+jPwskxVciiWmNShtBSDP9IKnL0WNPd0S9ax0cb6pGUpjLnA8UmM1QXeIcfy4m
+6bG/AxuTWw==</DigestValue>
 </Reference>
 <Reference URI="assets%2Findex.js">
 <DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha512"></DigestMethod>
-<DigestValue>ueqLhjNmxz07WL5H0Q4LNayqyShRJ09y85cjIbdXzyzK6WVTZx+vqyJ9iQmPBPCTZ8FD+LhFHtCB
-pQLMYQX2Cw==</DigestValue>
+<DigestValue>XBu73qE/cpV05dt8x6ESLD5UPfnE507iHt0lVtrqKTezWA7xkC6al7j+LRssNNJLUhjFLessDaBe
+2nnft+qLfg==</DigestValue>
 </Reference>
 <Reference URI="assets%2Fpolyfills-legacy.js">
 <DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha512"></DigestMethod>
@@ -34,8 +34,8 @@ DzaSC4gnGw==</DigestValue>
 </Reference>
 <Reference URI="author-signature.xml">
 <DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha512"></DigestMethod>
-<DigestValue>2k9A7b9PrHThncM4wdQcMZv/p04/XcScBjHvT3bjke3WJq/kgkQyCML7uk3TsyYCIjUM7eWd1jaX
-owgsOIu0kw==</DigestValue>
+<DigestValue>eRwC9RYmUhe3NBboXQ/wUWMbzbtnSzQtpfHXcAQDWM/s3lM9enaFSA7SU+nExPBnlH0Zd4yXwTUU
+6vCOK+MhTQ==</DigestValue>
 </Reference>
 <Reference URI="config.xml">
 <DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha512"></DigestMethod>
@@ -67,11 +67,11 @@ GyvKX9Snig==</DigestValue>
 </Reference>
 </SignedInfo>
 <SignatureValue>
-Qozm2w3n93PDYCePDXZVAztg67ZkTSUIr55WZ924y15MR6fPNGu/nTkrV9c6BTrplfIf9iF3YZs4
-r8rHAq0yvLHg7BHXnR6uLiQ0aFBNtfBx5wukGmU439aW4boHfurKk1jUCrWjuUki3woXOJH5mvBb
-vRLDjlmRzecJbq2IgZ3R2y/GOnPgVAyJgTAPgYqUfw+X1ThnteZmcGjGkNOHK3EKWMk05nx2K2qD
-NbFK0Hraq9RsxpnmMB9YkVAU2rKUQ1P77G6Jn5ZJML+VSgGKLPCjMZK3T11e+X4p0S03fw0VXC/+
-S3jrfHakASFst/AIETKeNboZXeXsP+SNCLZ6/w==
+IfZy0avHAyRemQLeK7nX+MuFqBIt72gpVUp0sQo0b4Df/8qywR4qhq/Hp2qe9/0OCpvmWtMJrn6Q
+CafdXu73Xdk8P5MwPNJqm5OS+9FJWi3oIPlsB+Z9od5avqLy2dc6JTee4frQUlBaLuLR7DP6taLj
+pO3RRBSZ/5UOFJzSZgdGl7KHbml3R3/8/NFYOZtcftgOfpHprGvFIimP4KapcizvKXEU3ZS11Tqa
+rFHZVwTBDlNhZRd9BIhRVvy8zFEDLXy8RYms0q1vuFOeUybfK451lyU+ICTCl9ThVmJ2vyD1za2W
+cfu7cDoSXvN/PbVBbe3q+hKvnATlOSpizf0APQ==
 </SignatureValue>
 <KeyInfo>
 <X509Data>
