@@ -79,19 +79,28 @@ export function ProfileManager({ onClose }: ProfileManagerProps) {
     const handleEnter = useCallback(() => {
         if (mode === 'list') {
             if (focusedIndex < profiles.length) {
-                // Select profile
                 const profile = profiles[focusedIndex];
-                if (profile.pin) {
-                    // Has PIN - verify first
-                    setPendingProfile(profile);
-                    setPinInput('');
-                    setPinError('');
-                    setMode('pin-verify');
+                const isActive = profile.id === activeProfile?.id;
+
+                if (isActive) {
+                    // Active profile - open edit mode (unless it's Kids profile)
+                    if (!profile.isKids) {
+                        startEdit(profile);
+                    }
                 } else {
-                    // No PIN - activate directly
-                    profileService.setActiveProfile(profile.id);
-                    refreshProfiles();
-                    onClose();
+                    // Non-active profile - switch to it
+                    if (profile.pin) {
+                        // Has PIN - verify first
+                        setPendingProfile(profile);
+                        setPinInput('');
+                        setPinError('');
+                        setMode('pin-verify');
+                    } else {
+                        // No PIN - activate directly
+                        profileService.setActiveProfile(profile.id);
+                        refreshProfiles();
+                        onClose();
+                    }
                 }
             } else {
                 // Add new profile
@@ -104,7 +113,7 @@ export function ProfileManager({ onClose }: ProfileManagerProps) {
             // Select avatar
             setFormAvatar(avatarOptions[avatarFocusIndex]);
         }
-    }, [mode, focusedIndex, profiles, onClose]);
+    }, [mode, focusedIndex, profiles, activeProfile, onClose]);
 
     const handleBack = useCallback(() => {
         if (mode === 'list') {
@@ -229,7 +238,24 @@ export function ProfileManager({ onClose }: ProfileManagerProps) {
                                 className={`pm-profile-card ${isActive ? 'active' : ''} ${isFocused ? 'focused' : ''}`}
                                 onClick={() => {
                                     setFocusedIndex(index);
-                                    handleEnter();
+                                    if (isActive) {
+                                        // Active profile - open edit (unless Kids)
+                                        if (!profile.isKids) {
+                                            startEdit(profile);
+                                        }
+                                    } else {
+                                        // Non-active - switch profile
+                                        if (profile.pin) {
+                                            setPendingProfile(profile);
+                                            setPinInput('');
+                                            setPinError('');
+                                            setMode('pin-verify');
+                                        } else {
+                                            profileService.setActiveProfile(profile.id);
+                                            refreshProfiles();
+                                            onClose();
+                                        }
+                                    }
                                 }}
                             >
                                 {isActive && (

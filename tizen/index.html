@@ -7,12 +7,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NeoStream TV</title>
   <link rel="stylesheet" href="./assets/style.css">
+  <!-- Load legacy polyfills first -->
+  <script src="./assets/polyfills-legacy.js"></script>
 </head>
 
 <body>
   <div id="root"></div>
-  <script src="./assets/polyfills-legacy.js"></script>
-  <script src="./assets/index-legacy.js"></script>
+  <!-- Load legacy app bundle using SystemJS -->
+  <script>
+    System.import('./assets/index-legacy.js').catch(function (e) {
+      console.error('Failed to load app:', e);
+      document.getElementById('root').innerHTML = '<div style="color:white;padding:20px;">Erro ao carregar: ' + e.message + '</div>';
+    });
+  </script>
 </body>
 
 </html>
