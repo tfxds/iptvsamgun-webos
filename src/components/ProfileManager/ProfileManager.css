@@ -508,8 +508,12 @@
     padding: 12px 24px;
 }
 
-.pm-btn-cancel:hover {
+.pm-btn-cancel:hover,
+.pm-btn-cancel.focused {
     background: rgba(255, 255, 255, 0.2);
+    border-color: #a855f7;
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+    transform: scale(1.05);
 }
 
 .pm-btn-save {
@@ -519,9 +523,11 @@
     padding: 12px 24px;
 }
 
-.pm-btn-save:hover {
+.pm-btn-save:hover,
+.pm-btn-save.focused {
     filter: brightness(1.1);
-    transform: translateY(-2px);
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.5);
 }
 
 .pm-btn-save:disabled {
@@ -537,8 +543,26 @@
     padding: 12px 24px;
 }
 
-.pm-btn-danger:hover {
+.pm-btn-danger:hover,
+.pm-btn-danger.focused {
     filter: brightness(1.1);
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+    transform: scale(1.05);
+}
+
+/* Edit/Delete button focus states */
+.pm-btn-edit.focused {
+    background: rgba(59, 130, 246, 0.4);
+    border-color: #60a5fa;
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+    transform: scale(1.1);
+}
+
+.pm-btn-delete.focused {
+    background: rgba(239, 68, 68, 0.4);
+    border-color: #f87171;
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+    transform: scale(1.1);
 }
 
 /* PIN Input */

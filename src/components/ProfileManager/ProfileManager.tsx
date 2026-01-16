@@ -24,6 +24,8 @@ export function ProfileManager({ onClose }: ProfileManagerProps) {
     const [formName, setFormName] = useState('');
     const [formAvatar, setFormAvatar] = useState('👤');
     const [avatarFocusIndex, setAvatarFocusIndex] = useState(0);
+    const [editFocusZone, setEditFocusZone] = useState<'avatars' | 'buttons'>('avatars');
+    const [buttonFocusIndex, setButtonFocusIndex] = useState(0); // 0 = cancel, 1 = save
 
     // PIN states
     const [pendingProfile, setPendingProfile] = useState<Profile | null>(null);
@@ -62,19 +64,39 @@ export function ProfileManager({ onClose }: ProfileManagerProps) {
                 setFocusedIndex(prev => Math.min(totalItems - 1, prev + cols));
             }
         } else if (mode === 'create' || mode === 'edit') {
-            // Avatar grid navigation (4x4)
-            const cols = 4;
-            if (direction === 'left') {
-                setAvatarFocusIndex(prev => Math.max(0, prev - 1));
-            } else if (direction === 'right') {
-                setAvatarFocusIndex(prev => Math.min(avatarOptions.length - 1, prev + 1));
-            } else if (direction === 'up') {
-                setAvatarFocusIndex(prev => Math.max(0, prev - cols));
-            } else if (direction === 'down') {
-                setAvatarFocusIndex(prev => Math.min(avatarOptions.length - 1, prev + cols));
+            if (editFocusZone === 'avatars') {
+                // Avatar grid navigation (8 columns)
+                const cols = 8;
+                if (direction === 'left') {
+                    setAvatarFocusIndex(prev => Math.max(0, prev - 1));
+                } else if (direction === 'right') {
+                    setAvatarFocusIndex(prev => Math.min(avatarOptions.length - 1, prev + 1));
+                } else if (direction === 'up') {
+                    setAvatarFocusIndex(prev => Math.max(0, prev - cols));
+                } else if (direction === 'down') {
+                    // Check if at last row of avatars
+                    const nextIndex = avatarFocusIndex + cols;
+                    if (nextIndex >= avatarOptions.length) {
+                        // Move to buttons
+                        setEditFocusZone('buttons');
+                        setButtonFocusIndex(0);
+                    } else {
+                        setAvatarFocusIndex(nextIndex);
+                    }
+                }
+            } else if (editFocusZone === 'buttons') {
+                // Buttons navigation (cancel, save)
+                if (direction === 'left') {
+                    setButtonFocusIndex(0);
+                } else if (direction === 'right') {
+                    setButtonFocusIndex(1);
+                } else if (direction === 'up') {
+                    // Move back to avatars
+                    setEditFocusZone('avatars');
+                }
             }
         }
-    }, [mode, totalItems]);
+    }, [mode, totalItems, editFocusZone, avatarFocusIndex]);
 
     const handleEnter = useCallback(() => {
         if (mode === 'list') {
@@ -110,10 +132,25 @@ export function ProfileManager({ onClose }: ProfileManagerProps) {
                 setMode('create');
             }
         } else if (mode === 'create' || mode === 'edit') {
-            // Select avatar
-            setFormAvatar(avatarOptions[avatarFocusIndex]);
+            if (editFocusZone === 'avatars') {
+                // Select avatar
+                setFormAvatar(avatarOptions[avatarFocusIndex]);
+            } else if (editFocusZone === 'buttons') {
+                if (buttonFocusIndex === 0) {
+                    // Cancel
+                    setMode('list');
+                    setEditFocusZone('avatars');
+                } else {
+                    // Save
+                    if (mode === 'create') {
+                        handleCreateProfile();
+                    } else {
+                        handleEditProfile();
+                    }
+                }
+            }
         }
-    }, [mode, focusedIndex, profiles, activeProfile, onClose]);
+    }, [mode, focusedIndex, profiles, activeProfile, onClose, editFocusZone, buttonFocusIndex, avatarFocusIndex]);
 
     const handleBack = useCallback(() => {
         if (mode === 'list') {
@@ -354,11 +391,14 @@ export function ProfileManager({ onClose }: ProfileManagerProps) {
                     </div>
 
                     <div className="pm-modal-buttons">
-                        <button className="pm-btn pm-btn-cancel" onClick={() => setMode('list')}>
+                        <button
+                            className={`pm-btn pm-btn-cancel ${editFocusZone === 'buttons' && buttonFocusIndex === 0 ? 'focused' : ''}`}
+                            onClick={() => { setMode('list'); setEditFocusZone('avatars'); }}
+                        >
                             Cancelar
                         </button>
                         <button
-                            className="pm-btn pm-btn-save"
+                            className={`pm-btn pm-btn-save ${editFocusZone === 'buttons' && buttonFocusIndex === 1 ? 'focused' : ''}`}
                             onClick={mode === 'create' ? handleCreateProfile : handleEditProfile}
                             disabled={!formName.trim()}
                         >
