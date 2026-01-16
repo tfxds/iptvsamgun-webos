@@ -35,6 +35,9 @@ export function ProfileManager({ onClose }: ProfileManagerProps) {
     // Delete confirm
     const [deleteTarget, setDeleteTarget] = useState<Profile | null>(null);
 
+    // Close button focus
+    const [closeButtonFocused, setCloseButtonFocused] = useState(false);
+
     // Load profiles
     useEffect(() => {
         profileService.initialize();
@@ -54,14 +57,27 @@ export function ProfileManager({ onClose }: ProfileManagerProps) {
         if (mode === 'list') {
             // Grid navigation (3 columns)
             const cols = 3;
-            if (direction === 'left') {
-                setFocusedIndex(prev => Math.max(0, prev - 1));
-            } else if (direction === 'right') {
-                setFocusedIndex(prev => Math.min(totalItems - 1, prev + 1));
-            } else if (direction === 'up') {
-                setFocusedIndex(prev => Math.max(0, prev - cols));
-            } else if (direction === 'down') {
-                setFocusedIndex(prev => Math.min(totalItems - 1, prev + cols));
+            if (closeButtonFocused) {
+                // From close button, only down goes back to grid
+                if (direction === 'down') {
+                    setCloseButtonFocused(false);
+                    setFocusedIndex(0);
+                }
+            } else {
+                if (direction === 'left') {
+                    setFocusedIndex(prev => Math.max(0, prev - 1));
+                } else if (direction === 'right') {
+                    setFocusedIndex(prev => Math.min(totalItems - 1, prev + 1));
+                } else if (direction === 'up') {
+                    // If at top row (index 0-2), go to close button
+                    if (focusedIndex < cols) {
+                        setCloseButtonFocused(true);
+                    } else {
+                        setFocusedIndex(prev => Math.max(0, prev - cols));
+                    }
+                } else if (direction === 'down') {
+                    setFocusedIndex(prev => Math.min(totalItems - 1, prev + cols));
+                }
             }
         } else if (mode === 'create' || mode === 'edit') {
             if (editFocusZone === 'avatars') {
@@ -100,6 +116,11 @@ export function ProfileManager({ onClose }: ProfileManagerProps) {
 
     const handleEnter = useCallback(() => {
         if (mode === 'list') {
+            if (closeButtonFocused) {
+                // Close button - close the modal
+                onClose();
+                return;
+            }
             if (focusedIndex < profiles.length) {
                 const profile = profiles[focusedIndex];
                 const isActive = profile.id === activeProfile?.id;
@@ -257,7 +278,10 @@ export function ProfileManager({ onClose }: ProfileManagerProps) {
                     <span className="pm-title-icon">👥</span>
                     Gerenciar Perfis
                 </h1>
-                <button className="pm-close-btn" onClick={onClose}>
+                <button
+                    className={`pm-close-btn ${closeButtonFocused ? 'focused' : ''}`}
+                    onClick={onClose}
+                >
                     ✕
                 </button>
             </div>
