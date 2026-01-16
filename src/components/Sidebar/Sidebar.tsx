@@ -1,13 +1,16 @@
 // Sidebar Navigation Component - Matching NeoStream Desktop Design
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useTVNavigation } from '../../hooks/useTVNavigation';
+import { useFocusZone } from '../../App';
 import './Sidebar.css';
 
 interface SidebarProps {
     activeItem: string;
     onItemSelect: (itemId: string) => void;
     onLogout: () => void;
+    onProfileClick: () => void;
+    focused?: boolean;
 }
 
 interface MenuItem {
@@ -15,19 +18,36 @@ interface MenuItem {
     label: string;
     emoji: string;
     gradient: string;
+    requiresTV?: boolean;
+    requiresVOD?: boolean;
 }
 
-const menuItems: MenuItem[] = [
+const allMenuItems: MenuItem[] = [
     { id: 'home', label: 'Início', emoji: '🏠', gradient: 'linear-gradient(135deg, #f59e0b, #d97706)' },
-    { id: 'live', label: 'TV ao Vivo', emoji: '📺', gradient: 'linear-gradient(135deg, #a855f7, #7c3aed)' },
-    { id: 'movies', label: 'Filmes', emoji: '🎬', gradient: 'linear-gradient(135deg, #3b82f6, #1d4ed8)' },
-    { id: 'series', label: 'Séries', emoji: '📺', gradient: 'linear-gradient(135deg, #ec4899, #db2777)' },
+    { id: 'live', label: 'TV ao Vivo', emoji: '📺', gradient: 'linear-gradient(135deg, #a855f7, #7c3aed)', requiresTV: true },
+    { id: 'movies', label: 'Filmes', emoji: '🎬', gradient: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', requiresVOD: true },
+    { id: 'series', label: 'Séries', emoji: '📺', gradient: 'linear-gradient(135deg, #ec4899, #db2777)', requiresVOD: true },
     { id: 'mylist', label: 'Minha Lista', emoji: '📑', gradient: 'linear-gradient(135deg, #14b8a6, #0891b2)' },
     { id: 'favorites', label: 'Favoritos', emoji: '❤️', gradient: 'linear-gradient(135deg, #ef4444, #dc2626)' },
     { id: 'settings', label: 'Configurações', emoji: '⚙️', gradient: 'linear-gradient(135deg, #6b7280, #4b5563)' },
 ];
 
-export function Sidebar({ activeItem, onItemSelect, onLogout }: SidebarProps) {
+export function Sidebar({ activeItem, onItemSelect, onLogout, onProfileClick, focused = false }: SidebarProps) {
+    const { setFocusZone } = useFocusZone();
+
+    // Get include preferences from localStorage
+    const includeTV = localStorage.getItem('includeTV') !== 'false';
+    const includeVOD = localStorage.getItem('includeVOD') !== 'false';
+
+    // Filter menu items based on preferences
+    const menuItems = useMemo(() => {
+        return allMenuItems.filter(item => {
+            if (item.requiresTV && !includeTV) return false;
+            if (item.requiresVOD && !includeVOD) return false;
+            return true;
+        });
+    }, [includeTV, includeVOD]);
+
     const [focusedIndex, setFocusedIndex] = useState(
         menuItems.findIndex(item => item.id === activeItem)
     );
@@ -38,6 +58,9 @@ export function Sidebar({ activeItem, onItemSelect, onLogout }: SidebarProps) {
             setFocusedIndex(prev => Math.max(0, prev - 1));
         } else if (direction === 'down') {
             setFocusedIndex(prev => Math.min(menuItems.length + 1, prev + 1)); // +1 profile, +1 logout
+        } else if (direction === 'right') {
+            // Move focus to content area
+            setFocusZone('content');
         }
     };
 
@@ -46,23 +69,27 @@ export function Sidebar({ activeItem, onItemSelect, onLogout }: SidebarProps) {
             // Logout button
             onLogout();
         } else if (focusedIndex === menuItems.length) {
-            // Profile button - could open profile menu in future
+            // Profile button - open profile manager
+            onProfileClick();
         } else {
             const item = menuItems[focusedIndex];
             if (item) {
                 onItemSelect(item.id);
+                setFocusZone('content'); // Move to content after selecting
             }
         }
     };
 
+    // Only enable TV navigation when sidebar is focused
     useTVNavigation({
         onNavigate: handleNavigate,
         onEnter: handleEnter,
+        enabled: focused,
     });
 
     return (
         <>
-            <div className="sidebar">
+            <div className={`sidebar ${focused ? 'sidebar-focused' : ''}`}>
                 {/* Animated Background */}
                 <div className="sidebar-bg">
                     <div className="bg-gradient" />
@@ -92,7 +119,7 @@ export function Sidebar({ activeItem, onItemSelect, onLogout }: SidebarProps) {
                 <nav className="nav-container">
                     {menuItems.map((item, index) => {
                         const isActive = activeItem === item.id;
-                        const isFocused = focusedIndex === index;
+                        const isFocused = focused && focusedIndex === index;
                         const isHovered = hoveredItem === item.id;
 
                         return (
@@ -141,7 +168,8 @@ export function Sidebar({ activeItem, onItemSelect, onLogout }: SidebarProps) {
                 <div className="bottom-section">
                     {/* Profile Button */}
                     <button
-                        className={`profile-btn ${focusedIndex === menuItems.length ? 'tv-focused' : ''}`}
+                        className={`profile-btn ${focused && focusedIndex === menuItems.length ? 'tv-focused' : ''}`}
+                        onClick={onProfileClick}
                         onMouseEnter={() => setHoveredItem('profile')}
                         onMouseLeave={() => setHoveredItem(null)}
                         onFocus={() => setFocusedIndex(menuItems.length)}
@@ -161,7 +189,7 @@ export function Sidebar({ activeItem, onItemSelect, onLogout }: SidebarProps) {
                             </svg>
                         </div>
                         {/* Profile Tooltip */}
-                        <div className={`tooltip ${focusedIndex === menuItems.length || hoveredItem === 'profile' ? 'visible' : ''}`}>
+                        <div className={`tooltip ${(focused && focusedIndex === menuItems.length) || hoveredItem === 'profile' ? 'visible' : ''}`}>
                             <span className="tooltip-emoji">👤</span>
                             <span className="tooltip-label">Perfil</span>
                         </div>
@@ -169,7 +197,7 @@ export function Sidebar({ activeItem, onItemSelect, onLogout }: SidebarProps) {
 
                     {/* Logout */}
                     <button
-                        className={`logout-btn ${focusedIndex === menuItems.length + 1 ? 'tv-focused' : ''}`}
+                        className={`logout-btn ${focused && focusedIndex === menuItems.length + 1 ? 'tv-focused' : ''}`}
                         onClick={onLogout}
                         onMouseEnter={() => setHoveredItem('logout')}
                         onMouseLeave={() => setHoveredItem(null)}
@@ -182,7 +210,7 @@ export function Sidebar({ activeItem, onItemSelect, onLogout }: SidebarProps) {
                             <path d="M21 12H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                         </svg>
                         {/* Logout Tooltip */}
-                        <div className={`tooltip danger ${focusedIndex === menuItems.length + 1 || hoveredItem === 'logout' ? 'visible' : ''}`}>
+                        <div className={`tooltip danger ${(focused && focusedIndex === menuItems.length + 1) || hoveredItem === 'logout' ? 'visible' : ''}`}>
                             <span className="tooltip-emoji">🚪</span>
                             <span className="tooltip-label">Sair</span>
                         </div>

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import type { VODStream, Series } from '../types';
 import { useTVNavigation } from '../hooks/useTVNavigation';
+import { useFocusZone } from '../App';
 import './Home.css';
 
 interface HomeProps {
@@ -17,6 +18,7 @@ interface ContentCounts {
 }
 
 export function Home({ onNavigate }: HomeProps) {
+    const { focusZone, setFocusZone } = useFocusZone();
     const [loading, setLoading] = useState(true);
     const [counts, setCounts] = useState<ContentCounts>({ live: 0, vod: 0, series: 0 });
     const [recentMovies, setRecentMovies] = useState<VODStream[]>([]);
@@ -114,7 +116,12 @@ export function Home({ onNavigate }: HomeProps) {
             setFocusedSection(prev => Math.min(sections.length - 1, prev + 1));
             setFocusedItem(0);
         } else if (direction === 'left') {
-            setFocusedItem(prev => Math.max(0, prev - 1));
+            if (focusedItem === 0) {
+                // At first item - move focus to Sidebar
+                setFocusZone('sidebar');
+            } else {
+                setFocusedItem(prev => Math.max(0, prev - 1));
+            }
         } else if (direction === 'right') {
             const maxItems = sections[focusedSection]?.items || 0;
             setFocusedItem(prev => Math.min(maxItems - 1, prev + 1));
@@ -136,10 +143,24 @@ export function Home({ onNavigate }: HomeProps) {
         }
     };
 
+    // Only enable navigation when content is focused
     useTVNavigation({
         onNavigate: handleNavigate,
         onEnter: handleEnter,
+        enabled: focusZone === 'content',
     });
+
+    // Auto-scroll to focused section when it changes
+    useEffect(() => {
+        const sectionIds = ['home-stats', 'home-recommendations', 'home-series', 'home-movies', 'home-quick'];
+        const sectionId = sectionIds[focusedSection];
+        if (sectionId) {
+            const element = document.getElementById(sectionId);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    }, [focusedSection]);
 
     // Helper to get cover image
     const getCover = (item: VODStream | Series) => {
@@ -178,7 +199,7 @@ export function Home({ onNavigate }: HomeProps) {
             </header>
 
             {/* Stats Cards */}
-            <section className="home-stats">
+            <section id="home-stats" className="home-stats">
                 <button
                     className={`stat-card stat-card-live ${focusedSection === 0 && focusedItem === 0 ? 'tv-focused' : ''}`}
                     onClick={() => onNavigate?.('live')}
@@ -213,7 +234,7 @@ export function Home({ onNavigate }: HomeProps) {
                 {/* This would need watchProgressService implementation */}
 
                 {/* Recommendations */}
-                <div className="content-section">
+                <div id="home-recommendations" className="content-section">
                     <h2 className="section-title">💡 Recomendados Para Você</h2>
                     <div className="content-row">
                         {recommendations.map((item, index) => (
@@ -236,7 +257,7 @@ export function Home({ onNavigate }: HomeProps) {
                 </div>
 
                 {/* Recent Series */}
-                <div className="content-section">
+                <div id="home-series" className="content-section">
                     <h2 className="section-title">🆕 Séries Recentes</h2>
                     <div className="content-row">
                         {recentSeries.map((series, index) => (
@@ -259,7 +280,7 @@ export function Home({ onNavigate }: HomeProps) {
                 </div>
 
                 {/* Recent Movies */}
-                <div className="content-section">
+                <div id="home-movies" className="content-section">
                     <h2 className="section-title">🎬 Filmes Recentes</h2>
                     <div className="content-row">
                         {recentMovies.map((movie, index) => (
@@ -283,7 +304,7 @@ export function Home({ onNavigate }: HomeProps) {
             </section>
 
             {/* Quick Access */}
-            <section className="home-quick-access">
+            <section id="home-quick" className="home-quick-access">
                 <h2 className="section-title">⚡ Acesso Rápido</h2>
                 <div className="quick-grid">
                     <button

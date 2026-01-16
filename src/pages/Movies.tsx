@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
 import type { VODStream, Category } from '../types';
 import { useTVNavigation } from '../hooks/useTVNavigation';
+import { useFocusZone } from '../App';
 import { CategoryMenu } from '../components/CategoryMenu';
 import { AnimatedSearchBar } from '../components/AnimatedSearchBar';
 import { ContentDetailModal } from '../components/ContentDetailModal';
@@ -11,6 +12,7 @@ import { VideoPlayer } from '../components/VideoPlayer';
 import './Movies.css';
 
 export function Movies() {
+    const { focusZone, setFocusZone } = useFocusZone();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [streams, setStreams] = useState<VODStream[]>([]);
@@ -124,7 +126,12 @@ export function Movies() {
     const handleNavigate = (direction: 'up' | 'down' | 'left' | 'right') => {
         if (focusArea === 'categories') {
             if (direction === 'left') {
-                setFocusedCategoryIndex(prev => Math.max(0, prev - 1));
+                if (focusedCategoryIndex === 0) {
+                    // At first category - go to sidebar
+                    setFocusZone('sidebar');
+                } else {
+                    setFocusedCategoryIndex(prev => Math.max(0, prev - 1));
+                }
             } else if (direction === 'right') {
                 setFocusedCategoryIndex(prev => Math.min(categories.length, prev + 1));
             } else if (direction === 'down') {
@@ -134,6 +141,7 @@ export function Movies() {
         } else if (focusArea === 'movies') {
             const cols = 5; // Grid columns
             const totalMovies = filteredStreams.length;
+            const currentCol = focusedMovieIndex % cols;
 
             if (direction === 'up') {
                 if (focusedMovieIndex < cols) {
@@ -144,7 +152,12 @@ export function Movies() {
             } else if (direction === 'down') {
                 setFocusedMovieIndex(prev => Math.min(totalMovies - 1, prev + cols));
             } else if (direction === 'left') {
-                setFocusedMovieIndex(prev => Math.max(0, prev - 1));
+                if (currentCol === 0) {
+                    // At first column - go to sidebar
+                    setFocusZone('sidebar');
+                } else {
+                    setFocusedMovieIndex(prev => Math.max(0, prev - 1));
+                }
             } else if (direction === 'right') {
                 setFocusedMovieIndex(prev => Math.min(totalMovies - 1, prev + 1));
             }
@@ -167,9 +180,11 @@ export function Movies() {
         }
     };
 
+    // Only enable when content is focused
     useTVNavigation({
         onNavigate: handleNavigate,
         onEnter: handleEnter,
+        enabled: focusZone === 'content',
     });
 
     const handleImageError = (streamId: number) => {

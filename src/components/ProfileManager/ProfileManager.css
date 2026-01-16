@@ -1,0 +1,641 @@
+/* ProfileManager Styles - TV Optimized */
+
+/* Overlay */
+.pm-overlay {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    z-index: 10000;
+    padding: 40px;
+    overflow-y: auto;
+    animation: pmFadeIn 0.4s ease;
+}
+
+@keyframes pmFadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Animated Background */
+.pm-backdrop {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.pm-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.4;
+    animation: pmOrbFloat 15s ease-in-out infinite;
+}
+
+.pm-orb-1 {
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, #a855f7 0%, transparent 70%);
+    top: -100px;
+    left: -100px;
+}
+
+.pm-orb-2 {
+    width: 350px;
+    height: 350px;
+    background: radial-gradient(circle, #ec4899 0%, transparent 70%);
+    bottom: -50px;
+    right: -50px;
+    animation-delay: -5s;
+}
+
+.pm-orb-3 {
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, #3b82f6 0%, transparent 70%);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation-delay: -10s;
+}
+
+@keyframes pmOrbFloat {
+
+    0%,
+    100% {
+        transform: translate(0, 0) scale(1);
+    }
+
+    25% {
+        transform: translate(30px, -30px) scale(1.1);
+    }
+
+    50% {
+        transform: translate(-20px, 20px) scale(0.9);
+    }
+
+    75% {
+        transform: translate(20px, 30px) scale(1.05);
+    }
+}
+
+/* Header */
+.pm-header {
+    width: 100%;
+    max-width: 1200px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+    position: relative;
+    z-index: 1;
+    animation: pmSlideDown 0.6s ease;
+}
+
+@keyframes pmSlideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.pm-title {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    color: white;
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+.pm-title-icon {
+    font-size: 40px;
+    animation: pmWave 2s ease-in-out infinite;
+}
+
+@keyframes pmWave {
+
+    0%,
+    100% {
+        transform: rotate(0deg);
+    }
+
+    25% {
+        transform: rotate(15deg);
+    }
+
+    75% {
+        transform: rotate(-10deg);
+    }
+}
+
+.pm-close-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    transition: all 0.3s ease;
+}
+
+.pm-close-btn:hover,
+.pm-close-btn:focus {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: rotate(90deg);
+}
+
+/* Profiles Grid */
+.pm-profiles-grid {
+    width: 100%;
+    max-width: 1200px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 24px;
+    position: relative;
+    z-index: 1;
+}
+
+/* Profile Card */
+.pm-profile-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 28px 20px;
+    border-radius: 16px;
+    width: 200px;
+    min-height: 220px;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    animation: pmCardIn 0.5s ease backwards;
+}
+
+@keyframes pmCardIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.pm-profile-card:hover,
+.pm-profile-card.focused {
+    transform: translateY(-8px) scale(1.02);
+    border-color: #a855f7;
+    box-shadow: 0 20px 40px rgba(168, 85, 247, 0.3);
+}
+
+.pm-profile-card.active {
+    border-color: #10b981;
+    background: linear-gradient(145deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.05));
+}
+
+.pm-profile-card.active.focused {
+    box-shadow: 0 20px 40px rgba(16, 185, 129, 0.3);
+}
+
+/* Active Badge */
+.pm-active-badge {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    color: white;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+/* Avatar */
+.pm-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(236, 72, 153, 0.3));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.pm-profile-card:hover .pm-avatar,
+.pm-profile-card.focused .pm-avatar {
+    transform: scale(1.1);
+}
+
+.pm-avatar-emoji {
+    font-size: 40px;
+}
+
+/* Profile Name */
+.pm-profile-name {
+    color: white;
+    font-size: 18px;
+    font-weight: 600;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.pm-kids-badge {
+    font-size: 12px;
+    padding: 2px 8px;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+/* PIN Indicator */
+.pm-pin-indicator {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Action Buttons */
+.pm-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: auto;
+}
+
+.pm-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pm-btn-edit {
+    background: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.pm-btn-edit:hover {
+    background: rgba(59, 130, 246, 0.3);
+}
+
+.pm-btn-delete {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.pm-btn-delete:hover {
+    background: rgba(239, 68, 68, 0.3);
+}
+
+.pm-btn-delete:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* Add Card */
+.pm-add-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    width: 200px;
+    min-height: 220px;
+    border-radius: 16px;
+    background: transparent;
+    border: 3px dashed rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.pm-add-card:hover,
+.pm-add-card.focused {
+    border-color: #a855f7;
+    background: rgba(168, 85, 247, 0.1);
+    transform: scale(1.02);
+}
+
+.pm-add-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(236, 72, 153, 0.3));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.pm-add-card:hover .pm-add-icon,
+.pm-add-card.focused .pm-add-icon {
+    transform: scale(1.1) rotate(90deg);
+}
+
+.pm-add-label {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* Modal */
+.pm-modal,
+.pm-pin-modal {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    max-width: 500px;
+    padding: 32px;
+    background: linear-gradient(145deg, rgba(30, 30, 50, 0.95), rgba(20, 20, 35, 0.95));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+    animation: pmModalIn 0.3s ease;
+}
+
+@keyframes pmModalIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.pm-modal-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.pm-modal-icon {
+    font-size: 32px;
+}
+
+.pm-modal-icon.danger {
+    filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.5));
+}
+
+.pm-modal-header h2 {
+    color: white;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+/* Form */
+.pm-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.pm-label {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.pm-input {
+    width: 100%;
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: white;
+    font-size: 16px;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.pm-input:focus {
+    border-color: #a855f7;
+    background: rgba(168, 85, 247, 0.1);
+}
+
+.pm-input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+/* Avatar Grid */
+.pm-avatar-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 8px;
+}
+
+.pm-avatar-option {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    font-size: 24px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pm-avatar-option:hover,
+.pm-avatar-option.focused {
+    border-color: #a855f7;
+    transform: scale(1.1);
+}
+
+.pm-avatar-option.selected {
+    border-color: #10b981;
+    background: rgba(16, 185, 129, 0.2);
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+}
+
+/* Modal Buttons */
+.pm-modal-buttons,
+.pm-pin-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.pm-btn-cancel {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 12px 24px;
+}
+
+.pm-btn-cancel:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.pm-btn-save {
+    background: linear-gradient(135deg, #a855f7, #ec4899);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+}
+
+.pm-btn-save:hover {
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+}
+
+.pm-btn-save:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.pm-btn-danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+}
+
+.pm-btn-danger:hover {
+    filter: brightness(1.1);
+}
+
+/* PIN Input */
+.pm-pin-header {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.pm-pin-icon {
+    font-size: 48px;
+    display: block;
+    margin-bottom: 12px;
+}
+
+.pm-pin-header h2 {
+    color: white;
+    font-size: 24px;
+    margin-bottom: 8px;
+}
+
+.pm-pin-header p {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 14px;
+}
+
+.pm-pin-input-container {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.pm-pin-digit {
+    width: 56px;
+    height: 64px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    color: white;
+    transition: all 0.2s ease;
+}
+
+.pm-pin-digit.filled {
+    border-color: #a855f7;
+    background: rgba(168, 85, 247, 0.2);
+}
+
+.pm-pin-digit.error {
+    border-color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+    animation: pmShake 0.5s ease;
+}
+
+@keyframes pmShake {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    25% {
+        transform: translateX(-8px);
+    }
+
+    75% {
+        transform: translateX(8px);
+    }
+}
+
+.pm-hidden-input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.pm-pin-error {
+    text-align: center;
+    color: #f87171;
+    font-size: 14px;
+    margin-bottom: 16px;
+}
+
+/* Delete Message */
+.pm-delete-msg {
+    color: rgba(255, 255, 255, 0.8);
+    text-align: center;
+    margin-bottom: 24px;
+    line-height: 1.6;
+}
+
+.pm-delete-warning {
+    color: #f87171;
+    font-size: 14px;
+}

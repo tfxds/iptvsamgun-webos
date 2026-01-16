@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
 import type { Series as SeriesType, Category } from '../types';
 import { useTVNavigation } from '../hooks/useTVNavigation';
+import { useFocusZone } from '../App';
 import { CategoryMenu } from '../components/CategoryMenu';
 import { AnimatedSearchBar } from '../components/AnimatedSearchBar';
 import { ContentDetailModal } from '../components/ContentDetailModal';
@@ -11,6 +12,7 @@ import { VideoPlayer } from '../components/VideoPlayer';
 import './Series.css';
 
 export function Series() {
+    const { focusZone, setFocusZone } = useFocusZone();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [series, setSeries] = useState<SeriesType[]>([]);
@@ -124,7 +126,12 @@ export function Series() {
     const handleNavigate = (direction: 'up' | 'down' | 'left' | 'right') => {
         if (focusArea === 'categories') {
             if (direction === 'left') {
-                setFocusedCategoryIndex(prev => Math.max(0, prev - 1));
+                if (focusedCategoryIndex === 0) {
+                    // At first category - go to sidebar
+                    setFocusZone('sidebar');
+                } else {
+                    setFocusedCategoryIndex(prev => Math.max(0, prev - 1));
+                }
             } else if (direction === 'right') {
                 setFocusedCategoryIndex(prev => Math.min(categories.length, prev + 1));
             } else if (direction === 'down') {
@@ -134,6 +141,7 @@ export function Series() {
         } else if (focusArea === 'series') {
             const cols = 5;
             const totalSeries = filteredSeries.length;
+            const currentCol = focusedSeriesIndex % cols;
 
             if (direction === 'up') {
                 if (focusedSeriesIndex < cols) {
@@ -144,7 +152,12 @@ export function Series() {
             } else if (direction === 'down') {
                 setFocusedSeriesIndex(prev => Math.min(totalSeries - 1, prev + cols));
             } else if (direction === 'left') {
-                setFocusedSeriesIndex(prev => Math.max(0, prev - 1));
+                if (currentCol === 0) {
+                    // At first column - go to sidebar
+                    setFocusZone('sidebar');
+                } else {
+                    setFocusedSeriesIndex(prev => Math.max(0, prev - 1));
+                }
             } else if (direction === 'right') {
                 setFocusedSeriesIndex(prev => Math.min(totalSeries - 1, prev + 1));
             }
@@ -167,9 +180,11 @@ export function Series() {
         }
     };
 
+    // Only enable when content is focused
     useTVNavigation({
         onNavigate: handleNavigate,
         onEnter: handleEnter,
+        enabled: focusZone === 'content',
     });
 
     const handleImageError = (seriesId: number) => {

@@ -10,8 +10,8 @@ const TV_KEYS = {
     LEFT: ['ArrowLeft', '37'],
     RIGHT: ['ArrowRight', '39'],
 
-    // Action keys
-    ENTER: ['Enter', '13'],
+    // Action keys - Samsung OK button uses 13, 29443, or space (32)
+    ENTER: ['Enter', '13', '29443', ' ', '32', 'Select'],
     BACK: ['Backspace', 'XF86Back', '10009', '8', '461'], // Samsung, LG, etc.
 
     // Media keys

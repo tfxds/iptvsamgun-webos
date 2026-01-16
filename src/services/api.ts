@@ -54,28 +54,74 @@ class XtreamAPI {
         apiUrl.searchParams.append('username', username);
         apiUrl.searchParams.append('password', password);
 
-        const response = await fetch(apiUrl.toString());
+        // Create AbortController for timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 seconds timeout
 
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        try {
+            const response = await fetch(apiUrl.toString(), {
+                signal: controller.signal,
+                headers: {
+                    'Accept': 'application/json, text/plain, */*',
+                },
+            });
+
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            // Get response as text first to check if it's valid
+            const text = await response.text();
+
+            console.log('[API] Response text length:', text?.length || 0);
+
+            if (!text || text.trim() === '') {
+                throw new Error('Servidor retornou resposta vazia. Verifique a URL do servidor.');
+            }
+
+            // Check if response looks like HTML (error page)
+            if (text.trim().startsWith('<')) {
+                throw new Error('Servidor retornou página de erro. Verifique a URL.');
+            }
+
+            let data: AuthResponse;
+            try {
+                data = JSON.parse(text);
+            } catch {
+                console.error('[API] Failed to parse JSON:', text.substring(0, 200));
+                throw new Error('Resposta inválida do servidor (não é JSON)');
+            }
+
+            if (data.user_info && data.user_info.auth === 0) {
+                throw new Error('Usuário ou senha incorretos');
+            }
+
+            if (!data.user_info) {
+                throw new Error('Resposta inválida do servidor');
+            }
+
+            // Save credentials
+            this.baseUrl = baseUrl;
+            this.username = username;
+            this.password = password;
+
+            return data;
+        } catch (error: any) {
+            clearTimeout(timeoutId);
+
+            // Handle specific error cases
+            if (error.name === 'AbortError') {
+                throw new Error('Tempo esgotado. O servidor demorou muito para responder.');
+            }
+
+            if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+                throw new Error('Erro de conexão. Verifique sua internet e a URL do servidor.');
+            }
+
+            throw error;
         }
-
-        const data: AuthResponse = await response.json();
-
-        if (data.user_info && data.user_info.auth === 0) {
-            throw new Error('Usuário ou senha incorretos');
-        }
-
-        if (!data.user_info) {
-            throw new Error('Resposta inválida do servidor');
-        }
-
-        // Save credentials
-        this.baseUrl = baseUrl;
-        this.username = username;
-        this.password = password;
-
-        return data;
     }
 
     async getLiveStreams(): Promise<LiveStream[]> {

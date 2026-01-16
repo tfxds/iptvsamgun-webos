@@ -1,0 +1,427 @@
+// ProfileManager Component - TV Optimized
+import { useState, useEffect, useCallback } from 'react';
+import { profileService } from '../../services/profileService';
+import type { Profile } from '../../types/profile';
+import { useTVNavigation } from '../../hooks/useTVNavigation';
+import './ProfileManager.css';
+
+interface ProfileManagerProps {
+    onClose: () => void;
+}
+
+const avatarOptions = ['👤', '👨', '👩', '🧒', '👴', '👵', '🐱', '🐶', '🦊', '🐼', '🎮', '🎬', '🎧', '🎸', '⚽', '🏀'];
+
+type ModalMode = 'list' | 'create' | 'edit' | 'pin-verify' | 'delete-confirm';
+
+export function ProfileManager({ onClose }: ProfileManagerProps) {
+    const [profiles, setProfiles] = useState<Profile[]>([]);
+    const [activeProfile, setActiveProfile] = useState<Profile | null>(null);
+    const [mode, setMode] = useState<ModalMode>('list');
+    const [focusedIndex, setFocusedIndex] = useState(0);
+
+    // Form states
+    const [editingProfile, setEditingProfile] = useState<Profile | null>(null);
+    const [formName, setFormName] = useState('');
+    const [formAvatar, setFormAvatar] = useState('👤');
+    const [avatarFocusIndex, setAvatarFocusIndex] = useState(0);
+
+    // PIN states
+    const [pendingProfile, setPendingProfile] = useState<Profile | null>(null);
+    const [pinInput, setPinInput] = useState('');
+    const [pinError, setPinError] = useState('');
+
+    // Delete confirm
+    const [deleteTarget, setDeleteTarget] = useState<Profile | null>(null);
+
+    // Load profiles
+    useEffect(() => {
+        profileService.initialize();
+        refreshProfiles();
+    }, []);
+
+    const refreshProfiles = () => {
+        setProfiles(profileService.getAllProfiles());
+        setActiveProfile(profileService.getActiveProfile());
+    };
+
+    // Calculate total focusable items (profiles + add button if < 5)
+    const totalItems = profiles.length + (profiles.length < 5 ? 1 : 0);
+
+    // Handle navigation
+    const handleNavigate = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
+        if (mode === 'list') {
+            // Grid navigation (3 columns)
+            const cols = 3;
+            if (direction === 'left') {
+                setFocusedIndex(prev => Math.max(0, prev - 1));
+            } else if (direction === 'right') {
+                setFocusedIndex(prev => Math.min(totalItems - 1, prev + 1));
+            } else if (direction === 'up') {
+                setFocusedIndex(prev => Math.max(0, prev - cols));
+            } else if (direction === 'down') {
+                setFocusedIndex(prev => Math.min(totalItems - 1, prev + cols));
+            }
+        } else if (mode === 'create' || mode === 'edit') {
+            // Avatar grid navigation (4x4)
+            const cols = 4;
+            if (direction === 'left') {
+                setAvatarFocusIndex(prev => Math.max(0, prev - 1));
+            } else if (direction === 'right') {
+                setAvatarFocusIndex(prev => Math.min(avatarOptions.length - 1, prev + 1));
+            } else if (direction === 'up') {
+                setAvatarFocusIndex(prev => Math.max(0, prev - cols));
+            } else if (direction === 'down') {
+                setAvatarFocusIndex(prev => Math.min(avatarOptions.length - 1, prev + cols));
+            }
+        }
+    }, [mode, totalItems]);
+
+    const handleEnter = useCallback(() => {
+        if (mode === 'list') {
+            if (focusedIndex < profiles.length) {
+                // Select profile
+                const profile = profiles[focusedIndex];
+                if (profile.pin) {
+                    // Has PIN - verify first
+                    setPendingProfile(profile);
+                    setPinInput('');
+                    setPinError('');
+                    setMode('pin-verify');
+                } else {
+                    // No PIN - activate directly
+                    profileService.setActiveProfile(profile.id);
+                    refreshProfiles();
+                    onClose();
+                }
+            } else {
+                // Add new profile
+                setFormName('');
+                setFormAvatar('👤');
+                setAvatarFocusIndex(0);
+                setMode('create');
+            }
+        } else if (mode === 'create' || mode === 'edit') {
+            // Select avatar
+            setFormAvatar(avatarOptions[avatarFocusIndex]);
+        }
+    }, [mode, focusedIndex, profiles, onClose]);
+
+    const handleBack = useCallback(() => {
+        if (mode === 'list') {
+            onClose();
+        } else {
+            setMode('list');
+            setEditingProfile(null);
+            setPendingProfile(null);
+            setDeleteTarget(null);
+        }
+    }, [mode, onClose]);
+
+    useTVNavigation({
+        onNavigate: handleNavigate,
+        onEnter: handleEnter,
+        onBack: handleBack,
+        enabled: true
+    });
+
+    // Handle PIN verification
+    const handlePinSubmit = async () => {
+        if (!pendingProfile || pinInput.length !== 4) return;
+
+        const isValid = await profileService.verifyPin(pendingProfile.id, pinInput);
+        if (isValid) {
+            profileService.setActiveProfile(pendingProfile.id);
+            refreshProfiles();
+            onClose();
+        } else {
+            setPinError('PIN incorreto');
+            setPinInput('');
+        }
+    };
+
+    // Handle create profile
+    const handleCreateProfile = async () => {
+        if (!formName.trim()) return;
+
+        await profileService.createProfile({
+            name: formName.trim(),
+            avatar: formAvatar
+        });
+        refreshProfiles();
+        setMode('list');
+    };
+
+    // Handle edit profile
+    const handleEditProfile = async () => {
+        if (!editingProfile || !formName.trim()) return;
+
+        await profileService.updateProfile(editingProfile.id, {
+            name: formName.trim(),
+            avatar: formAvatar
+        });
+        refreshProfiles();
+        setEditingProfile(null);
+        setMode('list');
+    };
+
+    // Handle delete profile
+    const handleDeleteProfile = () => {
+        if (!deleteTarget) return;
+
+        profileService.deleteProfile(deleteTarget.id);
+        refreshProfiles();
+        setDeleteTarget(null);
+        setMode('list');
+        setFocusedIndex(0);
+    };
+
+    // Start editing a profile
+    const startEdit = (profile: Profile) => {
+        setEditingProfile(profile);
+        setFormName(profile.name);
+        setFormAvatar(profile.avatar);
+        setAvatarFocusIndex(avatarOptions.indexOf(profile.avatar) || 0);
+        setMode('edit');
+    };
+
+    // Start delete confirmation
+    const startDelete = (profile: Profile) => {
+        if (profile.id === activeProfile?.id) {
+            return; // Cannot delete active profile
+        }
+        if (profile.isKids) {
+            return; // Cannot delete kids profile
+        }
+        setDeleteTarget(profile);
+        setMode('delete-confirm');
+    };
+
+    return (
+        <div className="pm-overlay">
+            {/* Animated Background */}
+            <div className="pm-backdrop">
+                <div className="pm-orb pm-orb-1" />
+                <div className="pm-orb pm-orb-2" />
+                <div className="pm-orb pm-orb-3" />
+            </div>
+
+            {/* Header */}
+            <div className="pm-header">
+                <h1 className="pm-title">
+                    <span className="pm-title-icon">👥</span>
+                    Gerenciar Perfis
+                </h1>
+                <button className="pm-close-btn" onClick={onClose}>
+                    ✕
+                </button>
+            </div>
+
+            {/* Main Content */}
+            {mode === 'list' && (
+                <div className="pm-profiles-grid">
+                    {profiles.map((profile, index) => {
+                        const isActive = profile.id === activeProfile?.id;
+                        const isFocused = focusedIndex === index;
+
+                        return (
+                            <div
+                                key={profile.id}
+                                className={`pm-profile-card ${isActive ? 'active' : ''} ${isFocused ? 'focused' : ''}`}
+                                onClick={() => {
+                                    setFocusedIndex(index);
+                                    handleEnter();
+                                }}
+                            >
+                                {isActive && (
+                                    <div className="pm-active-badge">
+                                        <span>✓</span> Ativo
+                                    </div>
+                                )}
+
+                                <div className="pm-avatar">
+                                    <span className="pm-avatar-emoji">{profile.avatar}</span>
+                                </div>
+
+                                <h3 className="pm-profile-name">
+                                    {profile.name}
+                                    {profile.isKids && <span className="pm-kids-badge">👶 Kids</span>}
+                                </h3>
+
+                                {profile.pin && (
+                                    <div className="pm-pin-indicator">
+                                        🔒 PIN ativo
+                                    </div>
+                                )}
+
+                                {/* Action buttons (only for non-kids profiles) */}
+                                {!profile.isKids && (
+                                    <div className="pm-actions">
+                                        <button
+                                            className="pm-btn pm-btn-edit"
+                                            onClick={(e) => { e.stopPropagation(); startEdit(profile); }}
+                                        >
+                                            ✏️ Editar
+                                        </button>
+                                        <button
+                                            className="pm-btn pm-btn-delete"
+                                            onClick={(e) => { e.stopPropagation(); startDelete(profile); }}
+                                            disabled={isActive || profiles.length <= 1}
+                                        >
+                                            🗑️ Excluir
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+
+                    {/* Add New Profile Card */}
+                    {profiles.length < 5 && (
+                        <button
+                            className={`pm-add-card ${focusedIndex === profiles.length ? 'focused' : ''}`}
+                            onClick={() => {
+                                setFocusedIndex(profiles.length);
+                                setFormName('');
+                                setFormAvatar('👤');
+                                setMode('create');
+                            }}
+                        >
+                            <div className="pm-add-icon">+</div>
+                            <span className="pm-add-label">Adicionar Perfil</span>
+                        </button>
+                    )}
+                </div>
+            )}
+
+            {/* Create/Edit Profile Modal */}
+            {(mode === 'create' || mode === 'edit') && (
+                <div className="pm-modal">
+                    <div className="pm-modal-header">
+                        <span className="pm-modal-icon">{mode === 'create' ? '➕' : '✏️'}</span>
+                        <h2>{mode === 'create' ? 'Novo Perfil' : 'Editar Perfil'}</h2>
+                    </div>
+
+                    <div className="pm-form">
+                        <label className="pm-label">Nome do Perfil</label>
+                        <input
+                            type="text"
+                            className="pm-input"
+                            value={formName}
+                            onChange={(e) => setFormName(e.target.value)}
+                            placeholder="Digite o nome..."
+                            maxLength={20}
+                            autoFocus
+                        />
+
+                        <label className="pm-label">Avatar</label>
+                        <div className="pm-avatar-grid">
+                            {avatarOptions.map((avatar, index) => (
+                                <button
+                                    key={avatar}
+                                    className={`pm-avatar-option ${formAvatar === avatar ? 'selected' : ''} ${avatarFocusIndex === index ? 'focused' : ''}`}
+                                    onClick={() => setFormAvatar(avatar)}
+                                >
+                                    {avatar}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="pm-modal-buttons">
+                        <button className="pm-btn pm-btn-cancel" onClick={() => setMode('list')}>
+                            Cancelar
+                        </button>
+                        <button
+                            className="pm-btn pm-btn-save"
+                            onClick={mode === 'create' ? handleCreateProfile : handleEditProfile}
+                            disabled={!formName.trim()}
+                        >
+                            ✓ Salvar
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* PIN Verification Modal */}
+            {mode === 'pin-verify' && pendingProfile && (
+                <div className="pm-pin-modal">
+                    <div className="pm-pin-header">
+                        <span className="pm-pin-icon">🔐</span>
+                        <h2>Digite o PIN</h2>
+                        <p>Perfil: <strong>{pendingProfile.name}</strong></p>
+                    </div>
+
+                    <div className="pm-pin-input-container">
+                        {[0, 1, 2, 3].map((index) => (
+                            <div
+                                key={index}
+                                className={`pm-pin-digit ${pinInput.length > index ? 'filled' : ''} ${pinError ? 'error' : ''}`}
+                            >
+                                {pinInput[index] ? '•' : ''}
+                            </div>
+                        ))}
+                    </div>
+
+                    <input
+                        type="password"
+                        maxLength={4}
+                        value={pinInput}
+                        onChange={(e) => {
+                            setPinInput(e.target.value.replace(/\D/g, ''));
+                            setPinError('');
+                        }}
+                        onKeyPress={(e) => {
+                            if (e.key === 'Enter' && pinInput.length === 4) {
+                                handlePinSubmit();
+                            }
+                        }}
+                        autoFocus
+                        className="pm-hidden-input"
+                    />
+
+                    {pinError && (
+                        <p className="pm-pin-error">⚠️ {pinError}</p>
+                    )}
+
+                    <div className="pm-pin-buttons">
+                        <button className="pm-btn pm-btn-cancel" onClick={() => setMode('list')}>
+                            Cancelar
+                        </button>
+                        <button
+                            className="pm-btn pm-btn-save"
+                            onClick={handlePinSubmit}
+                            disabled={pinInput.length !== 4}
+                        >
+                            ✓ Entrar
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {mode === 'delete-confirm' && deleteTarget && (
+                <div className="pm-modal pm-modal-delete">
+                    <div className="pm-modal-header">
+                        <span className="pm-modal-icon danger">🗑️</span>
+                        <h2>Excluir Perfil?</h2>
+                    </div>
+
+                    <p className="pm-delete-msg">
+                        Deseja excluir o perfil <strong>{deleteTarget.name}</strong>?
+                        <br />
+                        <span className="pm-delete-warning">Esta ação não pode ser desfeita.</span>
+                    </p>
+
+                    <div className="pm-modal-buttons">
+                        <button className="pm-btn pm-btn-cancel" onClick={() => setMode('list')}>
+                            Cancelar
+                        </button>
+                        <button className="pm-btn pm-btn-danger" onClick={handleDeleteProfile}>
+                            🗑️ Excluir
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}

@@ -1,8 +1,9 @@
 // Main App Component - NeoStream TV
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, createContext, useContext } from 'react';
 import { api } from './services/api';
 import { storage } from './services/storage';
+import { Welcome } from './pages/Welcome';
 import { Login } from './pages/Login';
 import { Home } from './pages/Home';
 import { LiveTV } from './pages/LiveTV';
@@ -11,14 +12,33 @@ import { Series } from './pages/Series';
 import { Favorites } from './pages/Favorites';
 import { MyList } from './pages/MyList';
 import { Sidebar } from './components/Sidebar';
+import { ProfileManager } from './components/ProfileManager';
 import './index.css';
 
 type Page = 'home' | 'live' | 'movies' | 'series' | 'mylist' | 'favorites' | 'settings';
+type AuthState = 'loading' | 'welcome' | 'login' | 'authenticated';
+type FocusZone = 'sidebar' | 'content';
+
+// Context for focus zone management
+interface FocusContextType {
+  focusZone: FocusZone;
+  setFocusZone: (zone: FocusZone) => void;
+}
+
+export const FocusContext = createContext<FocusContextType>({
+  focusZone: 'content',
+  setFocusZone: () => { },
+});
+
+export function useFocusZone() {
+  return useContext(FocusContext);
+}
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [authState, setAuthState] = useState<AuthState>('loading');
   const [currentPage, setCurrentPage] = useState<Page>('home');
+  const [focusZone, setFocusZone] = useState<FocusZone>('content');
+  const [showProfileManager, setShowProfileManager] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -30,32 +50,39 @@ function App() {
       if (credentials) {
         // Try to authenticate with saved credentials
         await api.authenticate(credentials.url, credentials.username, credentials.password);
-        setIsAuthenticated(true);
+        setAuthState('authenticated');
+      } else {
+        // No credentials saved - show welcome screen
+        setAuthState('welcome');
       }
     } catch (err) {
       console.error('Auto-login failed:', err);
       storage.clearCredentials();
-    } finally {
-      setLoading(false);
+      setAuthState('welcome');
     }
   };
 
+  const handleGoToLogin = () => {
+    setAuthState('login');
+  };
+
   const handleLoginSuccess = () => {
-    setIsAuthenticated(true);
+    setAuthState('authenticated');
   };
 
   const handleLogout = () => {
     api.logout();
     storage.clearCredentials();
-    setIsAuthenticated(false);
+    setAuthState('welcome');
   };
 
   const handlePageChange = (page: string) => {
     setCurrentPage(page as Page);
+    setFocusZone('content'); // Reset focus to content when changing pages
   };
 
   // Loading screen
-  if (loading) {
+  if (authState === 'loading') {
     return (
       <div className="app-loading">
         <div className="app-loading-logo">
@@ -71,29 +98,43 @@ function App() {
     );
   }
 
+  // Welcome screen (no playlist configured)
+  if (authState === 'welcome') {
+    return <Welcome onGoToLogin={handleGoToLogin} />;
+  }
+
   // Login screen
-  if (!isAuthenticated) {
+  if (authState === 'login') {
     return <Login onLoginSuccess={handleLoginSuccess} />;
   }
 
   // Main app with sidebar
   return (
-    <div className="app">
-      <Sidebar
-        activeItem={currentPage}
-        onItemSelect={handlePageChange}
-        onLogout={handleLogout}
-      />
-      <main className="app-content">
-        {currentPage === 'home' && <Home onNavigate={handlePageChange} />}
-        {currentPage === 'live' && <LiveTV />}
-        {currentPage === 'movies' && <Movies />}
-        {currentPage === 'series' && <Series />}
-        {currentPage === 'mylist' && <MyList />}
-        {currentPage === 'favorites' && <Favorites />}
-        {currentPage === 'settings' && <PlaceholderPage title="Configurações" icon="⚙️" />}
-      </main>
-    </div>
+    <FocusContext.Provider value={{ focusZone, setFocusZone }}>
+      <div className="app">
+        <Sidebar
+          activeItem={currentPage}
+          onItemSelect={handlePageChange}
+          onLogout={handleLogout}
+          onProfileClick={() => setShowProfileManager(true)}
+          focused={focusZone === 'sidebar'}
+        />
+        <main className="app-content">
+          {currentPage === 'home' && <Home onNavigate={handlePageChange} />}
+          {currentPage === 'live' && <LiveTV />}
+          {currentPage === 'movies' && <Movies />}
+          {currentPage === 'series' && <Series />}
+          {currentPage === 'mylist' && <MyList />}
+          {currentPage === 'favorites' && <Favorites />}
+          {currentPage === 'settings' && <PlaceholderPage title="Configurações" icon="⚙️" />}
+        </main>
+
+        {/* Profile Manager Modal */}
+        {showProfileManager && (
+          <ProfileManager onClose={() => setShowProfileManager(false)} />
+        )}
+      </div>
+    </FocusContext.Provider>
   );
 }
 
