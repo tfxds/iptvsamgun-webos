@@ -667,3 +667,47 @@
         align-self: flex-start;
     }
 }
+
+/* TV Navigation Focus States */
+.modal-close-btn.focused {
+    background: rgba(168, 85, 247, 0.6);
+    border-color: #a855f7;
+    transform: scale(1.15);
+    box-shadow: 0 0 25px rgba(168, 85, 247, 0.6);
+}
+
+.action-btn.focused {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 0 30px rgba(168, 85, 247, 0.7);
+    outline: 3px solid rgba(168, 85, 247, 0.8);
+    outline-offset: 3px;
+}
+
+.play-btn.focused {
+    animation: none;
+    box-shadow: 0 0 40px rgba(168, 85, 247, 0.8), 0 8px 30px rgba(236, 72, 153, 0.5);
+}
+
+.secondary-btn.focused {
+    border-color: #a855f7;
+    background: rgba(168, 85, 247, 0.3);
+}
+
+.favorite-btn.focused {
+    transform: scale(1.2);
+    box-shadow: 0 0 25px rgba(239, 68, 68, 0.6);
+}
+
+.season-tab.focused {
+    border-color: #a855f7 !important;
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.5), rgba(236, 72, 153, 0.3)) !important;
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.5);
+}
+
+.episode-item.focused {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.35), rgba(236, 72, 153, 0.25));
+    border-color: #a855f7;
+    transform: scale(1.02);
+    box-shadow: 0 0 15px rgba(168, 85, 247, 0.4);
+}

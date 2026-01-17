@@ -1,8 +1,9 @@
 // ContentDetailModal.tsx - Premium modal matching original NeoStream app
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '../services/api';
 import { searchMovieByName, searchSeriesByName, getImageUrl, formatGenres, type TMDBMovieDetails, type TMDBSeriesDetails } from '../services/tmdb';
+import { useTVNavigation } from '../hooks/useTVNavigation';
 import type { SeriesInfo } from '../types';
 import './ContentDetailModal.css';
 
@@ -99,6 +100,21 @@ export function ContentDetailModal({
     const [tmdbData, setTmdbData] = useState<TMDBMovieDetails | TMDBSeriesDetails | null>(null);
     const [tmdbLoading, setTmdbLoading] = useState(false);
 
+    // Focus management for TV navigation
+    type FocusZone = 'play' | 'watchLater' | 'favorite' | 'close' | 'season' | 'episode';
+    const [focusZone, setFocusZone] = useState<FocusZone>('play');
+    const [seasonFocusIndex, setSeasonFocusIndex] = useState(0);
+    const [episodeFocusIndex, setEpisodeFocusIndex] = useState(0);
+
+    // Reset focus when modal opens
+    useEffect(() => {
+        if (isOpen) {
+            setFocusZone('play');
+            setSeasonFocusIndex(0);
+            setEpisodeFocusIndex(0);
+        }
+    }, [isOpen]);
+
     // Fetch series info
     useEffect(() => {
         if (!isOpen || contentType !== 'series') return;
@@ -172,6 +188,119 @@ export function ContentDetailModal({
         }
     };
 
+    // Calculate navigation items
+    const seasons = seriesInfo?.episodes ? Object.keys(seriesInfo.episodes).sort((a, b) => Number(a) - Number(b)) : [];
+    const episodes = seriesInfo?.episodes?.[selectedSeason] || [];
+
+    // TV Navigation handlers
+    const handleNavigate = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
+        if (!isOpen) return;
+
+        if (contentType === 'series') {
+            // Series modal navigation
+            if (focusZone === 'play') {
+                if (direction === 'right') setFocusZone('watchLater');
+                else if (direction === 'up' && seasons.length > 0) setFocusZone('season');
+                else if (direction === 'down' && episodes.length > 0) setFocusZone('episode');
+            } else if (focusZone === 'watchLater') {
+                if (direction === 'left') setFocusZone('play');
+                else if (direction === 'right') setFocusZone('favorite');
+                else if (direction === 'up') setFocusZone('close');
+            } else if (focusZone === 'favorite') {
+                if (direction === 'left') setFocusZone('watchLater');
+                else if (direction === 'up') setFocusZone('close');
+            } else if (focusZone === 'close') {
+                if (direction === 'down') setFocusZone('play');
+            } else if (focusZone === 'season') {
+                if (direction === 'left') {
+                    setSeasonFocusIndex(prev => Math.max(0, prev - 1));
+                } else if (direction === 'right') {
+                    setSeasonFocusIndex(prev => Math.min(seasons.length - 1, prev + 1));
+                } else if (direction === 'down') {
+                    setFocusZone('episode');
+                } else if (direction === 'up') {
+                    setFocusZone('play');
+                }
+            } else if (focusZone === 'episode') {
+                if (direction === 'up') {
+                    if (episodeFocusIndex === 0) {
+                        setFocusZone('season');
+                    } else {
+                        setEpisodeFocusIndex(prev => Math.max(0, prev - 1));
+                    }
+                } else if (direction === 'down') {
+                    if (episodeFocusIndex < episodes.length - 1) {
+                        setEpisodeFocusIndex(prev => prev + 1);
+                    } else {
+                        setFocusZone('play');
+                    }
+                }
+            }
+        } else {
+            // Movie modal navigation (simpler)
+            if (focusZone === 'play') {
+                if (direction === 'right') setFocusZone('watchLater');
+                else if (direction === 'up') setFocusZone('close');
+            } else if (focusZone === 'watchLater') {
+                if (direction === 'left') setFocusZone('play');
+                else if (direction === 'right') setFocusZone('favorite');
+                else if (direction === 'up') setFocusZone('close');
+            } else if (focusZone === 'favorite') {
+                if (direction === 'left') setFocusZone('watchLater');
+                else if (direction === 'up') setFocusZone('close');
+            } else if (focusZone === 'close') {
+                if (direction === 'down') setFocusZone('play');
+            }
+        }
+    }, [isOpen, focusZone, contentType, seasons.length, episodes.length, seasonFocusIndex, episodeFocusIndex]);
+
+    const handleEnter = useCallback(() => {
+        if (!isOpen) return;
+
+        if (focusZone === 'play') {
+            onPlay(
+                contentType === 'series' ? selectedSeason : undefined,
+                contentType === 'series' ? selectedEpisode : undefined
+            );
+        } else if (focusZone === 'watchLater') {
+            const posterForWatchLater = tmdbData?.poster_path ? getImageUrl(tmdbData.poster_path, 'w500') : contentData.cover;
+            watchLaterService.toggle(
+                contentId,
+                contentType,
+                contentData.name,
+                posterForWatchLater || undefined,
+                tmdbData?.vote_average ? tmdbData.vote_average.toFixed(1) : contentData.rating
+            );
+            setRefresh(r => r + 1);
+        } else if (focusZone === 'favorite') {
+            favoritesService.toggle(contentId, contentType);
+            setRefresh(r => r + 1);
+        } else if (focusZone === 'close') {
+            handleClose();
+        } else if (focusZone === 'season') {
+            setSelectedSeason(Number(seasons[seasonFocusIndex]));
+            setSelectedEpisode(1);
+            setEpisodeFocusIndex(0);
+        } else if (focusZone === 'episode') {
+            const ep = episodes[episodeFocusIndex];
+            if (ep) {
+                setSelectedEpisode(Number(ep.episode_num));
+            }
+        }
+    }, [isOpen, focusZone, contentType, selectedSeason, selectedEpisode, contentId, contentData, tmdbData, seasons, seasonFocusIndex, episodes, episodeFocusIndex, onPlay, handleClose]);
+
+    const handleBack = useCallback(() => {
+        handleClose();
+    }, [handleClose]);
+
+    // TV Navigation hook
+    useTVNavigation({
+        onNavigate: handleNavigate,
+        onEnter: handleEnter,
+        onBack: handleBack,
+        enabled: isOpen
+    });
+
     // Helper function for episode titles
     const getEpisodeTitle = (ep: any): string => {
         const epNum = Number(ep.episode_num);
@@ -203,8 +332,6 @@ export function ContentDetailModal({
     const genres = tmdbData?.genres ? formatGenres(tmdbData.genres) : contentData.genre;
     const backdropUrl = tmdbData?.backdrop_path ? getImageUrl(tmdbData.backdrop_path, 'w1280') : null;
     const posterUrl = tmdbData?.poster_path ? getImageUrl(tmdbData.poster_path, 'w500') : contentData.cover;
-    const seasons = seriesInfo?.episodes ? Object.keys(seriesInfo.episodes).sort((a, b) => Number(a) - Number(b)) : [];
-    const episodes = seriesInfo?.episodes?.[selectedSeason] || [];
 
     return (
         <div
@@ -214,7 +341,7 @@ export function ContentDetailModal({
         >
             <div className={`modal-container ${isClosing ? 'closing' : ''}`}>
                 {/* Close Button */}
-                <button className="modal-close-btn" onClick={handleClose}>
+                <button className={`modal-close-btn ${focusZone === 'close' ? 'focused' : ''}`} onClick={handleClose}>
                     ✕
                 </button>
 
@@ -281,10 +408,10 @@ export function ContentDetailModal({
                         <>
                             {/* Season Tabs */}
                             <div className="season-tabs">
-                                {seasons.map(season => (
+                                {seasons.map((season, idx) => (
                                     <button
                                         key={season}
-                                        className={`season-tab ${selectedSeason === Number(season) ? 'active' : ''}`}
+                                        className={`season-tab ${selectedSeason === Number(season) ? 'active' : ''} ${focusZone === 'season' && seasonFocusIndex === idx ? 'focused' : ''}`}
                                         onClick={() => {
                                             setSelectedSeason(Number(season));
                                             setSelectedEpisode(1);
@@ -304,7 +431,7 @@ export function ContentDetailModal({
                                     return (
                                         <div
                                             key={ep.id || index}
-                                            className={`episode-item ${isSelected ? 'selected' : ''}`}
+                                            className={`episode-item ${isSelected ? 'selected' : ''} ${focusZone === 'episode' && episodeFocusIndex === index ? 'focused' : ''}`}
                                             onClick={() => setSelectedEpisode(epNum)}
                                         >
                                             <span className="episode-number default">{epNum}</span>
@@ -331,7 +458,7 @@ export function ContentDetailModal({
                     <div className="modal-actions">
                         {/* Play Button */}
                         <button
-                            className="action-btn play-btn"
+                            className={`action-btn play-btn ${focusZone === 'play' ? 'focused' : ''}`}
                             onClick={() => {
                                 onPlay(
                                     contentType === 'series' ? selectedSeason : undefined,
@@ -348,7 +475,7 @@ export function ContentDetailModal({
 
                         {/* Watch Later Button */}
                         <button
-                            className={`action-btn secondary-btn ${watchLaterService.has(contentId, contentType) ? 'active' : ''}`}
+                            className={`action-btn secondary-btn ${watchLaterService.has(contentId, contentType) ? 'active' : ''} ${focusZone === 'watchLater' ? 'focused' : ''}`}
                             onClick={() => {
                                 watchLaterService.toggle(
                                     contentId,
@@ -366,7 +493,7 @@ export function ContentDetailModal({
 
                         {/* Favorite Button */}
                         <button
-                            className={`action-btn favorite-btn ${favoritesService.has(contentId, contentType) ? 'active' : ''}`}
+                            className={`action-btn favorite-btn ${favoritesService.has(contentId, contentType) ? 'active' : ''} ${focusZone === 'favorite' ? 'focused' : ''}`}
                             onClick={() => {
                                 favoritesService.toggle(contentId, contentType);
                                 setRefresh(r => r + 1);
