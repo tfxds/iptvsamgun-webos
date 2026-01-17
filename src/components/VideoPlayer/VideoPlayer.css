@@ -59,6 +59,13 @@
     transform: scale(1.1);
 }
 
+.video-player-close.focused {
+    background: rgba(168, 85, 247, 0.8);
+    transform: scale(1.15);
+    box-shadow: 0 0 25px rgba(168, 85, 247, 0.7);
+    border: 2px solid #a855f7;
+}
+
 /* Title */
 .video-player-title {
     position: absolute;
