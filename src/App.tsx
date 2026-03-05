@@ -46,10 +46,10 @@ function App() {
   }, []);
 
   const checkAuth = async () => {
-    // FOR USER TEST: Clear storage once per session so they test language 
-    if (!sessionStorage.getItem('wiped_once')) {
-      storage.clearAll();
-      sessionStorage.setItem('wiped_once', 'true');
+    // FOR USER TEST: Clear storage once to test language screen on TV
+    if (!localStorage.getItem('wiped_v5')) {
+      localStorage.clear();
+      localStorage.setItem('wiped_v5', 'true');
     }
 
     if (!storage.hasSettings()) {

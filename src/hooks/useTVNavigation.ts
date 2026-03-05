@@ -98,8 +98,24 @@ export function useTVNavigation(options: UseTVNavigationOptions = {}) {
     }, [enabled, onNavigate, onAction, onBack, onEnter]);
 
     useEffect(() => {
+        // Custom handler for Tizen hardware 'back' key when keyboard is open
+        const handleTizenHwKey = (e: any) => {
+            if (e.keyName === 'back' || e.keyName === 'Return') {
+                const active = document.activeElement as HTMLElement;
+                if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
+                    active.blur();
+                    // Let TV close the keyboard
+                }
+            }
+        };
+
         window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
+        window.addEventListener('tizenhwkey', handleTizenHwKey as EventListener);
+
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('tizenhwkey', handleTizenHwKey as EventListener);
+        };
     }, [handleKeyDown]);
 }
 

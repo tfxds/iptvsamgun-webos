@@ -14,6 +14,9 @@ interface LoginProps {
 const MAX_FOCUS = 6;
 
 export function Login({ onLoginSuccess }: LoginProps) {
+    const [url, setUrl] = useState('');
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
     const [includeTV, setIncludeTV] = useState(true);
     const [includeVOD, setIncludeVOD] = useState(true);
     const [error, setError] = useState('');
@@ -31,18 +34,14 @@ export function Login({ onLoginSuccess }: LoginProps) {
     useEffect(() => {
         const saved = storage.getCredentials();
         if (saved) {
-            if (urlRef.current) urlRef.current.value = saved.url;
-            if (usernameRef.current) usernameRef.current.value = saved.username;
-            if (passwordRef.current) passwordRef.current.value = saved.password;
+            setUrl(saved.url || '');
+            setUsername(saved.username || '');
+            setPassword(saved.password || '');
         }
     }, []);
 
     const handleLogin = async () => {
-        const currentUrl = urlRef.current?.value || '';
-        const currentUsername = usernameRef.current?.value || '';
-        const currentPassword = passwordRef.current?.value || '';
-
-        if (!currentUrl || !currentUsername || !currentPassword) {
+        if (!url || !username || !password) {
             setError('Preencha todos os campos');
             return;
         }
@@ -51,10 +50,10 @@ export function Login({ onLoginSuccess }: LoginProps) {
         setError('');
 
         try {
-            await api.authenticate(currentUrl, currentUsername, currentPassword);
+            await api.authenticate(url, username, password);
             localStorage.setItem('includeTV', includeTV.toString());
             localStorage.setItem('includeVOD', includeVOD.toString());
-            storage.saveCredentials({ url: currentUrl, username: currentUsername, password: currentPassword });
+            storage.saveCredentials({ url, username, password });
             onLoginSuccess();
         } catch (err: any) {
             if (err?.message?.includes('Invalid URL') || err?.message?.includes('invalid url')) {
@@ -176,6 +175,8 @@ export function Login({ onLoginSuccess }: LoginProps) {
                             <input
                                 ref={urlRef}
                                 type="text"
+                                value={url}
+                                onChange={(e) => setUrl(e.target.value)}
                                 onBlur={() => setEditingField(null)}
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter' || e.keyCode === 13 || e.keyCode === 29443) {
@@ -205,6 +206,8 @@ export function Login({ onLoginSuccess }: LoginProps) {
                             <input
                                 ref={usernameRef}
                                 type="text"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
                                 onBlur={() => setEditingField(null)}
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter' || e.keyCode === 13 || e.keyCode === 29443) {
@@ -232,7 +235,10 @@ export function Login({ onLoginSuccess }: LoginProps) {
                             <FaLock size={18} />
                             <input
                                 ref={passwordRef}
-                                type="password"
+                                type="text"
+                                style={{ WebkitTextSecurity: 'disc' } as any}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
                                 onBlur={() => setEditingField(null)}
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter' || e.keyCode === 13 || e.keyCode === 29443) {
