@@ -210,6 +210,12 @@
     outline: none;
 }
 
+/* Tizen-compatible password masking (type=text with CSS disc) */
+.login-password-input {
+    -webkit-text-security: disc;
+    text-security: disc;
+}
+
 .login-input-wrap input::placeholder {
     color: rgba(255, 255, 255, 0.3);
 }
@@ -297,9 +303,26 @@
 /* Buttons */
 .login-buttons {
     display: flex;
-    gap: 20px;
+    gap: 12px;
     padding-top: 16px;
     margin-top: 8px;
+    flex-wrap: wrap;
+}
+
+.login-btn-lang {
+    background: rgba(99, 102, 241, 0.15);
+    color: #a5b4fc;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    flex: 0 0 auto;
+    min-width: 80px;
+}
+
+.login-btn-lang:hover:not(:disabled),
+.login-btn-lang.focused {
+    background: rgba(99, 102, 241, 0.25);
+    border-color: rgba(99, 102, 241, 0.6);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
 }
 
 .login-btn {

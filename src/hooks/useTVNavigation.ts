@@ -51,13 +51,16 @@ export function useTVNavigation(options: UseTVNavigationOptions = {}) {
         const key = event.key || String(event.keyCode);
 
         // Ignore events if user is currently focused on an input/textarea
-        // This allows the native TV keyboard (IME) to handle Backspace, Left, Right and Enter
+        // This allows the native TV keyboard (IME) to handle Backspace, Left, Right, etc.
         const target = event.target as HTMLElement;
         if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
             // If the user presses the 'Return' / 'Back' button on the TV remote while editing, 
             // we should blur the input to hide the virtual keyboard and restore TV navigation.
-            // 10009 (Tizen), 461 (WebOS), XF86Back (Generic)
-            if (key === '10009' || key === '461' || key === 'XF86Back') {
+            // 10009 (Tizen Back), 461 (WebOS Back), XF86Back (Generic), Escape
+            // Also handle keyCode 8 (Backspace) ONLY when input value is empty (to exit editing)
+            if (key === '10009' || key === '461' || key === 'XF86Back' || key === 'Escape') {
+                event.preventDefault();
+                event.stopPropagation();
                 target.blur();
             }
             return;

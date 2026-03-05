@@ -1,19 +1,23 @@
 // Login Page - Premium design with full TV navigation
-import { useState, useRef, useEffect } from 'react';
-import { FaTv, FaServer, FaUser, FaLock, FaSignInAlt, FaStar, FaArrowLeft } from 'react-icons/fa';
+// Tizen-compatible: no readOnly, no type=password (uses CSS masking)
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { FaTv, FaServer, FaUser, FaLock, FaSignInAlt, FaStar, FaArrowLeft, FaGlobe } from 'react-icons/fa';
 import { api } from '../services/api';
 import { storage } from '../services/storage';
 import { useTVNavigation } from '../hooks/useTVNavigation';
+import { useTranslation } from '../hooks/useTranslation';
 import './Login.css';
 
 interface LoginProps {
     onLoginSuccess: () => void;
+    onLanguageSelect?: () => void;
 }
 
-// Navigation order: 0=url, 1=username, 2=password, 3=includeTV, 4=includeVOD, 5=back, 6=submit
-const MAX_FOCUS = 6;
+// Navigation order: 0=url, 1=username, 2=password, 3=includeTV, 4=includeVOD, 5=lang, 6=back, 7=submit
+const MAX_FOCUS = 7;
 
-export function Login({ onLoginSuccess }: LoginProps) {
+export function Login({ onLoginSuccess, onLanguageSelect }: LoginProps) {
+    const { t } = useTranslation();
     const [url, setUrl] = useState('');
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
@@ -22,13 +26,11 @@ export function Login({ onLoginSuccess }: LoginProps) {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [focusedField, setFocusedField] = useState(0);
-    const [editingField, setEditingField] = useState<number | null>(null); // Which input is being edited
+    const [editingField, setEditingField] = useState<number | null>(null);
 
     const urlRef = useRef<HTMLInputElement>(null);
     const usernameRef = useRef<HTMLInputElement>(null);
     const passwordRef = useRef<HTMLInputElement>(null);
-    const backBtnRef = useRef<HTMLButtonElement>(null);
-    const submitBtnRef = useRef<HTMLButtonElement>(null);
 
     // Check for saved credentials on mount
     useEffect(() => {
@@ -38,6 +40,38 @@ export function Login({ onLoginSuccess }: LoginProps) {
             setUsername(saved.username || '');
             setPassword(saved.password || '');
         }
+    }, []);
+
+    // Listen for focus/blur on inputs to track editing state reliably
+    useEffect(() => {
+        const inputs = [urlRef.current, usernameRef.current, passwordRef.current];
+
+        const handleFocus = (e: FocusEvent) => {
+            const target = e.target as HTMLInputElement;
+            if (target === urlRef.current) setEditingField(0);
+            else if (target === usernameRef.current) setEditingField(1);
+            else if (target === passwordRef.current) setEditingField(2);
+        };
+
+        const handleBlur = () => {
+            setEditingField(null);
+        };
+
+        inputs.forEach(input => {
+            if (input) {
+                input.addEventListener('focus', handleFocus);
+                input.addEventListener('blur', handleBlur);
+            }
+        });
+
+        return () => {
+            inputs.forEach(input => {
+                if (input) {
+                    input.removeEventListener('focus', handleFocus);
+                    input.removeEventListener('blur', handleBlur);
+                }
+            });
+        };
     }, []);
 
     const handleLogin = async () => {
@@ -76,43 +110,63 @@ export function Login({ onLoginSuccess }: LoginProps) {
         window.location.reload();
     };
 
-    const handleEnter = () => {
+    // Blur all inputs - used when closing keyboard
+    const blurAllInputs = useCallback(() => {
+        urlRef.current?.blur();
+        usernameRef.current?.blur();
+        passwordRef.current?.blur();
+    }, []);
+
+    const handleEnter = useCallback(() => {
         // If editing an input, blur it (close keyboard)
         if (editingField !== null) {
-            setEditingField(null);
-            urlRef.current?.blur();
-            usernameRef.current?.blur();
-            passwordRef.current?.blur();
+            blurAllInputs();
             return;
         }
 
         // Handle action based on focused field
         switch (focusedField) {
             case 0: // URL input - start editing
+                urlRef.current?.focus();
+                break;
             case 1: // Username input
+                usernameRef.current?.focus();
+                break;
             case 2: // Password input
-                setEditingField(focusedField);
-                if (focusedField === 0) urlRef.current?.focus();
-                if (focusedField === 1) usernameRef.current?.focus();
-                if (focusedField === 2) passwordRef.current?.focus();
+                passwordRef.current?.focus();
                 break;
             case 3: // Include TV checkbox
-                setIncludeTV(!includeTV);
+                setIncludeTV(v => !v);
                 break;
             case 4: // Include VOD checkbox
-                setIncludeVOD(!includeVOD);
+                setIncludeVOD(v => !v);
                 break;
-            case 5: // Back button
+            case 5: // Language button
+                if (onLanguageSelect) onLanguageSelect();
+                break;
+            case 6: // Back button
                 handleBack();
                 break;
-            case 6: // Submit button
+            case 7: // Submit button
                 handleLogin();
                 break;
         }
-    };
+    }, [editingField, focusedField, blurAllInputs, onLanguageSelect]);
+
+    const handleBackAction = useCallback(() => {
+        // If editing, just blur (close keyboard)
+        if (editingField !== null) {
+            blurAllInputs();
+            return;
+        }
+        handleBack();
+    }, [editingField, blurAllInputs]);
 
     useTVNavigation({
         onNavigate: (direction) => {
+            // Don't navigate if editing an input
+            if (editingField !== null) return;
+
             if (direction === 'up') {
                 setFocusedField(Math.max(0, focusedField - 1));
             }
@@ -120,17 +174,18 @@ export function Login({ onLoginSuccess }: LoginProps) {
                 setFocusedField(Math.min(MAX_FOCUS, focusedField + 1));
             }
             if (direction === 'left' && focusedField >= 5) {
-                setFocusedField(5); // Back button
+                setFocusedField(5);
             }
             if (direction === 'right' && focusedField >= 5) {
-                setFocusedField(6); // Submit button
+                setFocusedField(Math.min(MAX_FOCUS, focusedField + 1));
             }
         },
         onEnter: handleEnter,
-        onBack: () => {
-            handleBack();
-        },
+        onBack: handleBackAction,
     });
+
+    // Get current language label
+    const currentLang = storage.getSettings().language === 'en' ? 'EN' : 'PT-BR';
 
     return (
         <div className="login-container">
@@ -166,10 +221,10 @@ export function Login({ onLoginSuccess }: LoginProps) {
 
                     {/* URL Input */}
                     <div className="login-field">
-                        <label>Endereço do Servidor</label>
+                        <label>{t('login_server' as any) || 'Endereço do Servidor'}</label>
                         <div
                             className={`login-input-wrap ${focusedField === 0 ? 'focused' : ''} ${editingField === 0 ? 'editing' : ''}`}
-                            onClick={() => { setFocusedField(0); setEditingField(0); urlRef.current?.focus(); }}
+                            onClick={() => { setFocusedField(0); urlRef.current?.focus(); }}
                         >
                             <FaServer size={18} />
                             <input
@@ -177,17 +232,12 @@ export function Login({ onLoginSuccess }: LoginProps) {
                                 type="text"
                                 value={url}
                                 onChange={(e) => setUrl(e.target.value)}
-                                onBlur={() => setEditingField(null)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' || e.keyCode === 13 || e.keyCode === 29443) {
-                                        setEditingField(null);
-                                        e.currentTarget.blur();
-                                    }
-                                }}
                                 placeholder="http://example.com:8080"
                                 disabled={loading}
-                                readOnly={editingField !== 0}
                                 tabIndex={-1}
+                                autoComplete="off"
+                                autoCorrect="off"
+                                spellCheck={false}
                             />
                             {focusedField === 0 && editingField !== 0 && (
                                 <span className="login-input-hint">OK para editar</span>
@@ -197,10 +247,10 @@ export function Login({ onLoginSuccess }: LoginProps) {
 
                     {/* Username Input */}
                     <div className="login-field">
-                        <label>Usuário</label>
+                        <label>{t('login_user' as any) || 'Usuário'}</label>
                         <div
                             className={`login-input-wrap ${focusedField === 1 ? 'focused' : ''} ${editingField === 1 ? 'editing' : ''}`}
-                            onClick={() => { setFocusedField(1); setEditingField(1); usernameRef.current?.focus(); }}
+                            onClick={() => { setFocusedField(1); usernameRef.current?.focus(); }}
                         >
                             <FaUser size={18} />
                             <input
@@ -208,16 +258,11 @@ export function Login({ onLoginSuccess }: LoginProps) {
                                 type="text"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
-                                onBlur={() => setEditingField(null)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' || e.keyCode === 13 || e.keyCode === 29443) {
-                                        setEditingField(null);
-                                        e.currentTarget.blur();
-                                    }
-                                }}
                                 disabled={loading}
-                                readOnly={editingField !== 1}
                                 tabIndex={-1}
+                                autoComplete="off"
+                                autoCorrect="off"
+                                spellCheck={false}
                             />
                             {focusedField === 1 && editingField !== 1 && (
                                 <span className="login-input-hint">OK para editar</span>
@@ -225,30 +270,25 @@ export function Login({ onLoginSuccess }: LoginProps) {
                         </div>
                     </div>
 
-                    {/* Password Input */}
+                    {/* Password Input - type="text" with CSS masking for Tizen compatibility */}
                     <div className="login-field">
-                        <label>Senha</label>
+                        <label>{t('login_password' as any) || 'Senha'}</label>
                         <div
                             className={`login-input-wrap ${focusedField === 2 ? 'focused' : ''} ${editingField === 2 ? 'editing' : ''}`}
-                            onClick={() => { setFocusedField(2); setEditingField(2); passwordRef.current?.focus(); }}
+                            onClick={() => { setFocusedField(2); passwordRef.current?.focus(); }}
                         >
                             <FaLock size={18} />
                             <input
                                 ref={passwordRef}
                                 type="text"
-                                style={{ WebkitTextSecurity: 'disc' } as any}
+                                className="login-password-input"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                onBlur={() => setEditingField(null)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' || e.keyCode === 13 || e.keyCode === 29443) {
-                                        setEditingField(null);
-                                        e.currentTarget.blur();
-                                    }
-                                }}
                                 disabled={loading}
-                                readOnly={editingField !== 2}
                                 tabIndex={-1}
+                                autoComplete="off"
+                                autoCorrect="off"
+                                spellCheck={false}
                             />
                             {focusedField === 2 && editingField !== 2 && (
                                 <span className="login-input-hint">OK para editar</span>
@@ -283,22 +323,32 @@ export function Login({ onLoginSuccess }: LoginProps) {
 
                     {/* Buttons */}
                     <div className="login-buttons">
+                        {/* Language Button */}
                         <button
-                            ref={backBtnRef}
+                            type="button"
+                            onClick={() => onLanguageSelect?.()}
+                            className={`login-btn login-btn-lang ${focusedField === 5 ? 'focused' : ''}`}
+                            disabled={loading}
+                            tabIndex={-1}
+                        >
+                            <FaGlobe size={18} />
+                            <span>{currentLang}</span>
+                        </button>
+
+                        <button
                             type="button"
                             onClick={handleBack}
-                            className={`login-btn login-btn-secondary ${focusedField === 5 ? 'focused' : ''}`}
+                            className={`login-btn login-btn-secondary ${focusedField === 6 ? 'focused' : ''}`}
                             disabled={loading}
                             tabIndex={-1}
                         >
                             <FaArrowLeft size={18} />
-                            <span>Voltar</span>
+                            <span>{t('welcome_back_btn' as any) || 'Voltar'}</span>
                         </button>
 
                         <button
-                            ref={submitBtnRef}
                             type="submit"
-                            className={`login-btn login-btn-primary ${focusedField === 6 ? 'focused' : ''}`}
+                            className={`login-btn login-btn-primary ${focusedField === 7 ? 'focused' : ''}`}
                             disabled={loading}
                             tabIndex={-1}
                         >
@@ -310,7 +360,7 @@ export function Login({ onLoginSuccess }: LoginProps) {
                             ) : (
                                 <>
                                     <FaSignInAlt size={18} />
-                                    <span>Entrar</span>
+                                    <span>{t('login_submit' as any) || 'Entrar'}</span>
                                 </>
                             )}
                         </button>

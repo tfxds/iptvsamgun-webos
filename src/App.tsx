@@ -46,12 +46,6 @@ function App() {
   }, []);
 
   const checkAuth = async () => {
-    // FOR USER TEST: Clear storage once to test language screen on TV
-    if (!localStorage.getItem('wiped_v5')) {
-      localStorage.clear();
-      localStorage.setItem('wiped_v5', 'true');
-    }
-
     if (!storage.hasSettings()) {
       setAuthState('languageSelection');
       return;
@@ -122,7 +116,7 @@ function App() {
 
   // Login screen
   if (authState === 'login') {
-    return <Login onLoginSuccess={handleLoginSuccess} />;
+    return <Login onLoginSuccess={handleLoginSuccess} onLanguageSelect={() => setAuthState('languageSelection')} />;
   }
 
   // Main app with sidebar
