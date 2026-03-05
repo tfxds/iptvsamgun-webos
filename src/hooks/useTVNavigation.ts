@@ -48,6 +48,13 @@ export function useTVNavigation(options: UseTVNavigationOptions = {}) {
     const handleKeyDown = useCallback((event: KeyboardEvent) => {
         if (!enabled) return;
 
+        // Ignore events if user is currently focused on an input/textarea
+        // This allows the native TV keyboard (IME) to handle Backspace, Left, Right and Enter
+        const target = event.target as HTMLElement;
+        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
+            return;
+        }
+
         const key = event.key || String(event.keyCode);
 
         // Navigation

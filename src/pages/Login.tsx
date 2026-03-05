@@ -112,7 +112,7 @@ export function Login({ onLoginSuccess }: LoginProps) {
     };
 
     useTVNavigation({
-        onNavigate: editingField !== null ? undefined : (direction) => {
+        onNavigate: (direction) => {
             if (direction === 'up') {
                 setFocusedField(Math.max(0, focusedField - 1));
             }
@@ -127,9 +127,7 @@ export function Login({ onLoginSuccess }: LoginProps) {
             }
         },
         onEnter: handleEnter,
-        // Don't capture Back key when editing - let it work as backspace
-        onBack: editingField !== null ? undefined : () => {
-            // Go back to welcome
+        onBack: () => {
             handleBack();
         },
     });
@@ -179,6 +177,13 @@ export function Login({ onLoginSuccess }: LoginProps) {
                                 type="text"
                                 value={url}
                                 onChange={(e) => setUrl(e.target.value)}
+                                onBlur={() => setEditingField(null)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.keyCode === 13 || e.keyCode === 29443) {
+                                        setEditingField(null);
+                                        e.currentTarget.blur();
+                                    }
+                                }}
                                 placeholder="http://example.com:8080"
                                 disabled={loading}
                                 readOnly={editingField !== 0}
@@ -203,6 +208,13 @@ export function Login({ onLoginSuccess }: LoginProps) {
                                 type="text"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
+                                onBlur={() => setEditingField(null)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.keyCode === 13 || e.keyCode === 29443) {
+                                        setEditingField(null);
+                                        e.currentTarget.blur();
+                                    }
+                                }}
                                 disabled={loading}
                                 readOnly={editingField !== 1}
                                 tabIndex={-1}
@@ -226,6 +238,13 @@ export function Login({ onLoginSuccess }: LoginProps) {
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
+                                onBlur={() => setEditingField(null)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.keyCode === 13 || e.keyCode === 29443) {
+                                        setEditingField(null);
+                                        e.currentTarget.blur();
+                                    }
+                                }}
                                 disabled={loading}
                                 readOnly={editingField !== 2}
                                 tabIndex={-1}
