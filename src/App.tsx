@@ -11,12 +11,13 @@ import { Movies } from './pages/Movies';
 import { Series } from './pages/Series';
 import { Favorites } from './pages/Favorites';
 import { MyList } from './pages/MyList';
+import { LanguageSelection } from './pages/LanguageSelection';
 import { Sidebar } from './components/Sidebar';
 import { ProfileManager } from './components/ProfileManager';
 import './index.css';
 
 type Page = 'home' | 'live' | 'movies' | 'series' | 'mylist' | 'favorites' | 'settings';
-type AuthState = 'loading' | 'welcome' | 'login' | 'authenticated';
+type AuthState = 'loading' | 'languageSelection' | 'welcome' | 'login' | 'authenticated';
 type FocusZone = 'sidebar' | 'content';
 
 // Context for focus zone management
@@ -45,6 +46,11 @@ function App() {
   }, []);
 
   const checkAuth = async () => {
+    if (!storage.hasSettings()) {
+      setAuthState('languageSelection');
+      return;
+    }
+
     try {
       const credentials = storage.getCredentials();
       if (credentials) {
@@ -96,6 +102,11 @@ function App() {
         <p className="app-loading-text">NeoStream</p>
       </div>
     );
+  }
+
+  // Language selection screen (first time user)
+  if (authState === 'languageSelection') {
+    return <LanguageSelection onComplete={checkAuth} />;
   }
 
   // Welcome screen (no playlist configured)

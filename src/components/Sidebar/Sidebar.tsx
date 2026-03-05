@@ -3,6 +3,8 @@
 import { useState, useMemo } from 'react';
 import { useTVNavigation } from '../../hooks/useTVNavigation';
 import { useFocusZone } from '../../App';
+import { useTranslation } from '../../hooks/useTranslation';
+import type { TranslationKey } from '../../i18n';
 import './Sidebar.css';
 
 interface SidebarProps {
@@ -34,6 +36,7 @@ const allMenuItems: MenuItem[] = [
 
 export function Sidebar({ activeItem, onItemSelect, onLogout, onProfileClick, focused = false }: SidebarProps) {
     const { setFocusZone } = useFocusZone();
+    const { t } = useTranslation();
 
     // Get include preferences from localStorage
     const includeTV = localStorage.getItem('includeTV') !== 'false';
@@ -157,7 +160,7 @@ export function Sidebar({ activeItem, onItemSelect, onLogout, onProfileClick, fo
                                 {/* Tooltip */}
                                 <div className={`tooltip ${isFocused || isHovered ? 'visible' : ''}`}>
                                     <span className="tooltip-emoji">{item.emoji}</span>
-                                    <span className="tooltip-label">{item.label}</span>
+                                    <span className="tooltip-label">{t(`sidebar_${item.id}` as TranslationKey)}</span>
                                 </div>
                             </button>
                         );
@@ -191,7 +194,7 @@ export function Sidebar({ activeItem, onItemSelect, onLogout, onProfileClick, fo
                         {/* Profile Tooltip */}
                         <div className={`tooltip ${(focused && focusedIndex === menuItems.length) || hoveredItem === 'profile' ? 'visible' : ''}`}>
                             <span className="tooltip-emoji">👤</span>
-                            <span className="tooltip-label">Perfil</span>
+                            <span className="tooltip-label">{t('sidebar_profile' as TranslationKey)}</span>
                         </div>
                     </button>
 
@@ -212,7 +215,7 @@ export function Sidebar({ activeItem, onItemSelect, onLogout, onProfileClick, fo
                         {/* Logout Tooltip */}
                         <div className={`tooltip danger ${(focused && focusedIndex === menuItems.length + 1) || hoveredItem === 'logout' ? 'visible' : ''}`}>
                             <span className="tooltip-emoji">🚪</span>
-                            <span className="tooltip-label">Sair</span>
+                            <span className="tooltip-label">{t('sidebar_logout')}</span>
                         </div>
                     </button>
                 </div>

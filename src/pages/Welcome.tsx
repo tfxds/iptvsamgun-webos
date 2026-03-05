@@ -2,6 +2,7 @@
 import { useRef, useEffect } from 'react';
 import { FaTv, FaPlus, FaStar } from 'react-icons/fa';
 import { useTVNavigation } from '../hooks/useTVNavigation';
+import { useTranslation } from '../hooks/useTranslation';
 import './Welcome.css';
 
 interface WelcomeProps {
@@ -9,6 +10,7 @@ interface WelcomeProps {
 }
 
 export function Welcome({ onGoToLogin }: WelcomeProps) {
+    const { t } = useTranslation();
     const buttonRef = useRef<HTMLButtonElement>(null);
 
     // Focus the button on mount
@@ -52,14 +54,14 @@ export function Welcome({ onGoToLogin }: WelcomeProps) {
                     <h1 className="welcome-title">NeoStream</h1>
                     <div className="welcome-badge">
                         <FaStar size={12} />
-                        <span style={{ marginLeft: '6px' }}>IPTV Player</span>
+                        <span style={{ marginLeft: '6px' }}>{t('welcome_subtitle')}</span>
                     </div>
                 </div>
 
                 {/* Message */}
                 <div className="welcome-message">
-                    <h2>Nenhuma playlist configurada</h2>
-                    <p>Adicione uma playlist do seu provedor IPTV para começar a assistir</p>
+                    <h2>{t('welcome_no_playlist')}</h2>
+                    <p>{t('welcome_add_instruction')}</p>
                 </div>
 
                 {/* Action Card - Always focused since it's the only button */}
@@ -75,20 +77,20 @@ export function Welcome({ onGoToLogin }: WelcomeProps) {
                             <FaPlus size={24} />
                         </div>
                         <div className="welcome-card-text">
-                            <span className="welcome-card-title">Adicionar Playlist</span>
-                            <span className="welcome-card-desc">Conecte sua conta IPTV</span>
+                            <span className="welcome-card-title">{t('welcome_login_button')}</span>
+                            <span className="welcome-card-desc">{t('welcome_login_desc')}</span>
                         </div>
                     </button>
                 </div>
 
                 {/* Footer */}
                 <p className="welcome-footer">
-                    NeoStream não fornece conteúdo. Use sua própria assinatura IPTV.
+                    {t('welcome_disclaimer')}
                 </p>
 
                 {/* Navigation hint for TV */}
                 <div className="welcome-hint">
-                    <span>Pressione OK para continuar</span>
+                    <span>{t('welcome_hint')}</span>
                 </div>
             </div>
         </div>

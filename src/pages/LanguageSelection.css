@@ -1,0 +1,160 @@
+.language-selection-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    width: 100vw;
+    background-color: var(--color-background);
+    background-image:
+        radial-gradient(circle at 15% 50%, rgba(var(--color-primary-rgb), 0.1), transparent 25%),
+        radial-gradient(circle at 85% 30%, rgba(var(--color-secondary-rgb), 0.1), transparent 25%);
+    overflow: hidden;
+    position: relative;
+}
+
+.language-selection-glass {
+    position: relative;
+    width: 100%;
+    max-width: 600px;
+    padding: 3rem;
+    background: rgba(30, 30, 40, 0.4);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+    z-index: 10;
+    animation: fadeUp 0.8s var(--transition-bounce) both;
+}
+
+/* Animated fluid orbs behind the glass */
+.language-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    z-index: -1;
+    opacity: 0.6;
+    animation: floatOrb 10s ease-in-out infinite alternate;
+}
+
+.orb-1 {
+    width: 250px;
+    height: 250px;
+    background: var(--color-primary);
+    top: -50px;
+    left: -50px;
+}
+
+.orb-2 {
+    width: 300px;
+    height: 300px;
+    background: var(--color-secondary);
+    bottom: -100px;
+    right: -50px;
+    animation-delay: -5s;
+}
+
+.language-selection-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3rem;
+    position: relative;
+    z-index: 2;
+}
+
+.language-selection-header {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.language-logo {
+    color: var(--color-primary);
+    filter: drop-shadow(0 0 15px rgba(var(--color-primary-rgb), 0.5));
+    margin-bottom: 0.5rem;
+}
+
+.language-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: white;
+    margin: 0;
+    letter-spacing: -0.02em;
+}
+
+.language-subtitle {
+    font-size: 1.25rem;
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+.language-options {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 1rem;
+}
+
+.language-btn {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    width: 100%;
+    padding: 1.25rem 2rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-md);
+    color: white;
+    font-size: 1.25rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    outline: none;
+}
+
+.language-icon {
+    font-size: 2rem;
+}
+
+.language-btn:hover,
+.language-btn.focused {
+    background: rgba(var(--color-primary-rgb), 0.15);
+    border-color: var(--color-primary);
+    transform: scale(1.02);
+    box-shadow:
+        0 10px 25px -5px rgba(0, 0, 0, 0.3),
+        0 0 20px rgba(var(--color-primary-rgb), 0.3);
+}
+
+.language-btn.focused {
+    /* Give it a stronger focus ring suitable for TV */
+    border-width: 2px;
+    outline: 2px solid transparent;
+    /* Fallback */
+}
+
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes floatOrb {
+    0% {
+        transform: translate(0, 0) scale(1);
+    }
+
+    100% {
+        transform: translate(20px, -20px) scale(1.1);
+    }
+}

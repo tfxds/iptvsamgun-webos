@@ -122,6 +122,10 @@ class StorageService {
     }
 
     // Settings
+    hasSettings(): boolean {
+        return localStorage.getItem(STORAGE_KEYS.SETTINGS) !== null;
+    }
+
     getSettings(): Settings {
         const data = localStorage.getItem(STORAGE_KEYS.SETTINGS);
         return data ? { ...DEFAULT_SETTINGS, ...JSON.parse(data) } : DEFAULT_SETTINGS;
