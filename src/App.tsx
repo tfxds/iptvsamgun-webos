@@ -46,6 +46,12 @@ function App() {
   }, []);
 
   const checkAuth = async () => {
+    // FOR USER TEST: Clear storage once per session so they test language 
+    if (!sessionStorage.getItem('wiped_once')) {
+      storage.clearAll();
+      sessionStorage.setItem('wiped_once', 'true');
+    }
+
     if (!storage.hasSettings()) {
       setAuthState('languageSelection');
       return;
