@@ -52,38 +52,35 @@ export function useTVNavigation(options: UseTVNavigationOptions = {}) {
 
         // Navigation
         if (matchKey(key, TV_KEYS.UP)) {
-            event.preventDefault();
-            onNavigate?.('up');
+            if (onNavigate) { event.preventDefault(); onNavigate('up'); }
         } else if (matchKey(key, TV_KEYS.DOWN)) {
-            event.preventDefault();
-            onNavigate?.('down');
+            if (onNavigate) { event.preventDefault(); onNavigate('down'); }
         } else if (matchKey(key, TV_KEYS.LEFT)) {
-            event.preventDefault();
-            onNavigate?.('left');
+            if (onNavigate) { event.preventDefault(); onNavigate('left'); }
         } else if (matchKey(key, TV_KEYS.RIGHT)) {
-            event.preventDefault();
-            onNavigate?.('right');
+            if (onNavigate) { event.preventDefault(); onNavigate('right'); }
         }
         // Actions
         else if (matchKey(key, TV_KEYS.ENTER)) {
-            event.preventDefault();
-            onEnter?.();
-            onAction?.('enter');
+            if (onEnter || onAction) {
+                event.preventDefault();
+                onEnter?.();
+                onAction?.('enter');
+            }
         } else if (matchKey(key, TV_KEYS.BACK)) {
-            event.preventDefault();
-            onBack?.();
-            onAction?.('back');
+            if (onBack || onAction) {
+                event.preventDefault();
+                onBack?.();
+                onAction?.('back');
+            }
         }
         // Media
         else if (matchKey(key, TV_KEYS.PLAY)) {
-            event.preventDefault();
-            onAction?.('play');
+            if (onAction) { event.preventDefault(); onAction('play'); }
         } else if (matchKey(key, TV_KEYS.PAUSE)) {
-            event.preventDefault();
-            onAction?.('pause');
+            if (onAction) { event.preventDefault(); onAction('pause'); }
         } else if (matchKey(key, TV_KEYS.STOP)) {
-            event.preventDefault();
-            onAction?.('stop');
+            if (onAction) { event.preventDefault(); onAction('stop'); }
         }
     }, [enabled, onNavigate, onAction, onBack, onEnter]);
 

@@ -112,10 +112,7 @@ export function Login({ onLoginSuccess }: LoginProps) {
     };
 
     useTVNavigation({
-        onNavigate: (direction) => {
-            // Don't navigate if editing an input
-            if (editingField !== null) return;
-
+        onNavigate: editingField !== null ? undefined : (direction) => {
             if (direction === 'up') {
                 setFocusedField(Math.max(0, focusedField - 1));
             }
