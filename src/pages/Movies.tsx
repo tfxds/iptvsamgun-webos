@@ -80,9 +80,10 @@ export function Movies() {
     }, []);
 
     // Filter streams
-    const filteredStreams = streams.filter(stream => {
-        const matchesSearch = stream.name.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesCategory = selectedCategory === 'all' || stream.category_id === selectedCategory;
+    const filteredStreams = (Array.isArray(streams) ? streams : []).filter((stream: any) => {
+        const streamName = stream?.name || '';
+        const matchesSearch = streamName.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesCategory = selectedCategory === 'all' || stream?.category_id === selectedCategory;
         return matchesSearch && matchesCategory;
     });
 
@@ -150,7 +151,14 @@ export function Movies() {
                     setFocusedMovieIndex(prev => Math.max(0, prev - cols));
                 }
             } else if (direction === 'down') {
-                setFocusedMovieIndex(prev => Math.min(totalMovies - 1, prev + cols));
+                setFocusedMovieIndex(prev => {
+                    const next = Math.min(totalMovies - 1, prev + cols);
+                    // If we're getting close to the visible limit, load more
+                    if (next >= visibleCount - 10) {
+                        setVisibleCount(current => Math.min(current + cols * 4, totalMovies));
+                    }
+                    return next;
+                });
             } else if (direction === 'left') {
                 if (currentCol === 0) {
                     // At first column - go to sidebar
@@ -159,10 +167,38 @@ export function Movies() {
                     setFocusedMovieIndex(prev => Math.max(0, prev - 1));
                 }
             } else if (direction === 'right') {
-                setFocusedMovieIndex(prev => Math.min(totalMovies - 1, prev + 1));
+                setFocusedMovieIndex(prev => {
+                    const next = Math.min(totalMovies - 1, prev + 1);
+                    if (next >= visibleCount - 5) {
+                        setVisibleCount(current => Math.min(current + cols * 4, totalMovies));
+                    }
+                    return next;
+                });
             }
         }
     };
+
+    // Scroll selected item into view when navigating with TV remote
+    useEffect(() => {
+        if (focusArea === 'movies' && focusZone === 'content') {
+            const container = scrollContainerRef.current;
+            const focusedItem = container?.querySelector('.movie-card.tv-focused') as HTMLElement;
+            
+            if (container && focusedItem) {
+                const containerRect = container.getBoundingClientRect();
+                const itemRect = focusedItem.getBoundingClientRect();
+                
+                // If item is below the view
+                if (itemRect.bottom > containerRect.bottom) {
+                    container.scrollTop += (itemRect.bottom - containerRect.bottom) + 20;
+                }
+                // If item is above the view
+                else if (itemRect.top < containerRect.top) {
+                    container.scrollTop -= (containerRect.top - itemRect.top) + 20;
+                }
+            }
+        }
+    }, [focusedMovieIndex, focusArea, focusZone]);
 
     const handleEnter = () => {
         if (focusArea === 'categories') {
@@ -331,7 +367,7 @@ export function Movies() {
                                         <div className="movie-rating">⭐ {movie.rating}</div>
                                     )}
                                 </div>
-                                <div className="movie-title">{movie.name}</div>
+                                <div className="movie-title">{movie?.name || 'Filme Sem Nome'}</div>
                             </div>
                         ))}
                     </div>

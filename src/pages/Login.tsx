@@ -76,7 +76,7 @@ export function Login({ onLoginSuccess, onLanguageSelect }: LoginProps) {
 
     const handleLogin = async () => {
         if (!url || !username || !password) {
-            setError('Preencha todos os campos');
+            setError(t('login_error_empty'));
             return;
         }
 
@@ -91,15 +91,15 @@ export function Login({ onLoginSuccess, onLanguageSelect }: LoginProps) {
             onLoginSuccess();
         } catch (err: any) {
             if (err?.message?.includes('Invalid URL') || err?.message?.includes('invalid url')) {
-                setError('URL do servidor inválida');
+                setError(t('login_error_invalid_url'));
             } else if (err?.message?.includes('fetch') || err?.message?.includes('ENOTFOUND') || err?.message?.includes('ECONNREFUSED')) {
-                setError('Não foi possível conectar ao servidor');
+                setError(t('login_error_connection'));
             } else if (err?.message?.includes('401') || err?.message?.includes('Unauthorized') || err?.message?.includes('authentication')) {
-                setError('Usuário ou senha incorretos');
+                setError(t('login_error_auth'));
             } else if (err?.message?.includes('timeout')) {
-                setError('Tempo limite excedido');
+                setError(t('login_error_timeout'));
             } else {
-                setError(err.message || 'Erro ao conectar');
+                setError(err.message || t('login_error_generic'));
             }
         } finally {
             setLoading(false);
@@ -211,7 +211,7 @@ export function Login({ onLoginSuccess, onLanguageSelect }: LoginProps) {
                     </div>
                 </div>
 
-                <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }} className="login-form">
+                <form onSubmit={(e) => { e.preventDefault(); blurAllInputs(); }} className="login-form">
                     {error && (
                         <div className="login-error">
                             <span>❌</span>
@@ -221,7 +221,7 @@ export function Login({ onLoginSuccess, onLanguageSelect }: LoginProps) {
 
                     {/* URL Input */}
                     <div className="login-field">
-                        <label>{t('login_server' as any) || 'Endereço do Servidor'}</label>
+                        <label>{t('login_server')}</label>
                         <div
                             className={`login-input-wrap ${focusedField === 0 ? 'focused' : ''} ${editingField === 0 ? 'editing' : ''}`}
                             onClick={() => { setFocusedField(0); urlRef.current?.focus(); }}
@@ -240,14 +240,14 @@ export function Login({ onLoginSuccess, onLanguageSelect }: LoginProps) {
                                 spellCheck={false}
                             />
                             {focusedField === 0 && editingField !== 0 && (
-                                <span className="login-input-hint">OK para editar</span>
+                                <span className="login-input-hint">{t('login_hint_edit')}</span>
                             )}
                         </div>
                     </div>
 
                     {/* Username Input */}
                     <div className="login-field">
-                        <label>{t('login_user' as any) || 'Usuário'}</label>
+                        <label>{t('login_user')}</label>
                         <div
                             className={`login-input-wrap ${focusedField === 1 ? 'focused' : ''} ${editingField === 1 ? 'editing' : ''}`}
                             onClick={() => { setFocusedField(1); usernameRef.current?.focus(); }}
@@ -265,14 +265,14 @@ export function Login({ onLoginSuccess, onLanguageSelect }: LoginProps) {
                                 spellCheck={false}
                             />
                             {focusedField === 1 && editingField !== 1 && (
-                                <span className="login-input-hint">OK para editar</span>
+                                <span className="login-input-hint">{t('login_hint_edit')}</span>
                             )}
                         </div>
                     </div>
 
                     {/* Password Input - type="text" with CSS masking for Tizen compatibility */}
                     <div className="login-field">
-                        <label>{t('login_password' as any) || 'Senha'}</label>
+                        <label>{t('login_password')}</label>
                         <div
                             className={`login-input-wrap ${focusedField === 2 ? 'focused' : ''} ${editingField === 2 ? 'editing' : ''}`}
                             onClick={() => { setFocusedField(2); passwordRef.current?.focus(); }}
@@ -291,7 +291,7 @@ export function Login({ onLoginSuccess, onLanguageSelect }: LoginProps) {
                                 spellCheck={false}
                             />
                             {focusedField === 2 && editingField !== 2 && (
-                                <span className="login-input-hint">OK para editar</span>
+                                <span className="login-input-hint">{t('login_hint_edit')}</span>
                             )}
                         </div>
                     </div>
@@ -306,7 +306,7 @@ export function Login({ onLoginSuccess, onLanguageSelect }: LoginProps) {
                             <span className={`login-checkbox-mark ${includeTV ? 'checked' : ''}`}>
                                 {includeTV && '✓'}
                             </span>
-                            <span>Incluir canais de TV</span>
+                            <span>{t('login_include_tv')}</span>
                         </div>
 
                         <div
@@ -317,7 +317,7 @@ export function Login({ onLoginSuccess, onLanguageSelect }: LoginProps) {
                             <span className={`login-checkbox-mark ${includeVOD ? 'checked' : ''}`}>
                                 {includeVOD && '✓'}
                             </span>
-                            <span>Incluir VOD (Filmes e Séries)</span>
+                            <span>{t('login_include_vod')}</span>
                         </div>
                     </div>
 
@@ -343,11 +343,12 @@ export function Login({ onLoginSuccess, onLanguageSelect }: LoginProps) {
                             tabIndex={-1}
                         >
                             <FaArrowLeft size={18} />
-                            <span>{t('welcome_back_btn' as any) || 'Voltar'}</span>
+                            <span>{t('login_back')}</span>
                         </button>
 
                         <button
-                            type="submit"
+                            type="button"
+                            onClick={handleLogin}
                             className={`login-btn login-btn-primary ${focusedField === 7 ? 'focused' : ''}`}
                             disabled={loading}
                             tabIndex={-1}
@@ -355,12 +356,12 @@ export function Login({ onLoginSuccess, onLanguageSelect }: LoginProps) {
                             {loading ? (
                                 <>
                                     <div className="login-spinner" />
-                                    <span>Autenticando...</span>
+                                    <span>{t('login_authenticating')}</span>
                                 </>
                             ) : (
                                 <>
                                     <FaSignInAlt size={18} />
-                                    <span>{t('login_submit' as any) || 'Entrar'}</span>
+                                    <span>{t('login_submit')}</span>
                                 </>
                             )}
                         </button>
@@ -369,11 +370,11 @@ export function Login({ onLoginSuccess, onLanguageSelect }: LoginProps) {
 
                 {/* Navigation hint for TV */}
                 <div className="login-hint">
-                    <span>↑↓ Navegar</span>
+                    <span>{t('login_hint_nav')}</span>
                     <span>•</span>
-                    <span>OK Selecionar</span>
+                    <span>{t('login_hint_select')}</span>
                     <span>•</span>
-                    <span>← Voltar</span>
+                    <span>{t('login_hint_back')}</span>
                 </div>
             </div>
         </div>

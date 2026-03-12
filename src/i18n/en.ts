@@ -14,6 +14,26 @@ export const en = {
     welcome_disclaimer: "NeoStream does not provide any content. Use your own IPTV subscription.",
     welcome_hint: "Press OK to continue",
 
+    // Login
+    login_server: "Server Address",
+    login_user: "Username",
+    login_password: "Password",
+    login_submit: "Sign In",
+    login_authenticating: "Authenticating...",
+    login_back: "Back",
+    login_include_tv: "Include TV channels",
+    login_include_vod: "Include VOD (Movies & Series)",
+    login_hint_edit: "OK to edit",
+    login_hint_nav: "↑↓ Navigate",
+    login_hint_select: "OK Select",
+    login_hint_back: "← Back",
+    login_error_empty: "Please fill in all fields",
+    login_error_invalid_url: "Invalid server URL",
+    login_error_connection: "Could not connect to server",
+    login_error_auth: "Invalid username or password",
+    login_error_timeout: "Connection timed out",
+    login_error_generic: "Connection error",
+
     // Sidebar
     sidebar_home: "Home",
     sidebar_live: "Live TV",
@@ -22,5 +42,6 @@ export const en = {
     sidebar_mylist: "My List",
     sidebar_favorites: "Favorites",
     sidebar_settings: "Settings",
+    sidebar_profile: "Profile",
     sidebar_logout: "Logout",
 };

@@ -14,6 +14,26 @@ export const pt = {
     welcome_disclaimer: "NeoStream não fornece conteúdo. Use sua própria assinatura IPTV.",
     welcome_hint: "Pressione OK para continuar",
 
+    // Login
+    login_server: "Endereço do Servidor",
+    login_user: "Usuário",
+    login_password: "Senha",
+    login_submit: "Entrar",
+    login_authenticating: "Autenticando...",
+    login_back: "Voltar",
+    login_include_tv: "Incluir canais de TV",
+    login_include_vod: "Incluir VOD (Filmes e Séries)",
+    login_hint_edit: "OK para editar",
+    login_hint_nav: "↑↓ Navegar",
+    login_hint_select: "OK Selecionar",
+    login_hint_back: "← Voltar",
+    login_error_empty: "Preencha todos os campos",
+    login_error_invalid_url: "URL do servidor inválida",
+    login_error_connection: "Não foi possível conectar ao servidor",
+    login_error_auth: "Usuário ou senha incorretos",
+    login_error_timeout: "Tempo limite excedido",
+    login_error_generic: "Erro ao conectar",
+
     // Sidebar
     sidebar_home: "Início",
     sidebar_live: "TV Ao Vivo",
@@ -22,5 +42,6 @@ export const pt = {
     sidebar_mylist: "Minha Lista",
     sidebar_favorites: "Favoritos",
     sidebar_settings: "Configurações",
+    sidebar_profile: "Perfil",
     sidebar_logout: "Sair",
 };

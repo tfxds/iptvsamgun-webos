@@ -80,9 +80,10 @@ export function Series() {
     }, []);
 
     // Filter series
-    const filteredSeries = series.filter(s => {
-        const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesCategory = selectedCategory === 'all' || s.category_id === selectedCategory;
+    const filteredSeries = (Array.isArray(series) ? series : []).filter((s: any) => {
+        const seriesName = s?.name || '';
+        const matchesSearch = seriesName.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesCategory = selectedCategory === 'all' || s?.category_id === selectedCategory;
         return matchesSearch && matchesCategory;
     });
 
@@ -150,7 +151,14 @@ export function Series() {
                     setFocusedSeriesIndex(prev => Math.max(0, prev - cols));
                 }
             } else if (direction === 'down') {
-                setFocusedSeriesIndex(prev => Math.min(totalSeries - 1, prev + cols));
+                setFocusedSeriesIndex(prev => {
+                    const next = Math.min(totalSeries - 1, prev + cols);
+                    // If we're getting close to the visible limit, load more
+                    if (next >= visibleCount - 10) {
+                        setVisibleCount(current => Math.min(current + cols * 4, totalSeries));
+                    }
+                    return next;
+                });
             } else if (direction === 'left') {
                 if (currentCol === 0) {
                     // At first column - go to sidebar
@@ -159,10 +167,38 @@ export function Series() {
                     setFocusedSeriesIndex(prev => Math.max(0, prev - 1));
                 }
             } else if (direction === 'right') {
-                setFocusedSeriesIndex(prev => Math.min(totalSeries - 1, prev + 1));
+                setFocusedSeriesIndex(prev => {
+                    const next = Math.min(totalSeries - 1, prev + 1);
+                    if (next >= visibleCount - 5) {
+                        setVisibleCount(current => Math.min(current + cols * 4, totalSeries));
+                    }
+                    return next;
+                });
             }
         }
     };
+
+    // Scroll selected item into view when navigating with TV remote
+    useEffect(() => {
+        if (focusArea === 'series' && focusZone === 'content') {
+            const container = scrollContainerRef.current;
+            const focusedItem = container?.querySelector('.series-card.tv-focused') as HTMLElement;
+            
+            if (container && focusedItem) {
+                const containerRect = container.getBoundingClientRect();
+                const itemRect = focusedItem.getBoundingClientRect();
+                
+                // If item is below the view
+                if (itemRect.bottom > containerRect.bottom) {
+                    container.scrollTop += (itemRect.bottom - containerRect.bottom) + 20;
+                }
+                // If item is above the view
+                else if (itemRect.top < containerRect.top) {
+                    container.scrollTop -= (containerRect.top - itemRect.top) + 20;
+                }
+            }
+        }
+    }, [focusedSeriesIndex, focusArea, focusZone]);
 
     const handleEnter = () => {
         if (focusArea === 'categories') {
@@ -348,7 +384,7 @@ export function Series() {
                                         <div className="series-rating">⭐ {item.rating}</div>
                                     )}
                                 </div>
-                                <div className="series-title">{item.name}</div>
+                                <div className="series-title">{item?.name || 'Série Sem Nome'}</div>
                             </div>
                         ))}
                     </div>

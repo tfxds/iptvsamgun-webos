@@ -1,6 +1,6 @@
 // LiveTV Page - Matching NeoStream Desktop Style
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
 import type { LiveStream, Category } from '../types';
 import { useTVNavigation } from '../hooks/useTVNavigation';
@@ -17,11 +17,57 @@ export function LiveTV() {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedChannel, setSelectedChannel] = useState<LiveStream | null>(null);
     const [brokenImages, setBrokenImages] = useState<Set<number>>(new Set());
+    const [visibleCount, setVisibleCount] = useState(24);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     // Focus states for TV navigation
     const [focusArea, setFocusArea] = useState<'categories' | 'search' | 'channels'>('channels');
     const [focusedCategoryIndex, setFocusedCategoryIndex] = useState(0);
     const [focusedChannelIndex, setFocusedChannelIndex] = useState(0);
+
+    // Calculate initial visible count based on screen size
+    useEffect(() => {
+        const calculateVisibleItems = () => {
+            const container = scrollContainerRef.current;
+            if (!container) return;
+
+            // Card dimensions
+            const cardWidth = 220; // larger for live tv
+            const cardHeight = 80;
+
+            const containerWidth = container.clientWidth - 32;
+            const containerHeight = window.innerHeight;
+
+            const cols = Math.floor(containerWidth / cardWidth);
+            const rows = Math.ceil(containerHeight / cardHeight) + 1;
+
+            const initialCount = cols * rows;
+            setVisibleCount(Math.max(initialCount, 15));
+        };
+
+        calculateVisibleItems();
+        window.addEventListener('resize', calculateVisibleItems);
+
+        return () => window.removeEventListener('resize', calculateVisibleItems);
+    }, [loading]);
+
+    // Lazy loading scroll will be defined after filteredStreams
+
+    // Reset on filter change
+    useEffect(() => {
+        const container = scrollContainerRef.current;
+        if (!container) return;
+
+        const cardWidth = 220;
+        const cardHeight = 80;
+        const containerWidth = container.clientWidth - 32;
+        const containerHeight = window.innerHeight;
+        const cols = Math.floor(containerWidth / cardWidth);
+        const rows = Math.ceil(containerHeight / cardHeight) + 1;
+
+        setVisibleCount(Math.max(cols * rows, 15));
+        setSelectedChannel(null);
+    }, [searchQuery, selectedCategory]);
 
     // Fetch data
     useEffect(() => {
@@ -44,11 +90,30 @@ export function LiveTV() {
     }, []);
 
     // Filter streams
-    const filteredStreams = streams.filter(stream => {
-        const matchesSearch = stream.name.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesCategory = selectedCategory === 'all' || stream.category_id === selectedCategory;
+    const filteredStreams = (Array.isArray(streams) ? streams : []).filter((stream: any) => {
+        const streamName = stream?.name || '';
+        const matchesSearch = streamName.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesCategory = selectedCategory === 'all' || stream?.category_id === selectedCategory;
         return matchesSearch && matchesCategory;
     });
+
+    // Lazy loading scroll
+    useEffect(() => {
+        const container = scrollContainerRef.current;
+        if (!container) return;
+
+        const handleScroll = () => {
+            const { scrollTop, scrollHeight, clientHeight } = container;
+            if (scrollTop + clientHeight >= scrollHeight * 0.8 && visibleCount < filteredStreams.length) {
+                const containerWidth = container.clientWidth - 32;
+                const cols = Math.floor(containerWidth / 220);
+                setVisibleCount(prev => Math.min(prev + cols * 2, filteredStreams.length));
+            }
+        };
+
+        container.addEventListener('scroll', handleScroll);
+        return () => container.removeEventListener('scroll', handleScroll);
+    }, [filteredStreams.length, visibleCount]);
 
     // TV Navigation
     const handleNavigate = (direction: 'up' | 'down' | 'left' | 'right') => {
@@ -72,14 +137,46 @@ export function LiveTV() {
                     setFocusedChannelIndex(prev => Math.max(0, prev - cols));
                 }
             } else if (direction === 'down') {
-                setFocusedChannelIndex(prev => Math.min(totalChannels - 1, prev + cols));
+                setFocusedChannelIndex(prev => {
+                    const next = Math.min(totalChannels - 1, prev + cols);
+                    if (next >= visibleCount - 6) {
+                        setVisibleCount(current => Math.min(current + cols * 4, totalChannels));
+                    }
+                    return next;
+                });
             } else if (direction === 'left') {
                 setFocusedChannelIndex(prev => Math.max(0, prev - 1));
             } else if (direction === 'right') {
-                setFocusedChannelIndex(prev => Math.min(totalChannels - 1, prev + 1));
+                setFocusedChannelIndex(prev => {
+                    const next = Math.min(totalChannels - 1, prev + 1);
+                    if (next >= visibleCount - 3) {
+                        setVisibleCount(current => Math.min(current + cols * 4, totalChannels));
+                    }
+                    return next;
+                });
             }
         }
     };
+
+    // Scroll selected item into view securely
+    useEffect(() => {
+        if (focusArea === 'channels') {
+            const container = scrollContainerRef.current;
+            const focusedItem = container?.querySelector('.channel-card.tv-focused') as HTMLElement;
+            
+            if (container && focusedItem) {
+                const containerRect = container.getBoundingClientRect();
+                const itemRect = focusedItem.getBoundingClientRect();
+                
+                // Keep some padding for smooth view
+                if (itemRect.bottom > containerRect.bottom) {
+                    container.scrollTop += (itemRect.bottom - containerRect.bottom) + 80;
+                } else if (itemRect.top < containerRect.top) {
+                    container.scrollTop -= (containerRect.top - itemRect.top) + 80;
+                }
+            }
+        }
+    }, [focusedChannelIndex, focusArea]);
 
     const handleEnter = () => {
         if (focusArea === 'categories') {
@@ -192,8 +289,8 @@ export function LiveTV() {
                                     <span className="placeholder-emoji">📺</span>
                                 ) : (
                                     <img
-                                        src={selectedChannel.stream_icon}
-                                        alt={selectedChannel.name}
+                                        src={selectedChannel?.stream_icon || ''}
+                                        alt={selectedChannel?.name || 'Canal'}
                                         onError={() => handleImageError(selectedChannel.stream_id)}
                                     />
                                 )}
@@ -216,7 +313,7 @@ export function LiveTV() {
             )}
 
             {/* Channels Grid - Horizontal Cards */}
-            <div className="livetv-content">
+            <div ref={scrollContainerRef} className="livetv-content">
                 {filteredStreams.length === 0 ? (
                     <div className="no-results">
                         <div className="no-results-icon">📺</div>
@@ -225,7 +322,7 @@ export function LiveTV() {
                     </div>
                 ) : (
                     <div className="channels-grid">
-                        {filteredStreams.map((stream, index) => (
+                        {filteredStreams.slice(0, visibleCount).map((stream, index) => (
                             <div
                                 key={stream.stream_id}
                                 className={`channel-card ${focusArea === 'channels' && focusedChannelIndex === index ? 'tv-focused' : ''} ${selectedChannel?.stream_id === stream.stream_id ? 'selected' : ''}`}
@@ -237,14 +334,14 @@ export function LiveTV() {
                                         <span className="channel-placeholder">📺</span>
                                     ) : (
                                         <img
-                                            src={stream.stream_icon}
-                                            alt={stream.name}
+                                            src={stream?.stream_icon || ''}
+                                            alt={stream?.name || 'Canal'}
                                             onError={() => handleImageError(stream.stream_id)}
                                         />
                                     )}
                                 </div>
                                 <div className="channel-info">
-                                    <div className="channel-name">{stream.name}</div>
+                                    <div className="channel-name">{stream?.name || 'Canal Sem Nome'}</div>
                                 </div>
                                 <div className="channel-live-indicator" />
                             </div>
