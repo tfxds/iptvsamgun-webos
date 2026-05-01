@@ -5,8 +5,12 @@ node_modules/
 
 # Build outputs
 dist/
+dist-tizen/
 dist-ssr/
 build/
+build-tizen/
+build-tizen-clean/
+build-tizen-smoke/
 *.local
 
 # IDE
@@ -49,6 +53,12 @@ coverage/
 .buildResult/
 .sign/
 *.wgt
+tizen/.metadata/
+tizen/.manifest.tmp
+dlog.txt
+sdb_*.txt
+install_*.txt
+vd_install.txt
 
 # LG webOS
 *.ipk

@@ -1,26 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<widget xmlns="http://www.w3.org/ns/widgets" xmlns:tizen="http://tizen.org/ns/widgets" id="http://neostream.tv" version="1.0.0" viewmodes="maximized">
-    <tizen:application id="Qe6pCNsVMw.NeoStreamTV" package="Qe6pCNsVMw" required_version="5.5"/>
+<widget xmlns="http://www.w3.org/ns/widgets" xmlns:tizen="http://tizen.org/ns/widgets" id="http://rakjsu.neostream.tv" version="1.0.0" viewmodes="maximized">
+    <tizen:application id="RakjsuNeo1.NeoStreamTV" package="RakjsuNeo1" required_version="5.5"/>
     <content src="index.html"/>
-    <feature name="http://tizen.org/feature/screen.size.all"/>
-    <icon src="icon.png"/>
-    <name>NeoStream TV</name>
-    
-    <!-- Allow access to any URL (required for IPTV servers) -->
+    <name>NeoStreamTV</name>
     <access origin="*" subdomains="true"/>
-    
-    <!-- Privileges -->
     <tizen:privilege name="http://tizen.org/privilege/internet"/>
-    <tizen:privilege name="http://tizen.org/privilege/application.launch"/>
-    <tizen:privilege name="http://tizen.org/privilege/tv.inputdevice"/>
-    <tizen:privilege name="http://tizen.org/privilege/websetting"/>
-    <tizen:privilege name="http://tizen.org/privilege/network.connection"/>
-    <tizen:privilege name="http://tizen.org/privilege/filesystem.read"/>
-    <tizen:privilege name="http://tizen.org/privilege/filesystem.write"/>
-    
-    <!-- Content Security Policy - Allow connections to any origin -->
-    <tizen:content-security-policy>default-src * 'self' data: blob:; script-src * 'self' 'unsafe-inline' 'unsafe-eval'; style-src * 'self' 'unsafe-inline'; img-src * 'self' data: blob:; media-src * 'self' data: blob:; connect-src * 'self'; font-src * 'self' data:;</tizen:content-security-policy>
-    
     <tizen:profile name="tv-samsung"/>
     <tizen:setting screen-orientation="landscape" context-menu="enable" background-support="disable" encryption="disable" install-location="auto" hwkey-event="enable"/>
 </widget>

@@ -28,6 +28,7 @@ const TV_KEYS = {
 
 type Direction = 'up' | 'down' | 'left' | 'right';
 type TVAction = 'enter' | 'back' | 'play' | 'pause' | 'stop';
+type TizenHardwareKeyEvent = Event & { keyName?: string };
 
 interface UseTVNavigationOptions {
     onNavigate?: (direction: Direction) => void;
@@ -54,14 +55,25 @@ export function useTVNavigation(options: UseTVNavigationOptions = {}) {
         // This allows the native TV keyboard (IME) to handle Backspace, Left, Right, etc.
         const target = event.target as HTMLElement;
         if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
+            if (matchKey(key, TV_KEYS.ENTER)) {
+                event.preventDefault();
+                event.stopPropagation();
+                target.blur();
+                onEnter?.();
+                onAction?.('enter');
+                return;
+            }
+
             // If the user presses the 'Return' / 'Back' button on the TV remote while editing, 
             // we should blur the input to hide the virtual keyboard and restore TV navigation.
             // 10009 (Tizen Back), 461 (WebOS Back), XF86Back (Generic), Escape
             // Also handle keyCode 8 (Backspace) ONLY when input value is empty (to exit editing)
-            if (key === '10009' || key === '461' || key === 'XF86Back' || key === 'Escape') {
+            if (matchKey(key, TV_KEYS.BACK) || key === 'Escape') {
                 event.preventDefault();
                 event.stopPropagation();
                 target.blur();
+                onBack?.();
+                onAction?.('back');
             }
             return;
         }
@@ -102,7 +114,7 @@ export function useTVNavigation(options: UseTVNavigationOptions = {}) {
 
     useEffect(() => {
         // Custom handler for Tizen hardware 'back' key when keyboard is open
-        const handleTizenHwKey = (e: any) => {
+        const handleTizenHwKey = (e: TizenHardwareKeyEvent) => {
             if (e.keyName === 'back' || e.keyName === 'Return') {
                 const active = document.activeElement as HTMLElement;
                 if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
@@ -165,7 +177,7 @@ export function useFocusManager<T extends HTMLElement>() {
         focusElement,
         moveFocus,
         getCurrentElement,
-        focusedIndex: focusedIndexRef.current,
+        getFocusedIndex: () => focusedIndexRef.current,
     };
 }
 

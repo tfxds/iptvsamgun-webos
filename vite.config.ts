@@ -1,30 +1,19 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import legacy from '@vitejs/plugin-legacy'
 
-// https://vite.dev/config/
+// Modern web build used for browser preview/development.
 export default defineConfig({
-  plugins: [
-    react(),
-    legacy({
-      targets: ['chrome >= 50', 'safari >= 10'],
-      additionalLegacyPolyfills: ['regenerator-runtime/runtime'],
-      renderLegacyChunks: true,
-      modernPolyfills: ['es.promise', 'es.array.iterator'],
-    }),
-  ],
-  base: './',
+  plugins: [react()],
   build: {
-    target: 'es2015',
     minify: 'terser',
-    cssCodeSplit: false,
+    chunkSizeWarningLimit: 650,
     rollupOptions: {
       output: {
-        format: 'iife', // Immediately Invoked Function Expression - no modules
-        inlineDynamicImports: true,
-        entryFileNames: 'assets/[name].js',
-        chunkFileNames: 'assets/[name].js',
-        assetFileNames: 'assets/[name].[ext]',
+        manualChunks: {
+          react: ['react', 'react-dom'],
+          media: ['hls.js'],
+          icons: ['react-icons/fa'],
+        },
       },
     },
     terserOptions: {

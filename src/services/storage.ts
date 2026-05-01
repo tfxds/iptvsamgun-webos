@@ -28,6 +28,7 @@ const STORAGE_KEYS = {
     WATCH_LATER: 'neostream_watch_later',
     LAST_CHANNEL: 'neostream_last_channel',
     SETTINGS: 'neostream_settings',
+    TMDB_API_KEY: 'neostream_tmdb_api_key',
 };
 
 interface Settings {
@@ -134,6 +135,24 @@ class StorageService {
     saveSettings(settings: Partial<Settings>): void {
         const current = this.getSettings();
         localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify({ ...current, ...settings }));
+    }
+
+    // TMDB API key (user-provided and stored locally only)
+    getTmdbApiKey(): string {
+        return localStorage.getItem(STORAGE_KEYS.TMDB_API_KEY) || '';
+    }
+
+    saveTmdbApiKey(apiKey: string): void {
+        const trimmed = apiKey.trim();
+        if (trimmed) {
+            localStorage.setItem(STORAGE_KEYS.TMDB_API_KEY, trimmed);
+        } else {
+            this.clearTmdbApiKey();
+        }
+    }
+
+    clearTmdbApiKey(): void {
+        localStorage.removeItem(STORAGE_KEYS.TMDB_API_KEY);
     }
 
     // Clear all data

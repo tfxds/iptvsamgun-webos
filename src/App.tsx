@@ -1,6 +1,6 @@
 // Main App Component - NeoStream TV
 
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from './services/api';
 import { storage } from './services/storage';
 import { Welcome } from './pages/Welcome';
@@ -11,29 +11,15 @@ import { Movies } from './pages/Movies';
 import { Series } from './pages/Series';
 import { Favorites } from './pages/Favorites';
 import { MyList } from './pages/MyList';
+import { Settings } from './pages/Settings';
 import { LanguageSelection } from './pages/LanguageSelection';
 import { Sidebar } from './components/Sidebar';
 import { ProfileManager } from './components/ProfileManager';
+import { FocusContext, type FocusZone } from './contexts/FocusContext';
 import './index.css';
 
 type Page = 'home' | 'live' | 'movies' | 'series' | 'mylist' | 'favorites' | 'settings';
 type AuthState = 'loading' | 'languageSelection' | 'welcome' | 'login' | 'authenticated';
-type FocusZone = 'sidebar' | 'content';
-
-// Context for focus zone management
-interface FocusContextType {
-  focusZone: FocusZone;
-  setFocusZone: (zone: FocusZone) => void;
-}
-
-export const FocusContext = createContext<FocusContextType>({
-  focusZone: 'content',
-  setFocusZone: () => { },
-});
-
-export function useFocusZone() {
-  return useContext(FocusContext);
-}
 
 function App() {
   const [authState, setAuthState] = useState<AuthState>('loading');
@@ -41,11 +27,7 @@ function App() {
   const [focusZone, setFocusZone] = useState<FocusZone>('content');
   const [showProfileManager, setShowProfileManager] = useState(false);
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     if (!storage.hasSettings()) {
       setAuthState('languageSelection');
       return;
@@ -66,7 +48,11 @@ function App() {
       storage.clearCredentials();
       setAuthState('welcome');
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    void Promise.resolve().then(checkAuth);
+  }, [checkAuth]);
 
   const handleGoToLogin = () => {
     setAuthState('login');
@@ -137,7 +123,7 @@ function App() {
           {currentPage === 'series' && <Series />}
           {currentPage === 'mylist' && <MyList />}
           {currentPage === 'favorites' && <Favorites />}
-          {currentPage === 'settings' && <PlaceholderPage title="Configurações" icon="⚙️" />}
+          {currentPage === 'settings' && <Settings />}
         </main>
 
         {/* Profile Manager Modal */}
@@ -146,17 +132,6 @@ function App() {
         )}
       </div>
     </FocusContext.Provider>
-  );
-}
-
-// Placeholder component for pages not yet implemented
-function PlaceholderPage({ title, icon }: { title: string; icon: string }) {
-  return (
-    <div className="placeholder-page">
-      <span className="placeholder-icon">{icon}</span>
-      <h1 className="placeholder-title">{title}</h1>
-      <p className="placeholder-text">Em desenvolvimento...</p>
-    </div>
   );
 }
 

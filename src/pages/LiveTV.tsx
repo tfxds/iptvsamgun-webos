@@ -80,8 +80,8 @@ export function LiveTV() {
                 ]);
                 setStreams(streamsData);
                 setCategories(categoriesData);
-            } catch (err: any) {
-                setError(err?.message || 'Erro ao carregar canais');
+            } catch (err: unknown) {
+                setError(err instanceof Error ? err.message : 'Erro ao carregar canais');
             } finally {
                 setLoading(false);
             }
@@ -90,10 +90,10 @@ export function LiveTV() {
     }, []);
 
     // Filter streams
-    const filteredStreams = (Array.isArray(streams) ? streams : []).filter((stream: any) => {
-        const streamName = stream?.name || '';
+    const filteredStreams = streams.filter((stream) => {
+        const streamName = stream.name || '';
         const matchesSearch = streamName.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesCategory = selectedCategory === 'all' || stream?.category_id === selectedCategory;
+        const matchesCategory = selectedCategory === 'all' || stream.category_id === selectedCategory;
         return matchesSearch && matchesCategory;
     });
 
@@ -105,9 +105,7 @@ export function LiveTV() {
         const handleScroll = () => {
             const { scrollTop, scrollHeight, clientHeight } = container;
             if (scrollTop + clientHeight >= scrollHeight * 0.8 && visibleCount < filteredStreams.length) {
-                const containerWidth = container.clientWidth - 32;
-                const cols = Math.floor(containerWidth / 220);
-                setVisibleCount(prev => Math.min(prev + cols * 2, filteredStreams.length));
+                setVisibleCount(prev => Math.min(prev + 12, filteredStreams.length));
             }
         };
 
@@ -127,7 +125,7 @@ export function LiveTV() {
                 setFocusedChannelIndex(0);
             }
         } else if (focusArea === 'channels') {
-            const cols = 3; // Grid columns
+            const cols = 6;
             const totalChannels = filteredStreams.length;
 
             if (direction === 'up') {

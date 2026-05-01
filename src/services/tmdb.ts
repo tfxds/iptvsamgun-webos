@@ -1,5 +1,6 @@
 // TMDB API Service for NeoStream TV
-const TMDB_API_KEY = '9d8ec8b10e9b4acd85853c44b29bd83a';
+import { storage } from './storage';
+
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
 
@@ -19,6 +20,16 @@ interface CacheEntry<T> {
 
 interface CacheStore<T> {
     [key: string]: CacheEntry<T>;
+}
+
+interface TMDBReleaseCountry {
+    iso_3166_1: string;
+    release_dates?: Array<{ certification?: string }>;
+}
+
+interface TMDBContentRating {
+    iso_3166_1: string;
+    rating?: string;
 }
 
 // In-memory cache
@@ -103,6 +114,20 @@ function normalizeSearchKey(name: string, year?: string): string {
     return year ? `${cleanName}:${year}` : cleanName;
 }
 
+function getTmdbApiKey(): string {
+    return storage.getTmdbApiKey();
+}
+
+function buildTmdbUrl(path: string, params: Record<string, string>): string | null {
+    const apiKey = getTmdbApiKey();
+    if (!apiKey) return null;
+
+    const url = new URL(`${TMDB_BASE_URL}${path}`);
+    url.searchParams.set('api_key', apiKey);
+    Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
+    return url.toString();
+}
+
 // TMDB Types
 export interface TMDBMovieDetails {
     id?: number;
@@ -150,18 +175,23 @@ export async function fetchMovieDetails(tmdbId: string): Promise<TMDBMovieDetail
     if (cached) return cached;
 
     try {
-        const response = await fetch(
-            `${TMDB_BASE_URL}/movie/${tmdbId}?api_key=${TMDB_API_KEY}&language=pt-BR&append_to_response=release_dates,external_ids`
-        );
+        const detailsUrl = buildTmdbUrl(`/movie/${tmdbId}`, {
+            language: 'pt-BR',
+            append_to_response: 'release_dates,external_ids',
+        });
+        if (!detailsUrl) return null;
+
+        const response = await fetch(detailsUrl);
         if (!response.ok) return null;
         const data = await response.json();
 
         // Extract certification
         let certification: string | undefined;
         if (data.release_dates?.results) {
-            const brRelease = data.release_dates.results.find((r: any) => r.iso_3166_1 === 'BR');
-            const usRelease = data.release_dates.results.find((r: any) => r.iso_3166_1 === 'US');
-            const releaseData = brRelease || usRelease || data.release_dates.results[0];
+            const releases = data.release_dates.results as TMDBReleaseCountry[];
+            const brRelease = releases.find((r) => r.iso_3166_1 === 'BR');
+            const usRelease = releases.find((r) => r.iso_3166_1 === 'US');
+            const releaseData = brRelease || usRelease || releases[0];
             if (releaseData?.release_dates?.[0]?.certification) {
                 certification = releaseData.release_dates[0].certification;
             }
@@ -186,18 +216,23 @@ export async function fetchSeriesDetails(tmdbId: string): Promise<TMDBSeriesDeta
     if (cached) return cached;
 
     try {
-        const response = await fetch(
-            `${TMDB_BASE_URL}/tv/${tmdbId}?api_key=${TMDB_API_KEY}&language=pt-BR&append_to_response=content_ratings,external_ids`
-        );
+        const detailsUrl = buildTmdbUrl(`/tv/${tmdbId}`, {
+            language: 'pt-BR',
+            append_to_response: 'content_ratings,external_ids',
+        });
+        if (!detailsUrl) return null;
+
+        const response = await fetch(detailsUrl);
         if (!response.ok) return null;
         const data = await response.json();
 
         // Extract certification
         let certification: string | undefined;
         if (data.content_ratings?.results) {
-            const brRating = data.content_ratings.results.find((r: any) => r.iso_3166_1 === 'BR');
-            const usRating = data.content_ratings.results.find((r: any) => r.iso_3166_1 === 'US');
-            const ratingData = brRating || usRating || data.content_ratings.results[0];
+            const ratings = data.content_ratings.results as TMDBContentRating[];
+            const brRating = ratings.find((r) => r.iso_3166_1 === 'BR');
+            const usRating = ratings.find((r) => r.iso_3166_1 === 'US');
+            const ratingData = brRating || usRating || ratings[0];
             if (ratingData?.rating) {
                 certification = ratingData.rating;
             }
@@ -218,6 +253,7 @@ export async function fetchSeriesDetails(tmdbId: string): Promise<TMDBSeriesDeta
  */
 export async function searchMovieByName(movieName: string, year?: string): Promise<TMDBMovieDetails | null> {
     const searchKey = normalizeSearchKey(movieName, year);
+    if (!getTmdbApiKey()) return null;
 
     const cachedTmdbId = getCached<string | null>(memoryCache.movieSearch, searchKey);
     if (cachedTmdbId !== null) {
@@ -230,9 +266,14 @@ export async function searchMovieByName(movieName: string, year?: string): Promi
         cleanName = cleanName.replace(/\s*\[.*?\]\s*/g, '').trim();
         cleanName = cleanName.replace(/\s+/g, ' ').trim();
 
-        const searchUrl = year
-            ? `${TMDB_BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&language=pt-BR&query=${encodeURIComponent(cleanName)}&year=${year}`
-            : `${TMDB_BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&language=pt-BR&query=${encodeURIComponent(cleanName)}`;
+        const searchParams: Record<string, string> = {
+            language: 'pt-BR',
+            query: cleanName,
+        };
+        if (year) searchParams.year = year;
+
+        const searchUrl = buildTmdbUrl('/search/movie', searchParams);
+        if (!searchUrl) return null;
 
         const response = await fetch(searchUrl);
         if (!response.ok) return null;
@@ -258,6 +299,7 @@ export async function searchMovieByName(movieName: string, year?: string): Promi
  */
 export async function searchSeriesByName(seriesName: string, year?: string): Promise<TMDBSeriesDetails | null> {
     const searchKey = normalizeSearchKey(seriesName, year);
+    if (!getTmdbApiKey()) return null;
 
     const cachedTmdbId = getCached<string | null>(memoryCache.seriesSearch, searchKey);
     if (cachedTmdbId !== null) {
@@ -270,9 +312,14 @@ export async function searchSeriesByName(seriesName: string, year?: string): Pro
         cleanName = cleanName.replace(/\s*\[.*?\]\s*/g, '').trim();
         cleanName = cleanName.replace(/\s+/g, ' ').trim();
 
-        const searchUrl = year
-            ? `${TMDB_BASE_URL}/search/tv?api_key=${TMDB_API_KEY}&language=pt-BR&query=${encodeURIComponent(cleanName)}&first_air_date_year=${year}`
-            : `${TMDB_BASE_URL}/search/tv?api_key=${TMDB_API_KEY}&language=pt-BR&query=${encodeURIComponent(cleanName)}`;
+        const searchParams: Record<string, string> = {
+            language: 'pt-BR',
+            query: cleanName,
+        };
+        if (year) searchParams.first_air_date_year = year;
+
+        const searchUrl = buildTmdbUrl('/search/tv', searchParams);
+        if (!searchUrl) return null;
 
         const response = await fetch(searchUrl);
         if (!response.ok) return null;

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useCallback, useEffect, useMemo, useState } from 'react';
 import { storage } from '../services/storage';
 import { useTranslation } from '../hooks/useTranslation';
 import './LanguageSelection.css';
@@ -11,10 +11,19 @@ export function LanguageSelection({ onComplete }: LanguageSelectionProps) {
     const { t } = useTranslation();
     const [focusedIndex, setFocusedIndex] = useState(0);
 
-    const languages = [
-        { code: 'pt', label: t('language_pt'), icon: '🇧🇷' },
-        { code: 'en', label: t('language_en'), icon: '🇺🇸' },
-    ];
+    const languages = useMemo(() => [
+        { code: 'pt' as const, label: t('language_pt'), icon: 'BR' },
+        { code: 'en' as const, label: t('language_en'), icon: 'US' },
+    ], [t]);
+
+    const handleSelect = useCallback((code: 'pt' | 'en') => {
+        // Save to storage
+        storage.saveSettings({ language: code });
+        // Fire event so hooks update immediately
+        window.dispatchEvent(new Event('neostream-lang-change'));
+        // Proceed to next step in App.tsx
+        onComplete();
+    }, [onComplete]);
 
     // We can't use useTVNavigation here directly if it relies on a specific generic zone, 
     // but we can implement a simple keydown listener for this specific screen.
@@ -31,23 +40,14 @@ export function LanguageSelection({ onComplete }: LanguageSelectionProps) {
                     setFocusedIndex((prev) => (prev - 1 + languages.length) % languages.length);
                     break;
                 case 'Enter':
-                    handleSelect(languages[focusedIndex].code as 'pt' | 'en');
+                    handleSelect(languages[focusedIndex].code);
                     break;
             }
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [focusedIndex, languages]);
-
-    const handleSelect = (code: 'pt' | 'en') => {
-        // Save to storage
-        storage.saveSettings({ language: code });
-        // Fire event so hooks update immediately
-        window.dispatchEvent(new Event('neostream-lang-change'));
-        // Proceed to next step in App.tsx
-        onComplete();
-    };
+    }, [focusedIndex, languages, handleSelect]);
 
     return (
         <div className="language-selection-container">

@@ -24,13 +24,11 @@ export function Welcome({ onGoToLogin }: WelcomeProps) {
 
     useTVNavigation({
         onEnter: () => {
-            console.log('Enter pressed on Welcome');
             onGoToLogin();
         },
     });
 
     const handleClick = () => {
-        console.log('Button clicked');
         onGoToLogin();
     };
 

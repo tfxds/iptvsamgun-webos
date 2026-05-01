@@ -1,6 +1,6 @@
-// Favorites Page - Matching NeoStream Desktop Style
+﻿// Favorites Page - Matching NeoStream Desktop Style
 
-import { useState, useEffect } from 'react';
+import { useCallback, useState } from 'react';
 import { storage } from '../services/storage';
 import { useTVNavigation } from '../hooks/useTVNavigation';
 import './Favorites.css';
@@ -16,7 +16,7 @@ interface FavoriteItem {
 }
 
 export function Favorites() {
-    const [items, setItems] = useState<FavoriteItem[]>([]);
+    const [items, setItems] = useState<FavoriteItem[]>(() => storage.getFavorites());
     const [activeTab, setActiveTab] = useState<'all' | 'movies' | 'series' | 'channels'>('all');
     const [removingId, setRemovingId] = useState<string | null>(null);
 
@@ -25,14 +25,10 @@ export function Favorites() {
     const [focusedTabIndex, setFocusedTabIndex] = useState(0);
     const [focusedItemIndex, setFocusedItemIndex] = useState(0);
 
-    useEffect(() => {
-        loadItems();
-    }, []);
-
-    const loadItems = () => {
+    const loadItems = useCallback(() => {
         const saved = storage.getFavorites();
         setItems(saved);
-    };
+    }, []);
 
     const removeItem = (id: string) => {
         setRemovingId(id);
@@ -70,7 +66,7 @@ export function Favorites() {
                 setFocusedItemIndex(0);
             }
         } else if (focusArea === 'items') {
-            const cols = 5;
+            const cols = 6;
             const total = displayItems.length;
 
             if (direction === 'up') {
@@ -107,21 +103,21 @@ export function Favorites() {
                 <div className="favorites-backdrop" />
                 <div className="empty-state">
                     <div className="empty-icon-container">
-                        <div className="empty-icon">❤️</div>
+                        <div className="empty-icon">♥</div>
                         <div className="empty-icon-glow" />
                     </div>
                     <h2 className="empty-title">Nenhum favorito ainda</h2>
                     <p className="empty-text">
                         Seus filmes, séries e canais favoritos aparecerão aqui.
-                        Clique no <strong>❤️ coração</strong> em qualquer conteúdo para adicionar aos favoritos.
+                        Clique no <strong>coração</strong> em qualquer conteúdo para adicionar aos favoritos.
                     </p>
                     <div className="empty-suggestions">
                         <button className="suggestion-btn">
-                            <span>🎬</span>
+                            <span>Filmes</span>
                             <span>Explorar Filmes</span>
                         </button>
                         <button className="suggestion-btn">
-                            <span>📺</span>
+                            <span>Séries</span>
                             <span>Explorar Séries</span>
                         </button>
                     </div>
@@ -137,7 +133,7 @@ export function Favorites() {
             {/* Header */}
             <header className="favorites-header">
                 <div className="header-title">
-                    <div className="title-icon">❤️</div>
+                    <div className="title-icon">♥</div>
                     <div>
                         <h1>Meus Favoritos</h1>
                         <p className="subtitle">{items.length} itens salvos</p>
@@ -145,7 +141,7 @@ export function Favorites() {
                 </div>
                 {items.length > 0 && (
                     <button className="clear-btn" onClick={clearAll}>
-                        <span>🗑️</span>
+                        <span>Excluir</span>
                         <span>Limpar Tudo</span>
                     </button>
                 )}
@@ -164,21 +160,21 @@ export function Favorites() {
                     className={`tab ${activeTab === 'movies' ? 'active' : ''} ${focusArea === 'tabs' && focusedTabIndex === 1 ? 'tv-focused' : ''}`}
                     onClick={() => setActiveTab('movies')}
                 >
-                    <span>🎬 Filmes</span>
+                    <span>Filmes</span>
                     <span className="tab-count">{movies.length}</span>
                 </button>
                 <button
                     className={`tab ${activeTab === 'series' ? 'active' : ''} ${focusArea === 'tabs' && focusedTabIndex === 2 ? 'tv-focused' : ''}`}
                     onClick={() => setActiveTab('series')}
                 >
-                    <span>📺 Séries</span>
+                    <span>Séries</span>
                     <span className="tab-count">{series.length}</span>
                 </button>
                 <button
                     className={`tab ${activeTab === 'channels' ? 'active' : ''} ${focusArea === 'tabs' && focusedTabIndex === 3 ? 'tv-focused' : ''}`}
                     onClick={() => setActiveTab('channels')}
                 >
-                    <span>📡 Canais</span>
+                    <span>Canais</span>
                     <span className="tab-count">{channels.length}</span>
                 </button>
             </div>
@@ -196,11 +192,11 @@ export function Favorites() {
                                 <img src={item.poster} alt={item.title} />
                             ) : (
                                 <div className="poster-placeholder">
-                                    {item.type === 'movie' ? '🎬' : item.type === 'series' ? '📺' : '📡'}
+                                    {item.type === 'movie' ? 'Filme' : item.type === 'series' ? 'Série' : 'Canal'}
                                 </div>
                             )}
                             <div className="card-type">
-                                {item.type === 'movie' ? '🎬' : item.type === 'series' ? '📺' : '📡'}
+                                {item.type === 'movie' ? 'Filme' : item.type === 'series' ? 'Série' : 'Canal'}
                             </div>
                             <div className="card-overlay">
                                 <button
@@ -210,7 +206,7 @@ export function Favorites() {
                                         removeItem(item.id);
                                     }}
                                 >
-                                    🗑️
+                                    Excluir
                                 </button>
                             </div>
                         </div>
@@ -218,7 +214,7 @@ export function Favorites() {
                             <h3 className="card-title">{item.title}</h3>
                             <div className="card-meta">
                                 {item.year && <span>{item.year}</span>}
-                                {item.rating && <span>⭐ {item.rating}</span>}
+                                {item.rating && <span>★ {item.rating}</span>}
                             </div>
                         </div>
                     </div>
@@ -227,9 +223,9 @@ export function Favorites() {
 
             {/* Footer Hints */}
             <div className="favorites-hints">
-                <span>↑↓←→ Navegar</span>
+                <span>Setas Navegar</span>
                 <span>OK Selecionar</span>
-                <span>← Voltar</span>
+                <span>Voltar</span>
             </div>
         </div>
     );

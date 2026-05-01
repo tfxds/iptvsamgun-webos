@@ -1,4 +1,4 @@
-// Category Menu Component - Hamburger Button + Slide Panel
+﻿// Category Menu Component - Hamburger Button + Slide Panel
 // Matching Original App Animations
 
 import { useState, useRef } from 'react';
@@ -51,38 +51,25 @@ export function CategoryMenu({
 
     const getCategoryIcon = (name: string): string => {
         const lower = name.toLowerCase();
-        if (lower.includes('ação') || lower.includes('action')) return '⚡';
-        if (lower.includes('aventura') || lower.includes('adventure')) return '🧭';
-        if (lower.includes('drama')) return '🎭';
-        if (lower.includes('romance')) return '❤️';
-        if (lower.includes('comédia') || lower.includes('comedy')) return '😂';
-        if (lower.includes('terror') || lower.includes('horror')) return '👻';
-        if (lower.includes('suspense') || lower.includes('thriller')) return '😱';
-        if (lower.includes('ficção') || lower.includes('sci-fi')) return '🚀';
-        if (lower.includes('fantasia') || lower.includes('fantasy')) return '🧙';
-        if (lower.includes('animação') || lower.includes('animation')) return '🎨';
-        if (lower.includes('anime')) return '⚔️';
-        if (lower.includes('infantil') || lower.includes('kids')) return '⭐';
-        if (lower.includes('documentário') || lower.includes('documentary')) return '🎬';
-        if (lower.includes('crime') || lower.includes('policial')) return '🔍';
-        if (lower.includes('guerra') || lower.includes('war')) return '⚔️';
-        if (lower.includes('esporte') || lower.includes('sport')) return '⚽';
-        if (lower.includes('música') || lower.includes('music')) return '🎵';
-        if (lower.includes('família') || lower.includes('family')) return '👨‍👩‍👧';
-        if (lower.includes('netflix')) return '🔴';
-        if (lower.includes('disney')) return '🏰';
-        if (lower.includes('amazon')) return '📦';
-        if (lower.includes('globoplay')) return '🌐';
-        if (lower.includes('hbo') || lower.includes('max')) return '🟣';
-        if (lower.includes('paramount')) return '⛰️';
-        if (lower.includes('apple')) return '🍎';
-        if (lower.includes('lançamento') || lower.includes('novo')) return '✨';
-        if (lower.includes('4k') || lower.includes('uhd')) return '📺';
-        if (lower.includes('adulto') || lower.includes('adult')) return '🔞';
-        if (lower.includes('dorama') || lower.includes('korean')) return '🇰🇷';
-        if (lower.includes('turca') || lower.includes('turkish')) return '🇹🇷';
-        if (lower.includes('notícia') || lower.includes('news')) return '📰';
-        return '📁';
+        if (lower.includes('ação') || lower.includes('action')) return 'Ação';
+        if (lower.includes('aventura') || lower.includes('adventure')) return 'Aventura';
+        if (lower.includes('drama')) return 'Drama';
+        if (lower.includes('romance')) return 'Romance';
+        if (lower.includes('comédia') || lower.includes('comedy')) return 'Comédia';
+        if (lower.includes('terror') || lower.includes('horror')) return 'Terror';
+        if (lower.includes('suspense') || lower.includes('thriller')) return 'Suspense';
+        if (lower.includes('ficção') || lower.includes('sci-fi')) return 'Sci-Fi';
+        if (lower.includes('fantasia') || lower.includes('fantasy')) return 'Fantasia';
+        if (lower.includes('animação') || lower.includes('animation')) return 'Animação';
+        if (lower.includes('anime')) return 'Anime';
+        if (lower.includes('infantil') || lower.includes('kids')) return 'Kids';
+        if (lower.includes('documentário') || lower.includes('documentary')) return 'Doc';
+        if (lower.includes('crime') || lower.includes('policial')) return 'Crime';
+        if (lower.includes('guerra') || lower.includes('war')) return 'Guerra';
+        if (lower.includes('esporte') || lower.includes('sport')) return 'Esporte';
+        if (lower.includes('música') || lower.includes('music')) return 'Música';
+        if (type === 'live') return 'TV';
+        return type === 'vod' ? 'Filme' : 'Série';
     };
 
     const getTypeLabel = () => {
@@ -125,7 +112,7 @@ export function CategoryMenu({
                             <p>Explore por gênero</p>
                         </div>
                         <button className="close-btn" onClick={handleClose}>
-                            ✕
+                            X
                         </button>
                     </div>
 
@@ -136,7 +123,7 @@ export function CategoryMenu({
                             className={`category-item ${selectedCategory === 'all' ? 'selected' : ''}`}
                             onClick={() => handleSelectCategory('all')}
                         >
-                            <div className="category-icon">📺</div>
+                            <div className="category-icon">TV</div>
                             <span className="category-name">{getTypeLabel()}</span>
                             {selectedCategory === 'all' && <div className="selected-dot" />}
                         </button>

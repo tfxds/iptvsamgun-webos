@@ -1,4 +1,4 @@
-// ProfileManager Component - TV Optimized
+﻿// ProfileManager Component - TV Optimized
 import { useState, useEffect, useCallback } from 'react';
 import { profileService } from '../../services/profileService';
 import type { Profile } from '../../types/profile';
@@ -9,7 +9,8 @@ interface ProfileManagerProps {
     onClose: () => void;
 }
 
-const avatarOptions = ['👤', '👨', '👩', '🧒', '👴', '👵', '🐱', '🐶', '🦊', '🐼', '🎮', '🎬', '🎧', '🎸', '⚽', '🏀'];
+const DEFAULT_AVATAR = 'P';
+const avatarOptions = [DEFAULT_AVATAR, 'A', 'B', 'C', 'D', 'E', 'F', 'G'];
 
 type ModalMode = 'list' | 'create' | 'edit' | 'pin-verify' | 'delete-confirm';
 
@@ -22,7 +23,7 @@ export function ProfileManager({ onClose }: ProfileManagerProps) {
     // Form states
     const [editingProfile, setEditingProfile] = useState<Profile | null>(null);
     const [formName, setFormName] = useState('');
-    const [formAvatar, setFormAvatar] = useState('👤');
+    const [formAvatar, setFormAvatar] = useState(DEFAULT_AVATAR);
     const [avatarFocusIndex, setAvatarFocusIndex] = useState(0);
     const [editFocusZone, setEditFocusZone] = useState<'avatars' | 'buttons'>('avatars');
     const [buttonFocusIndex, setButtonFocusIndex] = useState(0); // 0 = cancel, 1 = save
@@ -38,19 +39,55 @@ export function ProfileManager({ onClose }: ProfileManagerProps) {
     // Close button focus
     const [closeButtonFocused, setCloseButtonFocused] = useState(false);
 
-    // Load profiles
-    useEffect(() => {
-        profileService.initialize();
-        refreshProfiles();
-    }, []);
-
-    const refreshProfiles = () => {
+    const refreshProfiles = useCallback(() => {
         setProfiles(profileService.getAllProfiles());
         setActiveProfile(profileService.getActiveProfile());
-    };
+    }, []);
+
+    // Load profiles
+    useEffect(() => {
+        void Promise.resolve().then(() => {
+            profileService.initialize();
+            refreshProfiles();
+        });
+    }, [refreshProfiles]);
 
     // Calculate total focusable items (profiles + add button if < 5)
     const totalItems = profiles.length + (profiles.length < 5 ? 1 : 0);
+
+    // Start editing a profile
+    const startEdit = useCallback((profile: Profile) => {
+        setEditingProfile(profile);
+        setFormName(profile.name);
+        setFormAvatar(profile.avatar);
+        setAvatarFocusIndex(Math.max(0, avatarOptions.indexOf(profile.avatar)));
+        setMode('edit');
+    }, []);
+
+    // Handle create profile
+    const handleCreateProfile = useCallback(async () => {
+        if (!formName.trim()) return;
+
+        await profileService.createProfile({
+            name: formName.trim(),
+            avatar: formAvatar
+        });
+        refreshProfiles();
+        setMode('list');
+    }, [formAvatar, formName, refreshProfiles]);
+
+    // Handle edit profile
+    const handleEditProfile = useCallback(async () => {
+        if (!editingProfile || !formName.trim()) return;
+
+        await profileService.updateProfile(editingProfile.id, {
+            name: formName.trim(),
+            avatar: formAvatar
+        });
+        refreshProfiles();
+        setEditingProfile(null);
+        setMode('list');
+    }, [editingProfile, formAvatar, formName, refreshProfiles]);
 
     // Handle navigation
     const handleNavigate = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
@@ -112,7 +149,7 @@ export function ProfileManager({ onClose }: ProfileManagerProps) {
                 }
             }
         }
-    }, [mode, totalItems, editFocusZone, avatarFocusIndex]);
+    }, [mode, totalItems, editFocusZone, avatarFocusIndex, closeButtonFocused, focusedIndex]);
 
     const handleEnter = useCallback(() => {
         if (mode === 'list') {
@@ -148,7 +185,7 @@ export function ProfileManager({ onClose }: ProfileManagerProps) {
             } else {
                 // Add new profile
                 setFormName('');
-                setFormAvatar('👤');
+                setFormAvatar(DEFAULT_AVATAR);
                 setAvatarFocusIndex(0);
                 setMode('create');
             }
@@ -171,7 +208,7 @@ export function ProfileManager({ onClose }: ProfileManagerProps) {
                 }
             }
         }
-    }, [mode, focusedIndex, profiles, activeProfile, onClose, editFocusZone, buttonFocusIndex, avatarFocusIndex]);
+    }, [mode, closeButtonFocused, focusedIndex, profiles, activeProfile, onClose, editFocusZone, buttonFocusIndex, avatarFocusIndex, startEdit, refreshProfiles, handleCreateProfile, handleEditProfile]);
 
     const handleBack = useCallback(() => {
         if (mode === 'list') {
@@ -206,31 +243,6 @@ export function ProfileManager({ onClose }: ProfileManagerProps) {
         }
     };
 
-    // Handle create profile
-    const handleCreateProfile = async () => {
-        if (!formName.trim()) return;
-
-        await profileService.createProfile({
-            name: formName.trim(),
-            avatar: formAvatar
-        });
-        refreshProfiles();
-        setMode('list');
-    };
-
-    // Handle edit profile
-    const handleEditProfile = async () => {
-        if (!editingProfile || !formName.trim()) return;
-
-        await profileService.updateProfile(editingProfile.id, {
-            name: formName.trim(),
-            avatar: formAvatar
-        });
-        refreshProfiles();
-        setEditingProfile(null);
-        setMode('list');
-    };
-
     // Handle delete profile
     const handleDeleteProfile = () => {
         if (!deleteTarget) return;
@@ -240,15 +252,6 @@ export function ProfileManager({ onClose }: ProfileManagerProps) {
         setDeleteTarget(null);
         setMode('list');
         setFocusedIndex(0);
-    };
-
-    // Start editing a profile
-    const startEdit = (profile: Profile) => {
-        setEditingProfile(profile);
-        setFormName(profile.name);
-        setFormAvatar(profile.avatar);
-        setAvatarFocusIndex(avatarOptions.indexOf(profile.avatar) || 0);
-        setMode('edit');
     };
 
     // Start delete confirmation
@@ -275,14 +278,14 @@ export function ProfileManager({ onClose }: ProfileManagerProps) {
             {/* Header */}
             <div className="pm-header">
                 <h1 className="pm-title">
-                    <span className="pm-title-icon">👥</span>
+                    <span className="pm-title-icon">Perfis</span>
                     Gerenciar Perfis
                 </h1>
                 <button
                     className={`pm-close-btn ${closeButtonFocused ? 'focused' : ''}`}
                     onClick={onClose}
                 >
-                    ✕
+                    X
                 </button>
             </div>
 
@@ -331,12 +334,12 @@ export function ProfileManager({ onClose }: ProfileManagerProps) {
 
                                 <h3 className="pm-profile-name">
                                     {profile.name}
-                                    {profile.isKids && <span className="pm-kids-badge">👶 Kids</span>}
+                                    {profile.isKids && <span className="pm-kids-badge">Kids</span>}
                                 </h3>
 
                                 {profile.pin && (
                                     <div className="pm-pin-indicator">
-                                        🔒 PIN ativo
+                                        PIN ativo
                                     </div>
                                 )}
 
@@ -347,14 +350,14 @@ export function ProfileManager({ onClose }: ProfileManagerProps) {
                                             className="pm-btn pm-btn-edit"
                                             onClick={(e) => { e.stopPropagation(); startEdit(profile); }}
                                         >
-                                            ✏️ Editar
+                                            Editar
                                         </button>
                                         <button
                                             className="pm-btn pm-btn-delete"
                                             onClick={(e) => { e.stopPropagation(); startDelete(profile); }}
                                             disabled={isActive || profiles.length <= 1}
                                         >
-                                            🗑️ Excluir
+                                            Excluir
                                         </button>
                                     </div>
                                 )}
@@ -369,7 +372,7 @@ export function ProfileManager({ onClose }: ProfileManagerProps) {
                             onClick={() => {
                                 setFocusedIndex(profiles.length);
                                 setFormName('');
-                                setFormAvatar('👤');
+                                setFormAvatar(DEFAULT_AVATAR);
                                 setMode('create');
                             }}
                         >
@@ -384,7 +387,7 @@ export function ProfileManager({ onClose }: ProfileManagerProps) {
             {(mode === 'create' || mode === 'edit') && (
                 <div className="pm-modal">
                     <div className="pm-modal-header">
-                        <span className="pm-modal-icon">{mode === 'create' ? '➕' : '✏️'}</span>
+                        <span className="pm-modal-icon">{mode === 'create' ? '+' : 'Editar'}</span>
                         <h2>{mode === 'create' ? 'Novo Perfil' : 'Editar Perfil'}</h2>
                     </div>
 
@@ -436,7 +439,7 @@ export function ProfileManager({ onClose }: ProfileManagerProps) {
             {mode === 'pin-verify' && pendingProfile && (
                 <div className="pm-pin-modal">
                     <div className="pm-pin-header">
-                        <span className="pm-pin-icon">🔐</span>
+                        <span className="pm-pin-icon">PIN</span>
                         <h2>Digite o PIN</h2>
                         <p>Perfil: <strong>{pendingProfile.name}</strong></p>
                     </div>
@@ -470,7 +473,7 @@ export function ProfileManager({ onClose }: ProfileManagerProps) {
                     />
 
                     {pinError && (
-                        <p className="pm-pin-error">⚠️ {pinError}</p>
+                        <p className="pm-pin-error">! {pinError}</p>
                     )}
 
                     <div className="pm-pin-buttons">
@@ -492,7 +495,7 @@ export function ProfileManager({ onClose }: ProfileManagerProps) {
             {mode === 'delete-confirm' && deleteTarget && (
                 <div className="pm-modal pm-modal-delete">
                     <div className="pm-modal-header">
-                        <span className="pm-modal-icon danger">🗑️</span>
+                        <span className="pm-modal-icon danger">Excluir</span>
                         <h2>Excluir Perfil?</h2>
                     </div>
 
@@ -507,7 +510,7 @@ export function ProfileManager({ onClose }: ProfileManagerProps) {
                             Cancelar
                         </button>
                         <button className="pm-btn pm-btn-danger" onClick={handleDeleteProfile}>
-                            🗑️ Excluir
+                            Excluir
                         </button>
                     </div>
                 </div>

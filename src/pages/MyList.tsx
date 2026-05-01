@@ -1,6 +1,6 @@
 // MyList Page - Watch Later List - Matching NeoStream Desktop Style
 
-import { useState, useEffect } from 'react';
+import { useCallback, useState } from 'react';
 import { storage } from '../services/storage';
 import { useTVNavigation } from '../hooks/useTVNavigation';
 import './MyList.css';
@@ -16,7 +16,7 @@ interface WatchLaterItem {
 }
 
 export function MyList() {
-    const [items, setItems] = useState<WatchLaterItem[]>([]);
+    const [items, setItems] = useState<WatchLaterItem[]>(() => storage.getWatchLater());
     const [activeTab, setActiveTab] = useState<'all' | 'movies' | 'series'>('all');
     const [removingId, setRemovingId] = useState<string | null>(null);
 
@@ -25,14 +25,10 @@ export function MyList() {
     const [focusedTabIndex, setFocusedTabIndex] = useState(0);
     const [focusedItemIndex, setFocusedItemIndex] = useState(0);
 
-    useEffect(() => {
-        loadItems();
-    }, []);
-
-    const loadItems = () => {
+    const loadItems = useCallback(() => {
         const saved = storage.getWatchLater();
         setItems(saved);
-    };
+    }, []);
 
     const removeItem = (id: string) => {
         setRemovingId(id);
@@ -68,7 +64,7 @@ export function MyList() {
                 setFocusedItemIndex(0);
             }
         } else if (focusArea === 'items') {
-            const cols = 5;
+            const cols = 6;
             const total = displayItems.length;
 
             if (direction === 'up') {

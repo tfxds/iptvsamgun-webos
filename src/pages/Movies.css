@@ -284,8 +284,8 @@
 /* Movies Grid - Poster Cards */
 .movies-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 16px;
 }
 
 .movie-card {

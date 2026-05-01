@@ -1,5 +1,5 @@
 // useHls hook - Manages HLS.js for streaming playback with quality selection
-import { useEffect, useRef, useCallback, useState, type RefObject } from 'react';
+import { useEffect, useRef, useCallback, useState, type MutableRefObject, type RefObject } from 'react';
 import Hls from 'hls.js';
 
 export interface QualityLevel {
@@ -19,7 +19,7 @@ interface UseHlsOptions {
 }
 
 interface UseHlsReturn {
-    hlsRef: React.MutableRefObject<Hls | null>;
+    hlsRef: MutableRefObject<Hls | null>;
     cleanup: () => void;
     qualityLevels: QualityLevel[];
     currentQualityIndex: number;
@@ -45,19 +45,24 @@ export function useHls({
     const [currentQualityIndex, setCurrentQualityIndex] = useState(-1); // -1 = auto
     const [isAutoQuality, setIsAutoQuality] = useState(true);
 
-    // Keep error callback refs updated
-    onErrorRef.current = onError;
-    onStreamErrorRef.current = onStreamError;
-
-    const cleanup = useCallback(() => {
+    const destroyHlsInstance = useCallback(() => {
         if (hlsRef.current) {
             hlsRef.current.destroy();
             hlsRef.current = null;
         }
+    }, []);
+
+    useEffect(() => {
+        onErrorRef.current = onError;
+        onStreamErrorRef.current = onStreamError;
+    }, [onError, onStreamError]);
+
+    const cleanup = useCallback(() => {
+        destroyHlsInstance();
         setQualityLevels([]);
         setCurrentQualityIndex(-1);
         setIsAutoQuality(true);
-    }, []);
+    }, [destroyHlsInstance]);
 
     // Set quality level
     const setQuality = useCallback((index: number) => {
@@ -98,7 +103,7 @@ export function useHls({
         }
 
         // Cleanup previous instance
-        cleanup();
+        destroyHlsInstance();
         srcRef.current = src;
 
         // Reset video state
@@ -199,7 +204,7 @@ export function useHls({
             cleanup();
             srcRef.current = '';
         };
-    }, [src, autoPlay, cleanup]);
+    }, [src, autoPlay, cleanup, destroyHlsInstance, videoRef]);
 
     return {
         hlsRef,

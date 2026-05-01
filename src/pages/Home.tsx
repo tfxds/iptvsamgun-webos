@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import type { VODStream, Series } from '../types';
 import { useTVNavigation } from '../hooks/useTVNavigation';
-import { useFocusZone } from '../App';
+import { useFocusZone } from '../contexts/FocusContext';
 import './Home.css';
 
 interface HomeProps {

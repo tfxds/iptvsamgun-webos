@@ -1,24 +1,107 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR">
 
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/svg+xml" href="./vite.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NeoStream TV</title>
-  <link rel="stylesheet" href="./assets/style.css">
-  <!-- Load legacy polyfills first -->
+  <title>NeoStreamTV</title>
+  <style>
+    html,
+    body,
+    #root {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      background: #05070d;
+      color: #fff;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    #boot-status {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 48px;
+      box-sizing: border-box;
+      text-align: center;
+      background: #05070d;
+      color: #fff;
+      z-index: 999999;
+    }
+
+    #boot-status.ready {
+      display: none;
+    }
+
+    #boot-status strong {
+      display: block;
+      margin-bottom: 16px;
+      font-size: 40px;
+    }
+
+    #boot-status span {
+      display: block;
+      max-width: 900px;
+      color: #cbd5e1;
+      font-size: 24px;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+  </style>
+  <script>
+    window.__NEOSTREAM_BOOT_ERROR__ = function (message) {
+      var boot = document.getElementById('boot-status');
+      if (!boot) return;
+      boot.className = '';
+      boot.innerHTML = '<div><strong>Erro ao carregar NeoStream</strong><span>' + message + '</span></div>';
+    };
+
+    window.onerror = function (message, source, line, column) {
+      window.__NEOSTREAM_BOOT_ERROR__(String(message) + ' em ' + source + ':' + line + ':' + column);
+    };
+
+    window.onunhandledrejection = function (event) {
+      var reason = event && event.reason;
+      var message = reason && reason.message ? reason.message : String(reason);
+      window.__NEOSTREAM_BOOT_ERROR__(message);
+    };
+  </script>
   <script src="./assets/polyfills-legacy.js"></script>
 </head>
 
 <body>
+  <div id="boot-status">
+    <div>
+      <strong>Carregando NeoStream</strong>
+      <span>Preparando o app para a TV...</span>
+    </div>
+  </div>
   <div id="root"></div>
-  <!-- Load legacy app bundle using SystemJS -->
   <script>
-    System.import('./assets/index-legacy.js').catch(function (e) {
-      console.error('Failed to load app:', e);
-      document.getElementById('root').innerHTML = '<div style="color:white;padding:20px;">Erro ao carregar: ' + e.message + '</div>';
-    });
+    var version = new Date().getTime();
+    var css = document.createElement('link');
+    css.rel = 'stylesheet';
+    css.href = './assets/style.css?v=' + version;
+    document.head.appendChild(css);
+
+    if (!window.System || !window.System.import) {
+      window.__NEOSTREAM_BOOT_ERROR__('SystemJS nao foi carregado.');
+    } else {
+      window.System.import('./assets/index-legacy.js?v=' + version)
+        .then(function () {
+          setTimeout(function () {
+            var boot = document.getElementById('boot-status');
+            if (boot && document.getElementById('root').children.length > 0) {
+              boot.className = 'ready';
+            }
+          }, 300);
+        })
+        .catch(function (error) {
+          window.__NEOSTREAM_BOOT_ERROR__(error && error.message ? error.message : String(error));
+        });
+    }
   </script>
 </body>
 

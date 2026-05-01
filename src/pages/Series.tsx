@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
 import type { Series as SeriesType, Category } from '../types';
 import { useTVNavigation } from '../hooks/useTVNavigation';
-import { useFocusZone } from '../App';
+import { useFocusZone } from '../contexts/FocusContext';
 import { CategoryMenu } from '../components/CategoryMenu';
 import { AnimatedSearchBar } from '../components/AnimatedSearchBar';
 import { ContentDetailModal } from '../components/ContentDetailModal';
@@ -70,8 +70,8 @@ export function Series() {
                 ]);
                 setSeries(seriesData);
                 setCategories(categoriesData);
-            } catch (err: any) {
-                setError(err?.message || 'Erro ao carregar sÃ©ries');
+            } catch (err: unknown) {
+                setError(err instanceof Error ? err.message : 'Erro ao carregar séries');
             } finally {
                 setLoading(false);
             }
@@ -80,10 +80,10 @@ export function Series() {
     }, []);
 
     // Filter series
-    const filteredSeries = (Array.isArray(series) ? series : []).filter((s: any) => {
-        const seriesName = s?.name || '';
+    const filteredSeries = series.filter((s) => {
+        const seriesName = s.name || '';
         const matchesSearch = seriesName.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesCategory = selectedCategory === 'all' || s?.category_id === selectedCategory;
+        const matchesCategory = selectedCategory === 'all' || s.category_id === selectedCategory;
         return matchesSearch && matchesCategory;
     });
 
@@ -96,10 +96,7 @@ export function Series() {
             const { scrollTop, scrollHeight, clientHeight } = container;
             // Load more when user scrolls to 80% of the content
             if (scrollTop + clientHeight >= scrollHeight * 0.8 && visibleCount < filteredSeries.length) {
-                const containerWidth = container.clientWidth - 32;
-                const cols = Math.floor(containerWidth / 180);
-                // Add one row at a time
-                setVisibleCount(prev => Math.min(prev + cols, filteredSeries.length));
+                setVisibleCount(prev => Math.min(prev + 12, filteredSeries.length));
             }
         };
 
@@ -140,7 +137,7 @@ export function Series() {
                 setFocusedSeriesIndex(0);
             }
         } else if (focusArea === 'series') {
-            const cols = 5;
+            const cols = 6;
             const totalSeries = filteredSeries.length;
             const currentCol = focusedSeriesIndex % cols;
 

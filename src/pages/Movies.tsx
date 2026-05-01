@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
 import type { VODStream, Category } from '../types';
 import { useTVNavigation } from '../hooks/useTVNavigation';
-import { useFocusZone } from '../App';
+import { useFocusZone } from '../contexts/FocusContext';
 import { CategoryMenu } from '../components/CategoryMenu';
 import { AnimatedSearchBar } from '../components/AnimatedSearchBar';
 import { ContentDetailModal } from '../components/ContentDetailModal';
@@ -70,8 +70,8 @@ export function Movies() {
                 ]);
                 setStreams(streamsData);
                 setCategories(categoriesData);
-            } catch (err: any) {
-                setError(err?.message || 'Erro ao carregar filmes');
+            } catch (err: unknown) {
+                setError(err instanceof Error ? err.message : 'Erro ao carregar filmes');
             } finally {
                 setLoading(false);
             }
@@ -80,10 +80,10 @@ export function Movies() {
     }, []);
 
     // Filter streams
-    const filteredStreams = (Array.isArray(streams) ? streams : []).filter((stream: any) => {
-        const streamName = stream?.name || '';
+    const filteredStreams = streams.filter((stream) => {
+        const streamName = stream.name || '';
         const matchesSearch = streamName.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesCategory = selectedCategory === 'all' || stream?.category_id === selectedCategory;
+        const matchesCategory = selectedCategory === 'all' || stream.category_id === selectedCategory;
         return matchesSearch && matchesCategory;
     });
 
@@ -96,10 +96,7 @@ export function Movies() {
             const { scrollTop, scrollHeight, clientHeight } = container;
             // Load more when user scrolls to 80% of the content
             if (scrollTop + clientHeight >= scrollHeight * 0.8 && visibleCount < filteredStreams.length) {
-                const containerWidth = container.clientWidth - 32;
-                const cols = Math.floor(containerWidth / 180);
-                // Add one row at a time
-                setVisibleCount(prev => Math.min(prev + cols, filteredStreams.length));
+                setVisibleCount(prev => Math.min(prev + 12, filteredStreams.length));
             }
         };
 
@@ -140,7 +137,7 @@ export function Movies() {
                 setFocusedMovieIndex(0);
             }
         } else if (focusArea === 'movies') {
-            const cols = 5; // Grid columns
+            const cols = 6;
             const totalMovies = filteredStreams.length;
             const currentCol = focusedMovieIndex % cols;
 

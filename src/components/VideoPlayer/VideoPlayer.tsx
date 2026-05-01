@@ -143,12 +143,13 @@ export function VideoPlayer({
 
     // Cleanup on unmount
     useEffect(() => {
+        const video = videoRef.current;
         return () => {
             cleanup();
-            if (videoRef.current) {
-                videoRef.current.pause();
-                videoRef.current.src = '';
-                videoRef.current.load();
+            if (video) {
+                video.pause();
+                video.src = '';
+                video.load();
             }
         };
     }, [cleanup]);

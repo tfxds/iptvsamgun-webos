@@ -1,10 +1,10 @@
-// ContentDetailModal.tsx - Premium modal matching original NeoStream app
+﻿// ContentDetailModal.tsx - Premium modal matching original NeoStream app
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { api } from '../services/api';
 import { searchMovieByName, searchSeriesByName, getImageUrl, formatGenres, type TMDBMovieDetails, type TMDBSeriesDetails } from '../services/tmdb';
 import { useTVNavigation } from '../hooks/useTVNavigation';
-import type { SeriesInfo } from '../types';
+import type { Episode, SeriesInfo } from '../types';
 import './ContentDetailModal.css';
 
 interface ContentDetailModalProps {
@@ -56,6 +56,7 @@ interface WatchLaterItemData {
     title?: string;
     poster?: string;
     rating?: string;
+    addedAt?: number;
 }
 
 const watchLaterService = {
@@ -74,7 +75,7 @@ const watchLaterService = {
         if (index >= 0) {
             all.splice(index, 1);
         } else {
-            all.push({ id, type, title, poster, rating, addedAt: Date.now() } as any);
+            all.push({ id, type, title, poster, rating, addedAt: Date.now() });
         }
         localStorage.setItem(this.KEY, JSON.stringify(all));
     }
@@ -162,13 +163,13 @@ export function ContentDetailModal({
     }, [isOpen, contentData.name, contentData.release_date, contentType]);
 
     // Close with animation
-    const handleClose = () => {
+    const handleClose = useCallback(() => {
         setIsClosing(true);
         setTimeout(() => {
             setIsClosing(false);
             onClose();
         }, 250);
-    };
+    }, [onClose]);
 
     // Close on escape key
     useEffect(() => {
@@ -179,7 +180,7 @@ export function ContentDetailModal({
             window.addEventListener('keydown', handleEscape);
         }
         return () => window.removeEventListener('keydown', handleEscape);
-    }, [isOpen]);
+    }, [isOpen, handleClose]);
 
     // Close when clicking outside
     const handleBackdropClick = (e: React.MouseEvent) => {
@@ -189,8 +190,14 @@ export function ContentDetailModal({
     };
 
     // Calculate navigation items
-    const seasons = seriesInfo?.episodes ? Object.keys(seriesInfo.episodes).sort((a, b) => Number(a) - Number(b)) : [];
-    const episodes = seriesInfo?.episodes?.[selectedSeason] || [];
+    const seasons = useMemo(
+        () => seriesInfo?.episodes ? Object.keys(seriesInfo.episodes).sort((a, b) => Number(a) - Number(b)) : [],
+        [seriesInfo]
+    );
+    const episodes = useMemo(
+        () => seriesInfo?.episodes?.[selectedSeason] || [],
+        [seriesInfo, selectedSeason]
+    );
 
     // TV Navigation handlers
     const handleNavigate = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
@@ -252,7 +259,7 @@ export function ContentDetailModal({
                 if (direction === 'down') setFocusZone('play');
             }
         }
-    }, [isOpen, focusZone, contentType, seasons.length, episodes.length, seasonFocusIndex, episodeFocusIndex]);
+    }, [isOpen, focusZone, contentType, seasons.length, episodes.length, episodeFocusIndex]);
 
     const handleEnter = useCallback(() => {
         if (!isOpen) return;
@@ -302,14 +309,13 @@ export function ContentDetailModal({
     });
 
     // Helper function for episode titles
-    const getEpisodeTitle = (ep: any): string => {
+    const getEpisodeTitle = (ep: Episode): string => {
         const epNum = Number(ep.episode_num);
         const rawTitle = ep.title || '';
 
-        // Clean the title
-        let cleanTitle = rawTitle
-            .replace(/^(.*?)[\s\-–—]*S\d+[\s\-:\.]*E\d+[\s\-:\.–—]*/i, '')
-            .replace(/\s*[\[\(]?S\d+[\s\.\\-]*E\d+[\]\)]?\s*/gi, '')
+        const cleanTitle = rawTitle
+            .replace(/^(.*?)[\s-–—]*S\d+[\s:.]*E\d+[\s:.–—]*/i, '')
+            .replace(/\s*(?:\[|\()?S\d+[\s.-]*E\d+(?:\]|\))?\s*/gi, '')
             .replace(/Episode\s*\d+/gi, '')
             .replace(/^\d+\.?\s*/, '')
             .trim();
@@ -323,11 +329,10 @@ export function ContentDetailModal({
 
         return isValidTitle ? cleanTitle : `Episódio ${epNum}`;
     };
-
     if (!isOpen) return null;
 
     // Use TMDB data if available, fallback to IPTV data
-    const overview = (tmdbData as any)?.overview || contentData.plot || 'Sem descrição disponível.';
+    const overview = tmdbData?.overview || contentData.plot || 'Sem descrição disponível.';
     const rating = tmdbData?.vote_average ? tmdbData.vote_average.toFixed(1) : contentData.rating;
     const genres = tmdbData?.genres ? formatGenres(tmdbData.genres) : contentData.genre;
     const backdropUrl = tmdbData?.backdrop_path ? getImageUrl(tmdbData.backdrop_path, 'w1280') : null;
@@ -342,7 +347,7 @@ export function ContentDetailModal({
             <div className={`modal-container ${isClosing ? 'closing' : ''}`}>
                 {/* Close Button */}
                 <button className={`modal-close-btn ${focusZone === 'close' ? 'focused' : ''}`} onClick={handleClose}>
-                    ✕
+                    X
                 </button>
 
                 {/* Backdrop from TMDB */}
@@ -377,12 +382,12 @@ export function ContentDetailModal({
                     <div className="modal-meta">
                         {rating && (
                             <span className="meta-badge rating-badge">
-                                <span className="star">⭐</span>
+                                <span className="star">★</span>
                                 {rating}
                             </span>
                         )}
                         <span className={`meta-badge ${contentType === 'series' ? 'type-badge-series' : 'type-badge-movie'}`}>
-                            {contentType === 'series' ? '📺 Série' : '🎬 Filme'}
+                            {contentType === 'series' ? 'Série' : 'Filme'}
                         </span>
                         {contentType === 'series' && seasons.length > 0 && (
                             <span className="meta-badge season-badge">
@@ -424,7 +429,7 @@ export function ContentDetailModal({
 
                             {/* Episode List */}
                             <div className="episode-list">
-                                {episodes.map((ep: any, index: number) => {
+                                {episodes.map((ep, index: number) => {
                                     const epNum = Number(ep.episode_num);
                                     const isSelected = epNum === selectedEpisode;
 
@@ -500,7 +505,7 @@ export function ContentDetailModal({
                             }}
                             title={favoritesService.has(contentId, contentType) ? 'Remover dos Favoritos' : 'Adicionar aos Favoritos'}
                         >
-                            {favoritesService.has(contentId, contentType) ? '❤️' : '🤍'}
+                            {favoritesService.has(contentId, contentType) ? '♥' : '♡'}
                         </button>
                     </div>
                 </div>

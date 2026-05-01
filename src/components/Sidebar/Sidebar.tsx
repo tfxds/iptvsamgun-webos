@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useTVNavigation } from '../../hooks/useTVNavigation';
-import { useFocusZone } from '../../App';
+import { useFocusZone } from '../../contexts/FocusContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { TranslationKey } from '../../i18n';
 import './Sidebar.css';

@@ -1,0 +1,132 @@
+.settings-page {
+    min-height: 100vh;
+    padding: 56px;
+    background:
+        radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.18), transparent 32%),
+        var(--bg-primary);
+}
+
+.settings-panel {
+    max-width: 980px;
+    margin: 0 auto;
+}
+
+.settings-header {
+    margin-bottom: 32px;
+}
+
+.settings-kicker {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--accent-primary);
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.settings-header h1 {
+    margin-bottom: 12px;
+    color: var(--text-primary);
+    font-size: var(--font-size-3xl);
+}
+
+.settings-header p,
+.settings-help,
+.settings-status,
+.settings-message {
+    color: var(--text-secondary);
+    font-size: var(--font-size-base);
+}
+
+.settings-section,
+.settings-help {
+    padding: 24px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: rgba(22, 22, 31, 0.92);
+}
+
+.settings-label {
+    display: block;
+    margin-bottom: 10px;
+    color: var(--text-primary);
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+}
+
+.settings-input {
+    width: 100%;
+    min-height: 58px;
+    padding: 0 18px;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-size: var(--font-size-base);
+    outline: none;
+}
+
+.settings-input.focused,
+.settings-input:focus,
+.settings-button.focused {
+    border-color: var(--focus-ring);
+    box-shadow: var(--shadow-focus);
+}
+
+.settings-status {
+    margin-top: 14px;
+}
+
+.settings-actions {
+    display: flex;
+    gap: 14px;
+    margin-top: 22px;
+}
+
+.settings-button {
+    min-width: 190px;
+    min-height: 54px;
+    padding: 0 22px;
+    border: 2px solid transparent;
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: var(--font-size-base);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.settings-button.primary {
+    background: var(--accent-gradient);
+}
+
+.settings-button.secondary {
+    border-color: var(--border-color);
+    background: var(--bg-tertiary);
+}
+
+.settings-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+}
+
+.settings-message {
+    margin-top: 18px;
+    color: var(--accent-primary);
+}
+
+.settings-help {
+    margin-top: 20px;
+}
+
+.settings-help h2 {
+    margin-bottom: 12px;
+    color: var(--text-primary);
+}
+
+.settings-help ol {
+    padding-left: 24px;
+}
+
+.settings-help li + li {
+    margin-top: 8px;
+}

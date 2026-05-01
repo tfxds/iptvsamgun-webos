@@ -1,6 +1,7 @@
 // Login Page - Premium design with full TV navigation
 // Tizen-compatible: no readOnly, no type=password (uses CSS masking)
 import { useState, useRef, useEffect, useCallback } from 'react';
+import type { KeyboardEvent } from 'react';
 import { FaTv, FaServer, FaUser, FaLock, FaSignInAlt, FaStar, FaArrowLeft, FaGlobe } from 'react-icons/fa';
 import { api } from '../services/api';
 import { storage } from '../services/storage';
@@ -74,7 +75,7 @@ export function Login({ onLoginSuccess, onLanguageSelect }: LoginProps) {
         };
     }, []);
 
-    const handleLogin = async () => {
+    const handleLogin = useCallback(async () => {
         if (!url || !username || !password) {
             setError(t('login_error_empty'));
             return;
@@ -89,22 +90,23 @@ export function Login({ onLoginSuccess, onLanguageSelect }: LoginProps) {
             localStorage.setItem('includeVOD', includeVOD.toString());
             storage.saveCredentials({ url, username, password });
             onLoginSuccess();
-        } catch (err: any) {
-            if (err?.message?.includes('Invalid URL') || err?.message?.includes('invalid url')) {
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : '';
+            if (message.includes('Invalid URL') || message.includes('invalid url')) {
                 setError(t('login_error_invalid_url'));
-            } else if (err?.message?.includes('fetch') || err?.message?.includes('ENOTFOUND') || err?.message?.includes('ECONNREFUSED')) {
+            } else if (message.includes('fetch') || message.includes('ENOTFOUND') || message.includes('ECONNREFUSED')) {
                 setError(t('login_error_connection'));
-            } else if (err?.message?.includes('401') || err?.message?.includes('Unauthorized') || err?.message?.includes('authentication')) {
+            } else if (message.includes('401') || message.includes('Unauthorized') || message.includes('authentication')) {
                 setError(t('login_error_auth'));
-            } else if (err?.message?.includes('timeout')) {
+            } else if (message.includes('timeout')) {
                 setError(t('login_error_timeout'));
             } else {
-                setError(err.message || t('login_error_generic'));
+                setError(message || t('login_error_generic'));
             }
         } finally {
             setLoading(false);
         }
-    };
+    }, [includeTV, includeVOD, onLoginSuccess, password, t, url, username]);
 
     const handleBack = () => {
         window.location.reload();
@@ -117,10 +119,41 @@ export function Login({ onLoginSuccess, onLanguageSelect }: LoginProps) {
         passwordRef.current?.blur();
     }, []);
 
+    const stopEditingInput = useCallback(() => {
+        blurAllInputs();
+        setEditingField(null);
+        window.setTimeout(() => {
+            const active = document.activeElement as HTMLElement | null;
+            if (active?.tagName === 'INPUT') {
+                active.blur();
+            }
+        }, 0);
+    }, [blurAllInputs]);
+
+    const handleInputKeyDown = useCallback((event: KeyboardEvent<HTMLInputElement>) => {
+        const key = event.key || String(event.keyCode);
+        if (
+            key === 'Enter' ||
+            key === '13' ||
+            key === '29443' ||
+            key === 'Select' ||
+            key === 'Done' ||
+            key === 'Go' ||
+            key === '10009' ||
+            key === '461' ||
+            key === 'XF86Back' ||
+            key === 'Escape'
+        ) {
+            event.preventDefault();
+            event.stopPropagation();
+            stopEditingInput();
+        }
+    }, [stopEditingInput]);
+
     const handleEnter = useCallback(() => {
         // If editing an input, blur it (close keyboard)
         if (editingField !== null) {
-            blurAllInputs();
+            stopEditingInput();
             return;
         }
 
@@ -151,16 +184,16 @@ export function Login({ onLoginSuccess, onLanguageSelect }: LoginProps) {
                 handleLogin();
                 break;
         }
-    }, [editingField, focusedField, blurAllInputs, onLanguageSelect]);
+    }, [editingField, focusedField, stopEditingInput, onLanguageSelect, handleLogin]);
 
     const handleBackAction = useCallback(() => {
         // If editing, just blur (close keyboard)
         if (editingField !== null) {
-            blurAllInputs();
+            stopEditingInput();
             return;
         }
         handleBack();
-    }, [editingField, blurAllInputs]);
+    }, [editingField, stopEditingInput]);
 
     useTVNavigation({
         onNavigate: (direction) => {
@@ -183,6 +216,13 @@ export function Login({ onLoginSuccess, onLanguageSelect }: LoginProps) {
         onEnter: handleEnter,
         onBack: handleBackAction,
     });
+
+    useEffect(() => {
+        if (editingField !== null) return;
+        urlRef.current?.blur();
+        usernameRef.current?.blur();
+        passwordRef.current?.blur();
+    }, [editingField]);
 
     // Get current language label
     const currentLang = storage.getSettings().language === 'en' ? 'EN' : 'PT-BR';
@@ -235,6 +275,7 @@ export function Login({ onLoginSuccess, onLanguageSelect }: LoginProps) {
                                 placeholder="http://example.com:8080"
                                 disabled={loading}
                                 tabIndex={-1}
+                                onKeyDown={handleInputKeyDown}
                                 autoComplete="off"
                                 autoCorrect="off"
                                 spellCheck={false}
@@ -260,6 +301,7 @@ export function Login({ onLoginSuccess, onLanguageSelect }: LoginProps) {
                                 onChange={(e) => setUsername(e.target.value)}
                                 disabled={loading}
                                 tabIndex={-1}
+                                onKeyDown={handleInputKeyDown}
                                 autoComplete="off"
                                 autoCorrect="off"
                                 spellCheck={false}
@@ -286,6 +328,7 @@ export function Login({ onLoginSuccess, onLanguageSelect }: LoginProps) {
                                 onChange={(e) => setPassword(e.target.value)}
                                 disabled={loading}
                                 tabIndex={-1}
+                                onKeyDown={handleInputKeyDown}
                                 autoComplete="off"
                                 autoCorrect="off"
                                 spellCheck={false}
