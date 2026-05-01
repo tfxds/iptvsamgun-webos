@@ -35,6 +35,7 @@ Use at your own risk. The creator and contributors are not responsible for how t
 - Multi-profile support.
 - Portuguese and English language resources.
 - Optional TMDB metadata using a user-provided local API key.
+- Flexible Xtream server URL input, including bare domains, `http`, `https`, ports, and common Xtream endpoint paths.
 - Samsung Tizen build support with Vite legacy output.
 
 ## Quick Start
@@ -87,6 +88,7 @@ Each user should use their own TMDB key. The key is saved only in the local stor
 ```text
 src/
 |-- components/          Reusable UI components
+|-- contexts/            Shared focus/navigation context
 |-- hooks/               TV navigation, HLS, and app hooks
 |-- i18n/                Language resources
 |-- pages/               App screens
@@ -104,13 +106,35 @@ tizen/
 | Key | Action |
 |-----|--------|
 | Up / Down / Left / Right | Navigate |
-| Enter / OK | Select |
-| Back / Return | Go back or close overlays |
+| Enter / OK | Select or finish editing an input |
+| Back / Return | Go back, close overlays, or leave an active input |
 | Play / Pause | Media control where supported |
+
+## Samsung Tizen
+
+The current Tizen package identity is:
+
+```text
+Application ID: RakjsuNeo1.NeoStreamTV
+Package ID: RakjsuNeo1
+Widget ID: http://rakjsu.neostream.tv
+Visible name: NeoStreamTV
+```
+
+After `npm run build:tizen`, package the app with Tizen Studio CLI and install it on a connected Samsung TV:
+
+```powershell
+& 'C:\tizen-studio\tools\ide\bin\tizen.bat' package -t wgt -s NeoStreamTV -o .\build-tizen -- .\tizen
+& 'C:\tizen-studio\tools\ide\bin\tizen.bat' install -n 'NeoStreamTV.wgt' -s '<TV_IP>:26101' -- '<project>\build-tizen'
+& 'C:\tizen-studio\tools\ide\bin\tizen.bat' run -p RakjsuNeo1.NeoStreamTV -s '<TV_IP>:26101'
+```
+
+If the Tizen CLI has trouble transferring `NeoStreamTV.wgt`, copy the same package to a temporary name such as `NeoFinal.wgt` and install that file. The app identity inside the package remains `RakjsuNeo1.NeoStreamTV`.
 
 ## Security Notes
 
 - IPTV credentials are stored in browser/device `localStorage`.
+- Server URLs are normalized locally; the app accepts bare domains and common Xtream endpoint URLs, then saves the URL that authenticated successfully.
 - TMDB is disabled until the user enters their own API key in Settings.
 - The TMDB key is stored locally on the device where it was entered.
 - Do not add private provider credentials, private API keys, certificates, generated signatures, logs, or Tizen workspace metadata to commits.
@@ -125,7 +149,7 @@ tizen/
 
 - Complete Live TV playback flow from channel selection.
 - Add EPG/program guide support.
-- Continue lint cleanup and stricter TypeScript typing.
+- Continue stricter TypeScript typing.
 - Harden Tizen packaging and ignored generated artifacts.
 - Improve remote-control navigation consistency across all screens.
 - Add LG webOS packaging.

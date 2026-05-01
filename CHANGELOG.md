@@ -12,6 +12,9 @@ Created by **Rakjsu**.
 - Added local TMDB key storage through the Settings screen for device/browser testing.
 - Split production builds into `build:web` for modern browsers and `build:tizen` for Samsung Tizen.
 - Added a dedicated Tizen Vite config for legacy output and expected single-bundle packaging.
+- Finalized the Samsung Tizen package identity as `RakjsuNeo1.NeoStreamTV`.
+- Improved Xtream server URL handling with normalization and HTTP/HTTPS fallback.
+- Improved login remote-control behavior when leaving TV keyboard input fields.
 
 ### Documentation
 
@@ -20,6 +23,7 @@ Created by **Rakjsu**.
 - Added creator attribution for Rakjsu.
 - Added clearer disclaimer and security notes for IPTV credentials, TMDB usage, generated Tizen artifacts, and local logs.
 - Added a TMDB API key tutorial explaining that each user must provide their own key.
+- Documented the current Tizen package identity and install/run commands.
 - Added current maintenance notes for build, lint, and Tizen packaging state.
 
 ### Known Follow-ups
