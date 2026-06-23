@@ -417,8 +417,8 @@
 }
 /* Logo do revendedor (whitelabel) no topo do sidebar */
 .reseller-logo {
-    max-width: 82%;
-    max-height: 56px;
+    max-width: 92%;
+    max-height: 94px;
     object-fit: contain;
     display: block;
     margin: 0 auto;
