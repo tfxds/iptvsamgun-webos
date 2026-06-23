@@ -6,6 +6,7 @@ import { storage, ADULT_RE } from '../services/storage';
 import type { LiveStream, Category, EPGProgram } from '../types';
 import { useTVNavigation } from '../hooks/useTVNavigation';
 import { useFocusZone } from '../contexts/FocusContext';
+import { useHls } from '../hooks/useHls';
 import { VideoPlayer } from '../components/VideoPlayer';
 import './LiveTV.css';
 
@@ -26,6 +27,11 @@ export function LiveTV() {
 
     const channelsScrollRef = useRef<HTMLDivElement>(null);
     const searchRef = useRef<HTMLInputElement>(null);
+    const previewRef = useRef<HTMLVideoElement>(null);
+
+    // Mini preview do canal selecionado (mudo) na coluna de info; some ao abrir tela cheia
+    const previewSrc = selectedChannel && !showPlayer ? api.getLiveStreamUrl(selectedChannel.stream_id) : '';
+    useHls({ src: previewSrc, videoRef: previewRef, autoPlay: true });
 
     // Focus areas (3 colunas)
     const [focusArea, setFocusArea] = useState<'categories' | 'channels' | 'info'>('channels');
@@ -125,7 +131,11 @@ export function LiveTV() {
             setSelectedCategory(idx === 0 ? 'all' : (cats[idx - 1]?.category_id || "all"));
         } else if (focusArea === 'channels') {
             const ch = filteredStreams[focusedChannelIndex];
-            if (ch) setSelectedChannel(ch);
+            if (ch) {
+                // 1a vez: seleciona (mostra preview). 2a vez no MESMO canal: tela cheia.
+                if (selectedChannel?.stream_id === ch.stream_id) setShowPlayer(true);
+                else setSelectedChannel(ch);
+            }
         } else if (focusArea === 'info') {
             if (selectedChannel) setShowPlayer(true);
         }
@@ -234,15 +244,19 @@ export function LiveTV() {
                 ) : (
                     <>
                         <div className="info-head">
-                            <div className="info-logo">
-                                {brokenImages.has(selectedChannel.stream_id) || !selectedChannel.stream_icon ? (
-                                    <span>📺</span>
-                                ) : (
-                                    <img src={selectedChannel.stream_icon} alt={selectedChannel.name} />
-                                )}
+                            {/* Mini preview do canal (mudo) — OK de novo abre em tela cheia */}
+                            <div className="info-preview-wrap">
+                                <video
+                                    ref={previewRef}
+                                    className="info-preview"
+                                    muted
+                                    playsInline
+                                    autoPlay
+                                    poster={selectedChannel.stream_icon || undefined}
+                                />
+                                <span className="info-preview-badge"><span className="live-dot" /> PRÉVIA</span>
                             </div>
                             <h2 className="info-name">{selectedChannel.name}</h2>
-                            <span className="live-badge"><span className="live-dot" /> AO VIVO</span>
                         </div>
                         <button
                             className={`watch-btn ${focusArea === 'info' ? 'tv-focused' : ''}`}
