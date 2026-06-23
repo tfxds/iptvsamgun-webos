@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
+import { storage } from '../services/storage';
 import type { Series as SeriesType, Category } from '../types';
 import { useTVNavigation } from '../hooks/useTVNavigation';
 import { useFocusZone } from '../contexts/FocusContext';
@@ -22,7 +23,7 @@ export function Series() {
     const [selectedSeries, setSelectedSeries] = useState<SeriesType | null>(null);
     const [showModal, setShowModal] = useState(false);
     const [showPlayer, setShowPlayer] = useState(false);
-    const [playerInfo, setPlayerInfo] = useState<{ url: string; title: string; poster: string } | null>(null);
+    const [playerInfo, setPlayerInfo] = useState<{ url: string; title: string; poster: string; name: string; seriesId: string; season: number; episode: number; resume: number } | null>(null);
     const [brokenImages, setBrokenImages] = useState<Set<number>>(new Set());
     const [visibleCount, setVisibleCount] = useState(30);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -275,15 +276,25 @@ export function Series() {
                     }}
                     onPlay={async (season, episode) => {
                         try {
+                            const s = season || 1;
+                            const ep = episode || 1;
                             const seriesInfo = await api.getSeriesInfo(selectedSeries.series_id);
-                            const episodes = seriesInfo?.episodes?.[season || 1] || [];
-                            const episodeData = episodes.find(e => e.episode_num === episode) || episodes[0];
+                            const episodes = seriesInfo?.episodes?.[s] || [];
+                            const episodeData = episodes.find(e => e.episode_num === ep) || episodes[0];
                             if (episodeData) {
                                 const streamUrl = api.getSeriesStreamUrl(episodeData.id, episodeData.container_extension || 'mp4');
+                                // retoma de onde parou se for o MESMO episodio salvo
+                                const saved = storage.getProgress(String(selectedSeries.series_id), 'series');
+                                const resume = (saved && saved.season === s && saved.episode === ep) ? saved.position : 0;
                                 setPlayerInfo({
                                     url: streamUrl,
-                                    title: `${selectedSeries.name} - T${season} E${episode}`,
-                                    poster: selectedSeries.cover
+                                    title: `${selectedSeries.name} - T${s} E${ep}`,
+                                    poster: selectedSeries.cover,
+                                    name: selectedSeries.name,
+                                    seriesId: String(selectedSeries.series_id),
+                                    season: s,
+                                    episode: ep,
+                                    resume,
                                 });
                                 setShowPlayer(true);
                             }
@@ -301,6 +312,12 @@ export function Series() {
                     src={playerInfo.url}
                     title={playerInfo.title}
                     poster={playerInfo.poster}
+                    contentType="series"
+                    resumeTime={playerInfo.resume || null}
+                    onTimeUpdate={(t, d) => storage.saveProgress({
+                        id: playerInfo.seriesId, type: 'series', title: playerInfo.name, poster: playerInfo.poster,
+                        position: t, duration: d, season: playerInfo.season, episode: playerInfo.episode,
+                    })}
                     onClose={() => { setShowPlayer(false); setPlayerInfo(null); }}
                 />
             )}

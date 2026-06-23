@@ -26,10 +26,25 @@ const STORAGE_KEYS = {
     CREDENTIALS: 'neostream_credentials',
     FAVORITES: 'neostream_favorites',
     WATCH_LATER: 'neostream_watch_later',
+    CONTINUE: 'neostream_continue',
     LAST_CHANNEL: 'neostream_last_channel',
     SETTINGS: 'neostream_settings',
     TMDB_API_KEY: 'neostream_tmdb_api_key',
 };
+
+// Continuar Assistindo (resume) — guarda onde parou em filme/serie
+export interface ProgressItem {
+    id: string;                 // stream_id (filme) ou series_id (serie)
+    type: 'movie' | 'series';
+    title: string;
+    poster?: string;
+    position: number;           // segundos
+    duration: number;           // segundos (0 se desconhecido)
+    season?: number;            // serie: temporada atual
+    episode?: number;           // serie: episodio atual
+    containerExtension?: string;// filme: extensao p/ remontar a URL
+    updatedAt: number;
+}
 
 interface Settings {
     language: 'pt' | 'en' | 'es';
@@ -110,6 +125,36 @@ class StorageService {
 
     clearWatchLater(): void {
         localStorage.setItem(STORAGE_KEYS.WATCH_LATER, JSON.stringify([]));
+    }
+
+    // Continuar Assistindo (resume)
+    getContinueWatching(): ProgressItem[] {
+        const data = localStorage.getItem(STORAGE_KEYS.CONTINUE);
+        const list: ProgressItem[] = data ? JSON.parse(data) : [];
+        return list.sort((a, b) => b.updatedAt - a.updatedAt);
+    }
+
+    getProgress(id: string, type: 'movie' | 'series'): ProgressItem | null {
+        return this.getContinueWatching().find(p => p.id === id && p.type === type) || null;
+    }
+
+    // Upsert do progresso. Ignora o comeco (<30s) e remove quando quase termina (>92%).
+    saveProgress(item: Omit<ProgressItem, 'updatedAt'>): void {
+        const list = this.getContinueWatching().filter(p => !(p.id === item.id && p.type === item.type));
+        const nearEnd = item.duration > 0 && item.position >= item.duration * 0.92;
+        if (item.position >= 30 && !nearEnd) {
+            list.unshift({ ...item, updatedAt: Date.now() });
+        }
+        localStorage.setItem(STORAGE_KEYS.CONTINUE, JSON.stringify(list.slice(0, 50)));
+    }
+
+    removeProgress(id: string, type: 'movie' | 'series'): void {
+        const list = this.getContinueWatching().filter(p => !(p.id === id && p.type === type));
+        localStorage.setItem(STORAGE_KEYS.CONTINUE, JSON.stringify(list));
+    }
+
+    clearContinueWatching(): void {
+        localStorage.setItem(STORAGE_KEYS.CONTINUE, JSON.stringify([]));
     }
 
     // Last channel

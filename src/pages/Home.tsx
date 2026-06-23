@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import { storage, type ProgressItem } from '../services/storage';
 import type { VODStream, Series } from '../types';
 import { useTVNavigation } from '../hooks/useTVNavigation';
 import { useFocusZone } from '../contexts/FocusContext';
@@ -20,7 +21,7 @@ export function Home() {
     const [selectedItem, setSelectedItem] = useState<VODStream | Series | null>(null);
     const [showModal, setShowModal] = useState(false);
     const [showPlayer, setShowPlayer] = useState(false);
-    const [playerInfo, setPlayerInfo] = useState<{ url: string; title: string; poster: string } | null>(null);
+    const [playerInfo, setPlayerInfo] = useState<{ url: string; title: string; poster: string; save: Omit<ProgressItem, 'position' | 'duration' | 'updatedAt'>; resume: number } | null>(null);
 
     // Update clock every minute
     useEffect(() => {
@@ -97,20 +98,31 @@ export function Home() {
         if (!item) return;
         try {
             if (isMovie(item)) {
+                const id = String(item.stream_id);
+                const poster = item.stream_icon || item.cover || '';
                 setPlayerInfo({
                     url: api.getVodStreamUrl(item.stream_id, item.container_extension || 'mp4'),
                     title: item.name,
-                    poster: item.stream_icon || item.cover || '',
+                    poster,
+                    save: { id, type: 'movie', title: item.name, poster, containerExtension: item.container_extension || 'mp4' },
+                    resume: storage.getProgress(id, 'movie')?.position || 0,
                 });
             } else {
                 const info = await api.getSeriesInfo(item.series_id);
-                const eps = info?.episodes?.[season || 1] || [];
-                const ep = eps.find(e => e.episode_num === episode) || eps[0];
+                const s = season || 1;
+                const e = episode || 1;
+                const eps = info?.episodes?.[s] || [];
+                const ep = eps.find(ev => ev.episode_num === e) || eps[0];
                 if (!ep) { setShowModal(false); return; }
+                const id = String(item.series_id);
+                const saved = storage.getProgress(id, 'series');
+                const resume = (saved && saved.season === s && saved.episode === e) ? saved.position : 0;
                 setPlayerInfo({
                     url: api.getSeriesStreamUrl(ep.id, ep.container_extension || 'mp4'),
-                    title: `${item.name} - T${season || 1} E${episode || 1}`,
+                    title: `${item.name} - T${s} E${e}`,
                     poster: item.cover || '',
+                    save: { id, type: 'series', title: item.name, poster: item.cover || '', season: s, episode: e },
+                    resume,
                 });
             }
             setShowPlayer(true);
@@ -305,6 +317,9 @@ export function Home() {
                     src={playerInfo.url}
                     title={playerInfo.title}
                     poster={playerInfo.poster}
+                    contentType={playerInfo.save.type}
+                    resumeTime={playerInfo.resume || null}
+                    onTimeUpdate={(t, d) => storage.saveProgress({ ...playerInfo.save, position: t, duration: d })}
                     onClose={() => { setShowPlayer(false); setPlayerInfo(null); }}
                 />
             )}

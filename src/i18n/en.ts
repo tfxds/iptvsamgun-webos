@@ -39,7 +39,7 @@ export const en = {
     sidebar_live: "Live TV",
     sidebar_movies: "Movies",
     sidebar_series: "Series",
-    sidebar_mylist: "My List",
+    sidebar_mylist: "Continue",
     sidebar_favorites: "Favorites",
     sidebar_settings: "Settings",
     sidebar_profile: "Profile",

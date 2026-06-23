@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
+import { storage } from '../services/storage';
 import type { VODStream, Category } from '../types';
 import { useTVNavigation } from '../hooks/useTVNavigation';
 import { useFocusZone } from '../contexts/FocusContext';
@@ -284,6 +285,13 @@ export function Movies() {
                     src={api.getVodStreamUrl(playingMovie.stream_id, playingMovie.container_extension || 'mp4')}
                     title={playingMovie.name}
                     poster={playingMovie.stream_icon || playingMovie.cover}
+                    contentType="movie"
+                    resumeTime={storage.getProgress(String(playingMovie.stream_id), 'movie')?.position ?? null}
+                    onTimeUpdate={(t, d) => storage.saveProgress({
+                        id: String(playingMovie.stream_id), type: 'movie', title: playingMovie.name,
+                        poster: playingMovie.stream_icon || playingMovie.cover, position: t, duration: d,
+                        containerExtension: playingMovie.container_extension || 'mp4',
+                    })}
                     onClose={() => { setShowPlayer(false); setPlayingMovie(null); }}
                 />
             )}

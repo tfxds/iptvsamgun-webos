@@ -1,58 +1,69 @@
-// MyList Page - Watch Later List - Matching NeoStream Desktop Style
+// MyList Page - "Continuar Assistindo" (assistidos recentemente, filme/serie) com retomada
 
 import { useCallback, useState } from 'react';
-import { storage } from '../services/storage';
+import { api } from '../services/api';
+import { storage, type ProgressItem } from '../services/storage';
 import { useTVNavigation } from '../hooks/useTVNavigation';
 import { useFocusZone } from '../contexts/FocusContext';
+import { VideoPlayer } from '../components/VideoPlayer';
 import './MyList.css';
-
-interface WatchLaterItem {
-    id: string;
-    type: 'movie' | 'series' | 'channel';
-    title: string;
-    poster?: string;
-    rating?: string;
-    year?: string;
-    addedAt: number;
-}
 
 export function MyList() {
     const { focusZone, setFocusZone } = useFocusZone();
-    const [items, setItems] = useState<WatchLaterItem[]>(() => storage.getWatchLater());
+    const [items, setItems] = useState<ProgressItem[]>(() => storage.getContinueWatching());
     const [activeTab, setActiveTab] = useState<'all' | 'movies' | 'series'>('all');
     const [removingId, setRemovingId] = useState<string | null>(null);
+    const [player, setPlayer] = useState<{ src: string; title: string; poster: string; resume: number; item: ProgressItem } | null>(null);
 
     // Focus states for TV navigation
     const [focusArea, setFocusArea] = useState<'tabs' | 'items'>('items');
     const [focusedTabIndex, setFocusedTabIndex] = useState(0);
     const [focusedItemIndex, setFocusedItemIndex] = useState(0);
 
-    const loadItems = useCallback(() => {
-        const saved = storage.getWatchLater();
-        setItems(saved);
-    }, []);
+    const loadItems = useCallback(() => setItems(storage.getContinueWatching()), []);
 
-    const removeItem = (id: string) => {
+    const removeItem = (id: string, type: 'movie' | 'series') => {
         setRemovingId(id);
         setTimeout(() => {
-            storage.removeWatchLater(id);
+            storage.removeProgress(id, type);
             loadItems();
             setRemovingId(null);
         }, 300);
     };
 
     const clearAll = () => {
-        storage.clearWatchLater();
+        storage.clearContinueWatching();
         loadItems();
     };
 
     const movies = items.filter(item => item.type === 'movie');
     const series = items.filter(item => item.type === 'series');
-
-    const displayItems = activeTab === 'all' ? items :
-        activeTab === 'movies' ? movies : series;
-
+    const displayItems = activeTab === 'all' ? items : activeTab === 'movies' ? movies : series;
     const tabs = ['all', 'movies', 'series'] as const;
+
+    // Retoma de onde parou
+    const resumeItem = useCallback(async (item: ProgressItem) => {
+        try {
+            if (item.type === 'movie') {
+                setPlayer({
+                    src: api.getVodStreamUrl(Number(item.id), item.containerExtension || 'mp4'),
+                    title: item.title, poster: item.poster || '', resume: item.position, item,
+                });
+            } else {
+                const info = await api.getSeriesInfo(Number(item.id));
+                const eps = info?.episodes?.[item.season || 1] || [];
+                const ep = eps.find(e => e.episode_num === item.episode) || eps[0];
+                if (!ep) return;
+                setPlayer({
+                    src: api.getSeriesStreamUrl(ep.id, ep.container_extension || 'mp4'),
+                    title: `${item.title} - T${item.season} E${item.episode}`,
+                    poster: item.poster || '', resume: item.position, item,
+                });
+            }
+        } catch (e) {
+            console.error('Erro ao retomar:', e);
+        }
+    }, []);
 
     // TV Navigation
     const handleNavigate = (direction: 'up' | 'down' | 'left' | 'right') => {
@@ -69,13 +80,9 @@ export function MyList() {
         } else if (focusArea === 'items') {
             const cols = 6;
             const total = displayItems.length;
-
             if (direction === 'up') {
-                if (focusedItemIndex < cols) {
-                    setFocusArea('tabs');
-                } else {
-                    setFocusedItemIndex(prev => Math.max(0, prev - cols));
-                }
+                if (focusedItemIndex < cols) setFocusArea('tabs');
+                else setFocusedItemIndex(prev => Math.max(0, prev - cols));
             } else if (direction === 'down') {
                 setFocusedItemIndex(prev => Math.min(total - 1, prev + cols));
             } else if (direction === 'left') {
@@ -90,14 +97,19 @@ export function MyList() {
     const handleEnter = () => {
         if (focusArea === 'tabs') {
             setActiveTab(tabs[focusedTabIndex]);
+        } else if (focusArea === 'items') {
+            const it = displayItems[focusedItemIndex];
+            if (it) resumeItem(it);
         }
     };
 
     useTVNavigation({
         onNavigate: handleNavigate,
         onEnter: handleEnter,
-        enabled: focusZone === 'content',
+        enabled: focusZone === 'content' && !player,
     });
+
+    const pct = (p: ProgressItem) => p.duration > 0 ? Math.min(100, Math.round((p.position / p.duration) * 100)) : 0;
 
     // Empty State
     if (items.length === 0) {
@@ -106,24 +118,14 @@ export function MyList() {
                 <div className="mylist-backdrop" />
                 <div className="empty-state">
                     <div className="empty-icon-container">
-                        <div className="empty-icon">📑</div>
+                        <div className="empty-icon">▶️</div>
                         <div className="empty-icon-glow" />
                     </div>
-                    <h2 className="empty-title">Sua lista está vazia</h2>
+                    <h2 className="empty-title">Nada para continuar ainda</h2>
                     <p className="empty-text">
-                        Adicione filmes e séries para assistir depois clicando em
-                        <strong> "+ Minha Lista"</strong> no modal de detalhes.
+                        Os filmes e séries que você começar a assistir aparecem aqui pra
+                        <strong> retomar de onde parou</strong>.
                     </p>
-                    <div className="empty-suggestions">
-                        <button className="suggestion-btn">
-                            <span>🎬</span>
-                            <span>Explorar Filmes</span>
-                        </button>
-                        <button className="suggestion-btn">
-                            <span>📺</span>
-                            <span>Explorar Séries</span>
-                        </button>
-                    </div>
                 </div>
             </div>
         );
@@ -133,99 +135,82 @@ export function MyList() {
         <div className="mylist-page">
             <div className="mylist-backdrop" />
 
-            {/* Header */}
             <header className="mylist-header">
                 <div className="header-title">
-                    <div className="title-icon">📑</div>
+                    <div className="title-icon">▶️</div>
                     <div>
-                        <h1>Minha Lista</h1>
-                        <p className="subtitle">{items.length} itens para assistir</p>
+                        <h1>Continuar Assistindo</h1>
+                        <p className="subtitle">{items.length} em andamento</p>
                     </div>
                 </div>
-                {items.length > 0 && (
-                    <button className="clear-btn" onClick={clearAll}>
-                        <span>🗑️</span>
-                        <span>Limpar Tudo</span>
-                    </button>
-                )}
+                <button className="clear-btn" onClick={clearAll}>
+                    <span>🗑️</span>
+                    <span>Limpar Tudo</span>
+                </button>
             </header>
 
-            {/* Tabs */}
             <div className="tabs-container">
-                <button
-                    className={`tab ${activeTab === 'all' ? 'active' : ''} ${focusArea === 'tabs' && focusedTabIndex === 0 ? 'tv-focused' : ''}`}
-                    onClick={() => setActiveTab('all')}
-                >
-                    <span>Todos</span>
-                    <span className="tab-count">{items.length}</span>
+                <button className={`tab ${activeTab === 'all' ? 'active' : ''} ${focusArea === 'tabs' && focusedTabIndex === 0 ? 'tv-focused' : ''}`} onClick={() => setActiveTab('all')}>
+                    <span>Todos</span><span className="tab-count">{items.length}</span>
                 </button>
-                <button
-                    className={`tab ${activeTab === 'movies' ? 'active' : ''} ${focusArea === 'tabs' && focusedTabIndex === 1 ? 'tv-focused' : ''}`}
-                    onClick={() => setActiveTab('movies')}
-                >
-                    <span>🎬 Filmes</span>
-                    <span className="tab-count">{movies.length}</span>
+                <button className={`tab ${activeTab === 'movies' ? 'active' : ''} ${focusArea === 'tabs' && focusedTabIndex === 1 ? 'tv-focused' : ''}`} onClick={() => setActiveTab('movies')}>
+                    <span>🎬 Filmes</span><span className="tab-count">{movies.length}</span>
                 </button>
-                <button
-                    className={`tab ${activeTab === 'series' ? 'active' : ''} ${focusArea === 'tabs' && focusedTabIndex === 2 ? 'tv-focused' : ''}`}
-                    onClick={() => setActiveTab('series')}
-                >
-                    <span>📺 Séries</span>
-                    <span className="tab-count">{series.length}</span>
+                <button className={`tab ${activeTab === 'series' ? 'active' : ''} ${focusArea === 'tabs' && focusedTabIndex === 2 ? 'tv-focused' : ''}`} onClick={() => setActiveTab('series')}>
+                    <span>📺 Séries</span><span className="tab-count">{series.length}</span>
                 </button>
             </div>
 
-            {/* Cards Grid */}
             <div className="cards-grid">
                 {displayItems.map((item, index) => (
                     <div
-                        key={item.id}
+                        key={`${item.type}-${item.id}`}
                         className={`card ${removingId === item.id ? 'removing' : ''} ${focusArea === 'items' && focusedItemIndex === index ? 'tv-focused' : ''}`}
                         style={{ animationDelay: `${index * 0.05}s` }}
+                        onClick={() => resumeItem(item)}
                     >
                         <div className="card-poster">
                             {item.poster ? (
                                 <img src={item.poster} alt={item.title} />
                             ) : (
-                                <div className="poster-placeholder">
-                                    {item.type === 'movie' ? '🎬' : '📺'}
-                                </div>
+                                <div className="poster-placeholder">{item.type === 'movie' ? '🎬' : '📺'}</div>
                             )}
-                            <div className="card-type">
-                                {item.type === 'movie' ? '🎬' : '📺'}
-                            </div>
+                            <div className="card-type">{item.type === 'movie' ? '🎬' : '📺'}</div>
                             <div className="card-overlay">
-                                <button
-                                    className="remove-btn"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        removeItem(item.id);
-                                    }}
-                                >
-                                    🗑️
-                                </button>
-                                <button className="play-btn">
-                                    ▶️
-                                </button>
+                                <button className="remove-btn" onClick={(e) => { e.stopPropagation(); removeItem(item.id, item.type); }}>🗑️</button>
+                                <button className="play-btn" onClick={(e) => { e.stopPropagation(); resumeItem(item); }}>▶️</button>
                             </div>
+                            {/* barra de progresso */}
+                            <div className="card-progress"><div className="card-progress-fill" style={{ width: `${pct(item)}%` }} /></div>
                         </div>
                         <div className="card-info">
                             <h3 className="card-title">{item.title}</h3>
                             <div className="card-meta">
-                                {item.year && <span>{item.year}</span>}
-                                {item.rating && <span>⭐ {item.rating}</span>}
+                                {item.type === 'series' && <span>T{item.season} E{item.episode}</span>}
+                                <span>{pct(item)}%</span>
                             </div>
                         </div>
                     </div>
                 ))}
             </div>
 
-            {/* Footer Hints */}
             <div className="mylist-hints">
                 <span>↑↓←→ Navegar</span>
-                <span>OK Selecionar</span>
+                <span>OK Continuar</span>
                 <span>← Voltar</span>
             </div>
+
+            {player && (
+                <VideoPlayer
+                    src={player.src}
+                    title={player.title}
+                    poster={player.poster}
+                    contentType={player.item.type}
+                    resumeTime={player.resume || null}
+                    onTimeUpdate={(t, d) => storage.saveProgress({ ...player.item, position: t, duration: d })}
+                    onClose={() => { setPlayer(null); loadItems(); }}
+                />
+            )}
         </div>
     );
 }
