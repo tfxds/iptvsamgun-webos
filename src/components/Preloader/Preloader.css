@@ -10,6 +10,16 @@
     overflow: hidden;
 }
 
+/* Fundo do revendedor (img_bg) — fica atras do veu escuro */
+.sa-preloader-reseller-bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    opacity: 0.4;
+    pointer-events: none;
+}
+
 .sa-preloader-bg {
     position: absolute;
     inset: 0;

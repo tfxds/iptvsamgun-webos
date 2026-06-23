@@ -116,7 +116,7 @@ function App() {
 
   // Preloader pos-login: carrega canais/filmes/series (esquenta cache) -> Home
   if (authState === 'preloading') {
-    return <Preloader logoUrl={branding.imgLogo} onReady={() => setAuthState('authenticated')} />;
+    return <Preloader logoUrl={branding.imgLogo} bgUrl={branding.imgBg} onReady={() => setAuthState('authenticated')} />;
   }
 
   // Main app with sidebar

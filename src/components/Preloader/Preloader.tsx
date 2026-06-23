@@ -9,6 +9,7 @@ import './Preloader.css';
 
 interface PreloaderProps {
     logoUrl?: string;
+    bgUrl?: string;
     onReady: () => void;
 }
 
@@ -22,7 +23,7 @@ interface Step {
     status: StepStatus;
 }
 
-export function Preloader({ logoUrl, onReady }: PreloaderProps) {
+export function Preloader({ logoUrl, bgUrl, onReady }: PreloaderProps) {
     const [steps, setSteps] = useState<Step[]>([
         { key: 'live', order: '1º', label: 'Canais', status: 'pending', load: () => api.getLiveStreams() },
         { key: 'movies', order: '2º', label: 'Filmes', status: 'pending', load: () => api.getVODStreams() },
@@ -66,6 +67,14 @@ export function Preloader({ logoUrl, onReady }: PreloaderProps) {
 
     return (
         <div className="sa-preloader">
+            {/* Fundo do revendedor (whitelabel) */}
+            {bgUrl && (
+                <div
+                    aria-hidden
+                    className="sa-preloader-reseller-bg"
+                    style={{ backgroundImage: `url(${bgUrl})` }}
+                />
+            )}
             <div className="sa-preloader-bg" />
             <div className="sa-preloader-inner">
                 <div className="sa-preloader-logo">

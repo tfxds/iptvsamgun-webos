@@ -32,24 +32,39 @@ export function Home() {
     useEffect(() => {
         async function fetchData() {
             try {
-                const [movies, series] = await Promise.all([
+                const [movies, series, vodCats, seriesCats] = await Promise.all([
                     api.getVODStreams(),
-                    api.getSeries()
+                    api.getSeries(),
+                    api.getVodCategories(),
+                    api.getSeriesCategories(),
                 ]);
 
-                const sortedMovies = [...movies].sort((a, b) =>
+                // Filtra conteudo adulto (por categoria + por nome) — nunca aparece na Home
+                const adultRe = /(adult|adulto|\+\s*18|18\s*\+|xxx|porn|er[óo]tic|sex)/i;
+                const adultVodIds = new Set(vodCats.filter(c => adultRe.test(c.category_name || '')).map(c => c.category_id));
+                const adultSeriesIds = new Set(seriesCats.filter(c => adultRe.test(c.category_name || '')).map(c => c.category_id));
+                const cleanMovies = movies.filter(m => !adultVodIds.has(m.category_id) && !adultRe.test(m.name || ''));
+                const cleanSeries = series.filter(s => !adultSeriesIds.has(s.category_id) && !adultRe.test(s.name || ''));
+
+                const sortedMovies = [...cleanMovies].sort((a, b) =>
                     parseInt(b.added || '0') - parseInt(a.added || '0')
                 ).slice(0, 15);
-                const sortedSeries = [...series].sort((a, b) =>
+                const sortedSeries = [...cleanSeries].sort((a, b) =>
                     new Date(b.last_modified || 0).getTime() - new Date(a.last_modified || 0).getTime()
                 ).slice(0, 15);
                 setRecentMovies(sortedMovies);
                 setRecentSeries(sortedSeries);
 
-                // Recommendations: mistura aleatoria de filmes e series
-                const randomMovies = [...movies].sort(() => Math.random() - 0.5).slice(0, 8);
-                const randomSeries = [...series].sort(() => Math.random() - 0.5).slice(0, 7);
-                setRecommendations([...randomMovies, ...randomSeries].sort(() => Math.random() - 0.5));
+                // Recomendados: MESMA quantidade de filme e serie, intercalados (serie, filme, serie...)
+                const N = 8;
+                const randomMovies = [...cleanMovies].sort(() => Math.random() - 0.5).slice(0, N);
+                const randomSeries = [...cleanSeries].sort(() => Math.random() - 0.5).slice(0, N);
+                const mixed: (VODStream | Series)[] = [];
+                for (let i = 0; i < N; i++) {
+                    if (randomSeries[i]) mixed.push(randomSeries[i]);
+                    if (randomMovies[i]) mixed.push(randomMovies[i]);
+                }
+                setRecommendations(mixed);
             } catch (error) {
                 console.error('Failed to fetch data:', error);
             }

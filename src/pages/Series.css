@@ -265,21 +265,12 @@
     height: 100vh;
     overflow-y: auto;
     padding: 100px 16px 80px;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(168, 85, 247, 0.4) transparent;
+    scrollbar-width: none;
 }
 
 .series-content::-webkit-scrollbar {
-    width: 6px;
-}
-
-.series-content::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.series-content::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #a855f7, #ec4899);
-    border-radius: 3px;
+    width: 0;
+    display: none;
 }
 
 /* Series Grid - Poster Cards */
@@ -607,8 +598,10 @@
     flex: 1;
     overflow-y: auto;
     padding: 8px;
-    scrollbar-width: thin;
+    scrollbar-width: none;
 }
+
+.series-cat-col .cat-list::-webkit-scrollbar { width: 0; display: none; }
 
 .series-cat-col .cat-item {
     display: block;
