@@ -700,3 +700,15 @@
 .pm-account-item strong { font-size: 17px; color: #f1f5f9; }
 .pm-account-item strong.ok { color: #22c55e; }
 .pm-account-item strong.warn { color: #f87171; }
+
+/* Fundo do revendedor (whitelabel) no perfil */
+.pm-reseller-bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    opacity: 0.4;
+    pointer-events: none;
+    z-index: 0;
+}
+.pm-account { position: relative; z-index: 1; }

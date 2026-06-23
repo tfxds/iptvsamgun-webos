@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { profileService } from '../../services/profileService';
 import { api } from '../../services/api';
 import { storage } from '../../services/storage';
+import { getBranding } from '../../services/brandingService';
 import type { Profile } from '../../types/profile';
 import type { UserInfo } from '../../types';
 import { useTVNavigation } from '../../hooks/useTVNavigation';
@@ -58,6 +59,7 @@ export function ProfileManager({ onClose }: ProfileManagerProps) {
         return () => { cancelled = true; };
     }, []);
     const accountServer = storage.getCredentials()?.url || '';
+    const resellerBg = getBranding().imgBg;
 
     const refreshProfiles = useCallback(() => {
         setProfiles(profileService.getAllProfiles());
@@ -288,6 +290,10 @@ export function ProfileManager({ onClose }: ProfileManagerProps) {
 
     return (
         <div className="pm-overlay">
+            {/* Fundo do revendedor (whitelabel) */}
+            {resellerBg && (
+                <div className="pm-reseller-bg" style={{ backgroundImage: `url(${resellerBg})` }} />
+            )}
             {/* Animated Background */}
             <div className="pm-backdrop">
                 <div className="pm-orb pm-orb-1" />
