@@ -51,30 +51,30 @@ export function useTVNavigation(options: UseTVNavigationOptions = {}) {
 
         const key = event.key || String(event.keyCode);
 
-        // Ignore events if user is currently focused on an input/textarea
-        // This allows the native TV keyboard (IME) to handle Backspace, Left, Right, etc.
+        // Quando o foco esta num input/textarea, deixamos a digitacao NATIVA passar
+        // (letras, numeros, ESPACO e BACKSPACE) — so reagimos as teclas REAIS de controle
+        // remoto de TV pra fechar o teclado virtual. NUNCA interceptar Backspace/Espaco aqui,
+        // senao o usuario nao consegue apagar/digitar (bug do campo de codigo do revendedor).
         const target = event.target as HTMLElement;
         if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
-            if (matchKey(key, TV_KEYS.ENTER)) {
+            // Enter "de verdade" (NAO o Espaco) confirma e fecha o teclado
+            const isRealEnter = ['Enter', '13', '29443', 'Select', 'Go', 'Done'].includes(String(key));
+            // Back/Return de controle remoto de TV (Tizen 10009, webOS 461, generico, Escape) — NAO Backspace
+            const isTvBack = ['XF86Back', '10009', '461', 'Escape'].includes(String(key));
+            if (isRealEnter) {
                 event.preventDefault();
                 event.stopPropagation();
                 target.blur();
                 onEnter?.();
                 onAction?.('enter');
-                return;
-            }
-
-            // If the user presses the 'Return' / 'Back' button on the TV remote while editing, 
-            // we should blur the input to hide the virtual keyboard and restore TV navigation.
-            // 10009 (Tizen Back), 461 (WebOS Back), XF86Back (Generic), Escape
-            // Also handle keyCode 8 (Backspace) ONLY when input value is empty (to exit editing)
-            if (matchKey(key, TV_KEYS.BACK) || key === 'Escape') {
+            } else if (isTvBack) {
                 event.preventDefault();
                 event.stopPropagation();
                 target.blur();
                 onBack?.();
                 onAction?.('back');
             }
+            // Qualquer outra tecla (incl. Backspace, Espaco, numeros, letras) -> digitacao normal
             return;
         }
 
