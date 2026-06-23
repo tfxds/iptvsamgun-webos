@@ -410,3 +410,28 @@
     align-items: center;
     gap: 6px;
 }
+/* ===== S.A Player overrides (paleta sky/dark) ===== */
+.login-container { background: var(--sa-bg); }
+.login-logo-img {
+    width: 220px;
+    max-width: 60vw;
+    height: auto;
+    display: block;
+    margin: 0 auto 8px;
+    object-fit: contain;
+}
+.login-btn-primary {
+    background: var(--sa-grad);
+    box-shadow: 0 8px 32px rgba(56, 189, 248, 0.30);
+}
+.login-btn-primary:hover:not(:disabled),
+.login-btn-primary.focused {
+    box-shadow: 0 12px 40px rgba(56, 189, 248, 0.50);
+}
+.login-input-wrap.focused {
+    border-color: var(--sa-accent2) !important;
+    box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.35) !important;
+}
+.login-orb-1 { background: radial-gradient(circle, rgba(14,165,233,0.45), transparent 70%) !important; }
+.login-orb-2 { background: radial-gradient(circle, rgba(56,189,248,0.35), transparent 70%) !important; }
+.login-orb-3 { background: radial-gradient(circle, rgba(34,158,217,0.30), transparent 70%) !important; }

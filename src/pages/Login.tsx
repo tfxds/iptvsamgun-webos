@@ -1,12 +1,12 @@
-// Login Page - Premium design with full TV navigation
-// Tizen-compatible: no readOnly, no type=password (uses CSS masking)
+// Login Page - S.A Player - login por código de revendedor (2 passos), navegação TV (Tizen/webOS)
 import { useState, useRef, useEffect, useCallback } from 'react';
 import type { KeyboardEvent } from 'react';
-import { FaTv, FaServer, FaUser, FaLock, FaSignInAlt, FaStar, FaArrowLeft, FaGlobe } from 'react-icons/fa';
+import { FaUser, FaLock, FaSignInAlt, FaArrowLeft, FaKey, FaServer } from 'react-icons/fa';
 import { api } from '../services/api';
 import { storage } from '../services/storage';
+import * as panel from '../services/panelService';
+import type { DnsOption } from '../services/panelService';
 import { useTVNavigation } from '../hooks/useTVNavigation';
-import { useTranslation } from '../hooks/useTranslation';
 import './Login.css';
 
 interface LoginProps {
@@ -14,222 +14,193 @@ interface LoginProps {
     onLanguageSelect?: () => void;
 }
 
-// Navigation order: 0=url, 1=username, 2=password, 3=includeTV, 4=includeVOD, 5=lang, 6=back, 7=submit
-const MAX_FOCUS = 7;
-
-export function Login({ onLoginSuccess, onLanguageSelect }: LoginProps) {
-    const { t } = useTranslation();
-    const [url, setUrl] = useState('');
+export function Login({ onLoginSuccess }: LoginProps) {
+    const [step, setStep] = useState<'code' | 'creds'>('code');
+    const [code, setCode] = useState('');
+    const [dnsList, setDnsList] = useState<DnsOption[]>([]);
+    const [dnsId, setDnsId] = useState('');
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
-    const [includeTV, setIncludeTV] = useState(true);
-    const [includeVOD, setIncludeVOD] = useState(true);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [focusedField, setFocusedField] = useState(0);
     const [editingField, setEditingField] = useState<number | null>(null);
 
-    const urlRef = useRef<HTMLInputElement>(null);
+    const codeRef = useRef<HTMLInputElement>(null);
     const usernameRef = useRef<HTMLInputElement>(null);
     const passwordRef = useRef<HTMLInputElement>(null);
 
-    // Check for saved credentials on mount
+    // Layout dos campos por passo (ids). DNS só vira campo navegável quando há mais de uma.
+    const hasDnsSelector = dnsList.length > 1;
+    const fields: string[] =
+        step === 'code'
+            ? ['code', 'continue']
+            : hasDnsSelector
+                ? ['dns', 'user', 'pass', 'back', 'entrar']
+                : ['user', 'pass', 'back', 'entrar'];
+    const maxFocus = fields.length - 1;
+    const idxOf = (id: string) => fields.indexOf(id);
+
+    // Restaura usuário salvo (conveniência)
     useEffect(() => {
         const saved = storage.getCredentials();
-        if (saved) {
-            setUrl(saved.url || '');
-            setUsername(saved.username || '');
-            setPassword(saved.password || '');
-        }
+        if (saved?.username) setUsername(saved.username);
     }, []);
 
-    // Listen for focus/blur on inputs to track editing state reliably
+    // Reseta o foco ao trocar de passo
     useEffect(() => {
-        const inputs = [urlRef.current, usernameRef.current, passwordRef.current];
+        setFocusedField(0);
+        setEditingField(null);
+    }, [step]);
 
-        const handleFocus = (e: FocusEvent) => {
-            const target = e.target as HTMLInputElement;
-            if (target === urlRef.current) setEditingField(0);
-            else if (target === usernameRef.current) setEditingField(1);
-            else if (target === passwordRef.current) setEditingField(2);
-        };
-
-        const handleBlur = () => {
-            setEditingField(null);
-        };
-
-        inputs.forEach(input => {
-            if (input) {
-                input.addEventListener('focus', handleFocus);
-                input.addEventListener('blur', handleBlur);
-            }
-        });
-
-        return () => {
-            inputs.forEach(input => {
-                if (input) {
-                    input.removeEventListener('focus', handleFocus);
-                    input.removeEventListener('blur', handleBlur);
-                }
-            });
-        };
+    const stopEditingInput = useCallback(() => {
+        codeRef.current?.blur();
+        usernameRef.current?.blur();
+        passwordRef.current?.blur();
+        setEditingField(null);
     }, []);
 
-    const handleLogin = useCallback(async () => {
-        if (!url || !username || !password) {
-            setError(t('login_error_empty'));
+    const handleInputKeyDown = useCallback(
+        (event: KeyboardEvent<HTMLInputElement>) => {
+            const key = event.key || String(event.keyCode);
+            if (
+                ['Enter', '13', '29443', 'Select', 'Done', 'Go', '10009', '461', 'XF86Back', 'Escape'].includes(key)
+            ) {
+                event.preventDefault();
+                event.stopPropagation();
+                stopEditingInput();
+            }
+        },
+        [stopEditingInput],
+    );
+
+    const submitCode = useCallback(async () => {
+        setError('');
+        const c = code.trim().toUpperCase();
+        if (!c) {
+            setError('Informe o código do revendedor.');
             return;
         }
-
         setLoading(true);
-        setError('');
-
         try {
-            await api.authenticate(url, username, password);
-            localStorage.setItem('includeTV', includeTV.toString());
-            localStorage.setItem('includeVOD', includeVOD.toString());
-            storage.saveCredentials({ url, username, password });
-            onLoginSuccess();
-        } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : '';
-            if (message.includes('Invalid URL') || message.includes('invalid url')) {
-                setError(t('login_error_invalid_url'));
-            } else if (message.includes('fetch') || message.includes('ENOTFOUND') || message.includes('ECONNREFUSED')) {
-                setError(t('login_error_connection'));
-            } else if (message.includes('401') || message.includes('Unauthorized') || message.includes('authentication')) {
-                setError(t('login_error_auth'));
-            } else if (message.includes('timeout')) {
-                setError(t('login_error_timeout'));
-            } else {
-                setError(message || t('login_error_generic'));
+            const r = await panel.resellerDns(c);
+            if (!r.success) {
+                setError(r.message || 'Revendedor não encontrado.');
+                return;
             }
+            if (!r.dns.length) {
+                setError('Nenhuma DNS liberada para este revendedor.');
+                return;
+            }
+            setDnsList(r.dns);
+            setDnsId(r.dns[0].id);
+            setStep('creds');
+        } catch {
+            setError('Erro de conexão. Tente novamente.');
         } finally {
             setLoading(false);
         }
-    }, [includeTV, includeVOD, onLoginSuccess, password, t, url, username]);
+    }, [code]);
 
-    const handleBack = () => {
-        window.location.reload();
-    };
-
-    // Blur all inputs - used when closing keyboard
-    const blurAllInputs = useCallback(() => {
-        urlRef.current?.blur();
-        usernameRef.current?.blur();
-        passwordRef.current?.blur();
-    }, []);
-
-    const stopEditingInput = useCallback(() => {
-        blurAllInputs();
-        setEditingField(null);
-        window.setTimeout(() => {
-            const active = document.activeElement as HTMLElement | null;
-            if (active?.tagName === 'INPUT') {
-                active.blur();
-            }
-        }, 0);
-    }, [blurAllInputs]);
-
-    const handleInputKeyDown = useCallback((event: KeyboardEvent<HTMLInputElement>) => {
-        const key = event.key || String(event.keyCode);
-        if (
-            key === 'Enter' ||
-            key === '13' ||
-            key === '29443' ||
-            key === 'Select' ||
-            key === 'Done' ||
-            key === 'Go' ||
-            key === '10009' ||
-            key === '461' ||
-            key === 'XF86Back' ||
-            key === 'Escape'
-        ) {
-            event.preventDefault();
-            event.stopPropagation();
-            stopEditingInput();
+    const submitLogin = useCallback(async () => {
+        setError('');
+        if (!username.trim() || !password.trim()) {
+            setError('Informe usuário e senha.');
+            return;
         }
-    }, [stopEditingInput]);
+        setLoading(true);
+        try {
+            const c = code.trim().toUpperCase();
+            const r = await panel.login({ dnsId, username: username.trim(), password: password.trim(), code: c });
+            if (!r.success) {
+                setError(r.message || 'Falha na validação do revendedor.');
+                return;
+            }
+            const dnsUrl = dnsList.find((d) => d.id === dnsId)?.url || '';
+            await api.authenticate(dnsUrl, username.trim(), password.trim());
+            storage.saveCredentials({ url: dnsUrl, username: username.trim(), password: password.trim() });
+            onLoginSuccess();
+        } catch (e) {
+            const m = e instanceof Error ? e.message : '';
+            setError(
+                m.includes('401') || m.toLowerCase().includes('auth')
+                    ? 'Credenciais inválidas ou conta inativa.'
+                    : 'Erro ao conectar no servidor.',
+            );
+        } finally {
+            setLoading(false);
+        }
+    }, [username, password, dnsId, dnsList, code, onLoginSuccess]);
+
+    const cycleDns = useCallback(() => {
+        setDnsId((cur) => {
+            const i = dnsList.findIndex((d) => d.id === cur);
+            const next = dnsList[(i + 1) % dnsList.length];
+            return next ? next.id : cur;
+        });
+    }, [dnsList]);
+
+    const activate = useCallback(
+        (id: string) => {
+            switch (id) {
+                case 'code':
+                    codeRef.current?.focus();
+                    break;
+                case 'continue':
+                    submitCode();
+                    break;
+                case 'dns':
+                    cycleDns();
+                    break;
+                case 'user':
+                    usernameRef.current?.focus();
+                    break;
+                case 'pass':
+                    passwordRef.current?.focus();
+                    break;
+                case 'back':
+                    setStep('code');
+                    break;
+                case 'entrar':
+                    submitLogin();
+                    break;
+            }
+        },
+        [submitCode, submitLogin, cycleDns],
+    );
 
     const handleEnter = useCallback(() => {
-        // If editing an input, blur it (close keyboard)
         if (editingField !== null) {
             stopEditingInput();
             return;
         }
-
-        // Handle action based on focused field
-        switch (focusedField) {
-            case 0: // URL input - start editing
-                urlRef.current?.focus();
-                break;
-            case 1: // Username input
-                usernameRef.current?.focus();
-                break;
-            case 2: // Password input
-                passwordRef.current?.focus();
-                break;
-            case 3: // Include TV checkbox
-                setIncludeTV(v => !v);
-                break;
-            case 4: // Include VOD checkbox
-                setIncludeVOD(v => !v);
-                break;
-            case 5: // Language button
-                if (onLanguageSelect) onLanguageSelect();
-                break;
-            case 6: // Back button
-                handleBack();
-                break;
-            case 7: // Submit button
-                handleLogin();
-                break;
-        }
-    }, [editingField, focusedField, stopEditingInput, onLanguageSelect, handleLogin]);
+        activate(fields[focusedField]);
+    }, [editingField, stopEditingInput, activate, fields, focusedField]);
 
     const handleBackAction = useCallback(() => {
-        // If editing, just blur (close keyboard)
         if (editingField !== null) {
             stopEditingInput();
             return;
         }
-        handleBack();
-    }, [editingField, stopEditingInput]);
+        if (step === 'creds') setStep('code');
+    }, [editingField, stopEditingInput, step]);
 
     useTVNavigation({
         onNavigate: (direction) => {
-            // Don't navigate if editing an input
             if (editingField !== null) return;
-
-            if (direction === 'up') {
-                setFocusedField(Math.max(0, focusedField - 1));
-            }
-            if (direction === 'down') {
-                setFocusedField(Math.min(MAX_FOCUS, focusedField + 1));
-            }
-            if (direction === 'left' && focusedField >= 5) {
-                setFocusedField(5);
-            }
-            if (direction === 'right' && focusedField >= 5) {
-                setFocusedField(Math.min(MAX_FOCUS, focusedField + 1));
-            }
+            if (direction === 'up') setFocusedField((f) => Math.max(0, f - 1));
+            if (direction === 'down') setFocusedField((f) => Math.min(maxFocus, f + 1));
         },
         onEnter: handleEnter,
         onBack: handleBackAction,
     });
 
-    useEffect(() => {
-        if (editingField !== null) return;
-        urlRef.current?.blur();
-        usernameRef.current?.blur();
-        passwordRef.current?.blur();
-    }, [editingField]);
-
-    // Get current language label
-    const currentLang = storage.getSettings().language === 'en' ? 'EN' : 'PT-BR';
+    const currentDns = dnsList.find((d) => d.id === dnsId);
+    const focusCls = (id: string) => (focusedField === idxOf(id) ? 'focused' : '');
+    const editCls = (id: string) => (editingField === idxOf(id) ? 'editing' : '');
 
     return (
         <div className="login-container">
-            {/* Animated Background */}
             <div className="login-bg">
                 <div className="login-orb login-orb-1" />
                 <div className="login-orb login-orb-2" />
@@ -237,21 +208,12 @@ export function Login({ onLoginSuccess, onLanguageSelect }: LoginProps) {
                 <div className="login-grid" />
             </div>
 
-            {/* Content */}
             <div className="login-content">
-                {/* Logo */}
                 <div className="login-logo">
-                    <div className="login-logo-bg">
-                        <FaTv className="login-logo-icon" />
-                    </div>
-                    <h1 className="login-title">NeoStream</h1>
-                    <div className="login-badge">
-                        <FaStar size={12} />
-                        <span style={{ marginLeft: '8px' }}>IPTV LOGIN</span>
-                    </div>
+                    <img src="/saplayer-logo.png" alt="S.A Player" className="login-logo-img" />
                 </div>
 
-                <form onSubmit={(e) => { e.preventDefault(); blurAllInputs(); }} className="login-form">
+                <form onSubmit={(e) => e.preventDefault()} className="login-form">
                     {error && (
                         <div className="login-error">
                             <span>❌</span>
@@ -259,165 +221,174 @@ export function Login({ onLoginSuccess, onLanguageSelect }: LoginProps) {
                         </div>
                     )}
 
-                    {/* URL Input */}
-                    <div className="login-field">
-                        <label>{t('login_server')}</label>
-                        <div
-                            className={`login-input-wrap ${focusedField === 0 ? 'focused' : ''} ${editingField === 0 ? 'editing' : ''}`}
-                            onClick={() => { setFocusedField(0); urlRef.current?.focus(); }}
-                        >
-                            <FaServer size={18} />
-                            <input
-                                ref={urlRef}
-                                type="text"
-                                value={url}
-                                onChange={(e) => setUrl(e.target.value)}
-                                placeholder="http://example.com:8080"
-                                disabled={loading}
-                                tabIndex={-1}
-                                onKeyDown={handleInputKeyDown}
-                                autoComplete="off"
-                                autoCorrect="off"
-                                spellCheck={false}
-                            />
-                            {focusedField === 0 && editingField !== 0 && (
-                                <span className="login-input-hint">{t('login_hint_edit')}</span>
+                    {step === 'code' ? (
+                        <>
+                            <div className="login-field">
+                                <label>Código do revendedor</label>
+                                <div
+                                    className={`login-input-wrap ${focusCls('code')} ${editCls('code')}`}
+                                    onClick={() => {
+                                        setFocusedField(idxOf('code'));
+                                        codeRef.current?.focus();
+                                    }}
+                                >
+                                    <FaKey size={18} />
+                                    <input
+                                        ref={codeRef}
+                                        type="text"
+                                        value={code}
+                                        onChange={(e) => setCode(e.target.value.toUpperCase())}
+                                        onFocus={() => setEditingField(idxOf('code'))}
+                                        onBlur={() => setEditingField(null)}
+                                        onKeyDown={handleInputKeyDown}
+                                        placeholder="EX: MEUCODIGO"
+                                        disabled={loading}
+                                        tabIndex={-1}
+                                        autoComplete="off"
+                                        autoCorrect="off"
+                                        spellCheck={false}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="login-buttons">
+                                <button
+                                    type="button"
+                                    onClick={submitCode}
+                                    className={`login-btn login-btn-primary ${focusCls('continue')}`}
+                                    disabled={loading}
+                                    tabIndex={-1}
+                                >
+                                    {loading ? (
+                                        <>
+                                            <div className="login-spinner" />
+                                            <span>Carregando...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <FaSignInAlt size={18} />
+                                            <span>Continuar</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            {hasDnsSelector && (
+                                <div className="login-field">
+                                    <label>Servidor</label>
+                                    <div
+                                        className={`login-input-wrap ${focusCls('dns')}`}
+                                        onClick={() => {
+                                            setFocusedField(idxOf('dns'));
+                                            cycleDns();
+                                        }}
+                                    >
+                                        <FaServer size={18} />
+                                        <span style={{ flex: 1 }}>{currentDns?.title || 'Selecionar'}</span>
+                                        <span className="login-input-hint">trocar</span>
+                                    </div>
+                                </div>
                             )}
-                        </div>
-                    </div>
 
-                    {/* Username Input */}
-                    <div className="login-field">
-                        <label>{t('login_user')}</label>
-                        <div
-                            className={`login-input-wrap ${focusedField === 1 ? 'focused' : ''} ${editingField === 1 ? 'editing' : ''}`}
-                            onClick={() => { setFocusedField(1); usernameRef.current?.focus(); }}
-                        >
-                            <FaUser size={18} />
-                            <input
-                                ref={usernameRef}
-                                type="text"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                disabled={loading}
-                                tabIndex={-1}
-                                onKeyDown={handleInputKeyDown}
-                                autoComplete="off"
-                                autoCorrect="off"
-                                spellCheck={false}
-                            />
-                            {focusedField === 1 && editingField !== 1 && (
-                                <span className="login-input-hint">{t('login_hint_edit')}</span>
-                            )}
-                        </div>
-                    </div>
+                            <div className="login-field">
+                                <label>Usuário</label>
+                                <div
+                                    className={`login-input-wrap ${focusCls('user')} ${editCls('user')}`}
+                                    onClick={() => {
+                                        setFocusedField(idxOf('user'));
+                                        usernameRef.current?.focus();
+                                    }}
+                                >
+                                    <FaUser size={18} />
+                                    <input
+                                        ref={usernameRef}
+                                        type="text"
+                                        value={username}
+                                        onChange={(e) => setUsername(e.target.value)}
+                                        onFocus={() => setEditingField(idxOf('user'))}
+                                        onBlur={() => setEditingField(null)}
+                                        onKeyDown={handleInputKeyDown}
+                                        disabled={loading}
+                                        tabIndex={-1}
+                                        autoComplete="off"
+                                        autoCorrect="off"
+                                        spellCheck={false}
+                                    />
+                                </div>
+                            </div>
 
-                    {/* Password Input - type="text" with CSS masking for Tizen compatibility */}
-                    <div className="login-field">
-                        <label>{t('login_password')}</label>
-                        <div
-                            className={`login-input-wrap ${focusedField === 2 ? 'focused' : ''} ${editingField === 2 ? 'editing' : ''}`}
-                            onClick={() => { setFocusedField(2); passwordRef.current?.focus(); }}
-                        >
-                            <FaLock size={18} />
-                            <input
-                                ref={passwordRef}
-                                type="text"
-                                className="login-password-input"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                disabled={loading}
-                                tabIndex={-1}
-                                onKeyDown={handleInputKeyDown}
-                                autoComplete="off"
-                                autoCorrect="off"
-                                spellCheck={false}
-                            />
-                            {focusedField === 2 && editingField !== 2 && (
-                                <span className="login-input-hint">{t('login_hint_edit')}</span>
-                            )}
-                        </div>
-                    </div>
+                            <div className="login-field">
+                                <label>Senha</label>
+                                <div
+                                    className={`login-input-wrap ${focusCls('pass')} ${editCls('pass')}`}
+                                    onClick={() => {
+                                        setFocusedField(idxOf('pass'));
+                                        passwordRef.current?.focus();
+                                    }}
+                                >
+                                    <FaLock size={18} />
+                                    <input
+                                        ref={passwordRef}
+                                        type="text"
+                                        className="login-password-input"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        onFocus={() => setEditingField(idxOf('pass'))}
+                                        onBlur={() => setEditingField(null)}
+                                        onKeyDown={handleInputKeyDown}
+                                        disabled={loading}
+                                        tabIndex={-1}
+                                        autoComplete="off"
+                                        autoCorrect="off"
+                                        spellCheck={false}
+                                    />
+                                </div>
+                            </div>
 
-                    {/* Checkboxes for TV and VOD */}
-                    <div className="login-checkboxes">
-                        <div
-                            className={`login-checkbox ${focusedField === 3 ? 'focused' : ''}`}
-                            onClick={() => setIncludeTV(!includeTV)}
-                            tabIndex={-1}
-                        >
-                            <span className={`login-checkbox-mark ${includeTV ? 'checked' : ''}`}>
-                                {includeTV && '✓'}
-                            </span>
-                            <span>{t('login_include_tv')}</span>
-                        </div>
+                            <div className="login-buttons">
+                                <button
+                                    type="button"
+                                    onClick={() => setStep('code')}
+                                    className={`login-btn login-btn-secondary ${focusCls('back')}`}
+                                    disabled={loading}
+                                    tabIndex={-1}
+                                >
+                                    <FaArrowLeft size={18} />
+                                    <span>Voltar</span>
+                                </button>
 
-                        <div
-                            className={`login-checkbox ${focusedField === 4 ? 'focused' : ''}`}
-                            onClick={() => setIncludeVOD(!includeVOD)}
-                            tabIndex={-1}
-                        >
-                            <span className={`login-checkbox-mark ${includeVOD ? 'checked' : ''}`}>
-                                {includeVOD && '✓'}
-                            </span>
-                            <span>{t('login_include_vod')}</span>
-                        </div>
-                    </div>
-
-                    {/* Buttons */}
-                    <div className="login-buttons">
-                        {/* Language Button */}
-                        <button
-                            type="button"
-                            onClick={() => onLanguageSelect?.()}
-                            className={`login-btn login-btn-lang ${focusedField === 5 ? 'focused' : ''}`}
-                            disabled={loading}
-                            tabIndex={-1}
-                        >
-                            <FaGlobe size={18} />
-                            <span>{currentLang}</span>
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={handleBack}
-                            className={`login-btn login-btn-secondary ${focusedField === 6 ? 'focused' : ''}`}
-                            disabled={loading}
-                            tabIndex={-1}
-                        >
-                            <FaArrowLeft size={18} />
-                            <span>{t('login_back')}</span>
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={handleLogin}
-                            className={`login-btn login-btn-primary ${focusedField === 7 ? 'focused' : ''}`}
-                            disabled={loading}
-                            tabIndex={-1}
-                        >
-                            {loading ? (
-                                <>
-                                    <div className="login-spinner" />
-                                    <span>{t('login_authenticating')}</span>
-                                </>
-                            ) : (
-                                <>
-                                    <FaSignInAlt size={18} />
-                                    <span>{t('login_submit')}</span>
-                                </>
-                            )}
-                        </button>
-                    </div>
+                                <button
+                                    type="button"
+                                    onClick={submitLogin}
+                                    className={`login-btn login-btn-primary ${focusCls('entrar')}`}
+                                    disabled={loading}
+                                    tabIndex={-1}
+                                >
+                                    {loading ? (
+                                        <>
+                                            <div className="login-spinner" />
+                                            <span>Entrando...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <FaSignInAlt size={18} />
+                                            <span>Entrar</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </>
+                    )}
                 </form>
 
-                {/* Navigation hint for TV */}
                 <div className="login-hint">
-                    <span>{t('login_hint_nav')}</span>
+                    <span>Navegue com as setas</span>
                     <span>•</span>
-                    <span>{t('login_hint_select')}</span>
+                    <span>OK para selecionar</span>
                     <span>•</span>
-                    <span>{t('login_hint_back')}</span>
+                    <span>Voltar</span>
                 </div>
             </div>
         </div>
