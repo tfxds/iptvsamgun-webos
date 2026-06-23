@@ -10,7 +10,7 @@ import './Settings.css';
 const APP_VERSION = '1.0.0';
 
 // Linhas navegáveis (em ordem)
-const ROWS = ['block', 'pin', 'clear', 'privacy'] as const;
+const ROWS = ['block', 'pin', 'clear', 'privacy', 'diag'] as const;
 type Row = typeof ROWS[number];
 
 export function Settings() {
@@ -43,6 +43,8 @@ export function Settings() {
             setConfirmClear(true);
         } else if (row === 'privacy') {
             setShowPrivacy(p => !p);
+        } else if (row === 'diag') {
+            setShowDiag(d => !d);
         }
     };
 
@@ -183,7 +185,7 @@ export function Settings() {
                 <section className="settings-section">
                     <h2 className="settings-section-title">ℹ️ Sobre</h2>
                     <div className="settings-info-row"><span>Versão</span><strong>S.A Player • v{APP_VERSION}</strong></div>
-                    <button className="settings-row settings-diag-toggle" onClick={() => setShowDiag(d => !d)}>
+                    <button className={`settings-row settings-diag-toggle ${focused === 4 ? 'tv-focused' : ''}`} onClick={() => setShowDiag(d => !d)}>
                         <div className="settings-row-text"><span className="settings-row-label">Diagnóstico</span></div>
                         <span className="settings-row-action">{showDiag ? '▲' : '▼'}</span>
                     </button>

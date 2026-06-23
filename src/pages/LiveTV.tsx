@@ -34,7 +34,7 @@ export function LiveTV() {
     useHls({ src: previewSrc, videoRef: previewRef, autoPlay: true });
 
     // Focus areas (3 colunas)
-    const [focusArea, setFocusArea] = useState<'categories' | 'channels' | 'info'>('channels');
+    const [focusArea, setFocusArea] = useState<'categories' | 'channels'>('channels');
     const [focusedCategoryIndex, setFocusedCategoryIndex] = useState(0);
     const [focusedChannelIndex, setFocusedChannelIndex] = useState(0);
 
@@ -118,9 +118,6 @@ export function LiveTV() {
                 return next;
             });
             else if (direction === 'left') setFocusArea('categories');
-            else if (direction === 'right' && selectedChannel) setFocusArea('info');
-        } else if (focusArea === 'info') {
-            if (direction === 'left') setFocusArea('channels');
         }
     };
 
@@ -136,8 +133,6 @@ export function LiveTV() {
                 if (selectedChannel?.stream_id === ch.stream_id) setShowPlayer(true);
                 else setSelectedChannel(ch);
             }
-        } else if (focusArea === 'info') {
-            if (selectedChannel) setShowPlayer(true);
         }
     };
 
@@ -257,11 +252,8 @@ export function LiveTV() {
                                 <span className="info-preview-badge"><span className="live-dot" /> PRÉVIA</span>
                             </div>
                             <h2 className="info-name">{selectedChannel.name}</h2>
+                            <p className="info-hint">▶ Pressione OK de novo para assistir em tela cheia</p>
                         </div>
-                        <button
-                            className={`watch-btn ${focusArea === 'info' ? 'tv-focused' : ''}`}
-                            onClick={() => setShowPlayer(true)}
-                        >▶ Assistir</button>
 
                         <div className="epg-block">
                             {epgLoading ? (
