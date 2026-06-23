@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
 import { storage } from '../services/storage';
-import type { Series as SeriesType, Category } from '../types';
+import type { Series as SeriesType, Category, SeriesInfo } from '../types';
 import { useTVNavigation } from '../hooks/useTVNavigation';
 import { useFocusZone } from '../contexts/FocusContext';
 import { ContentDetailModal } from '../components/ContentDetailModal';
@@ -23,7 +23,7 @@ export function Series() {
     const [selectedSeries, setSelectedSeries] = useState<SeriesType | null>(null);
     const [showModal, setShowModal] = useState(false);
     const [showPlayer, setShowPlayer] = useState(false);
-    const [playerInfo, setPlayerInfo] = useState<{ url: string; title: string; poster: string; name: string; seriesId: string; season: number; episode: number; resume: number } | null>(null);
+    const [playerInfo, setPlayerInfo] = useState<{ url: string; title: string; poster: string; name: string; seriesId: string; season: number; episode: number; resume: number; info: SeriesInfo; series: SeriesType } | null>(null);
     const [brokenImages, setBrokenImages] = useState<Set<number>>(new Set());
     const [visibleCount, setVisibleCount] = useState(30);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -147,6 +147,51 @@ export function Series() {
     });
 
     const handleImageError = (seriesId: number) => setBrokenImages(prev => new Set(prev).add(seriesId));
+
+    // Reproduz um episodio especifico (monta URL + resume + contexto p/ proximo/anterior)
+    const playSeriesEpisode = (series: SeriesType, info: SeriesInfo, s: number, ep: number) => {
+        const eps = info?.episodes?.[s] || [];
+        const epData = eps.find(e => Number(e.episode_num) === ep) || eps[0];
+        if (!epData) return;
+        const realEp = Number(epData.episode_num);
+        const saved = storage.getProgress(String(series.series_id), 'series');
+        const resume = (saved && saved.season === s && saved.episode === realEp) ? saved.position : 0;
+        setPlayerInfo({
+            url: api.getSeriesStreamUrl(epData.id, epData.container_extension || 'mp4'),
+            title: `${series.name} - T${s} E${realEp}`,
+            poster: series.cover, name: series.name, seriesId: String(series.series_id),
+            season: s, episode: realEp, resume, info, series,
+        });
+        setShowPlayer(true);
+    };
+
+    // Calcula o (temporada, episodio) adjacente. delta +1 = proximo, -1 = anterior.
+    const adjacentEpisode = (delta: number): { s: number; ep: number } | null => {
+        if (!playerInfo) return null;
+        const { info, season, episode } = playerInfo;
+        const eps = info?.episodes?.[season] || [];
+        const idx = eps.findIndex(e => Number(e.episode_num) === episode);
+        if (delta > 0 && idx >= 0 && idx < eps.length - 1) return { s: season, ep: Number(eps[idx + 1].episode_num) };
+        if (delta < 0 && idx > 0) return { s: season, ep: Number(eps[idx - 1].episode_num) };
+        // troca de temporada
+        const seasonsList = Object.keys(info?.episodes || {}).map(Number).sort((a, b) => a - b);
+        const sIdx = seasonsList.indexOf(season);
+        if (delta > 0 && sIdx >= 0 && sIdx < seasonsList.length - 1) {
+            const ns = seasonsList[sIdx + 1];
+            const nEps = info.episodes[ns] || [];
+            if (nEps[0]) return { s: ns, ep: Number(nEps[0].episode_num) };
+        } else if (delta < 0 && sIdx > 0) {
+            const ps = seasonsList[sIdx - 1];
+            const pEps = info.episodes[ps] || [];
+            if (pEps.length) return { s: ps, ep: Number(pEps[pEps.length - 1].episode_num) };
+        }
+        return null;
+    };
+
+    const goToEpisode = (delta: number) => {
+        const next = adjacentEpisode(delta);
+        if (next && playerInfo) playSeriesEpisode(playerInfo.series, playerInfo.info, next.s, next.ep);
+    };
 
     if (loading) {
         return (
@@ -276,28 +321,8 @@ export function Series() {
                     }}
                     onPlay={async (season, episode) => {
                         try {
-                            const s = season || 1;
-                            const ep = episode || 1;
-                            const seriesInfo = await api.getSeriesInfo(selectedSeries.series_id);
-                            const episodes = seriesInfo?.episodes?.[s] || [];
-                            const episodeData = episodes.find(e => e.episode_num === ep) || episodes[0];
-                            if (episodeData) {
-                                const streamUrl = api.getSeriesStreamUrl(episodeData.id, episodeData.container_extension || 'mp4');
-                                // retoma de onde parou se for o MESMO episodio salvo
-                                const saved = storage.getProgress(String(selectedSeries.series_id), 'series');
-                                const resume = (saved && saved.season === s && saved.episode === ep) ? saved.position : 0;
-                                setPlayerInfo({
-                                    url: streamUrl,
-                                    title: `${selectedSeries.name} - T${s} E${ep}`,
-                                    poster: selectedSeries.cover,
-                                    name: selectedSeries.name,
-                                    seriesId: String(selectedSeries.series_id),
-                                    season: s,
-                                    episode: ep,
-                                    resume,
-                                });
-                                setShowPlayer(true);
-                            }
+                            const info = await api.getSeriesInfo(selectedSeries.series_id);
+                            if (info) playSeriesEpisode(selectedSeries, info, season || 1, episode || 1);
                         } catch (err) {
                             console.error('Error getting episode info:', err);
                         }
@@ -318,6 +343,10 @@ export function Series() {
                         id: playerInfo.seriesId, type: 'series', title: playerInfo.name, poster: playerInfo.poster,
                         position: t, duration: d, season: playerInfo.season, episode: playerInfo.episode,
                     })}
+                    onNextEpisode={() => goToEpisode(1)}
+                    onPreviousEpisode={() => goToEpisode(-1)}
+                    canGoNext={!!adjacentEpisode(1)}
+                    canGoPrevious={!!adjacentEpisode(-1)}
                     onClose={() => { setShowPlayer(false); setPlayerInfo(null); }}
                 />
             )}
