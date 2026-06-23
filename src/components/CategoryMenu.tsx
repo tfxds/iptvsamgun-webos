@@ -49,29 +49,6 @@ export function CategoryMenu({
         handleClose();
     };
 
-    const getCategoryIcon = (name: string): string => {
-        const lower = name.toLowerCase();
-        if (lower.includes('ação') || lower.includes('action')) return 'Ação';
-        if (lower.includes('aventura') || lower.includes('adventure')) return 'Aventura';
-        if (lower.includes('drama')) return 'Drama';
-        if (lower.includes('romance')) return 'Romance';
-        if (lower.includes('comédia') || lower.includes('comedy')) return 'Comédia';
-        if (lower.includes('terror') || lower.includes('horror')) return 'Terror';
-        if (lower.includes('suspense') || lower.includes('thriller')) return 'Suspense';
-        if (lower.includes('ficção') || lower.includes('sci-fi')) return 'Sci-Fi';
-        if (lower.includes('fantasia') || lower.includes('fantasy')) return 'Fantasia';
-        if (lower.includes('animação') || lower.includes('animation')) return 'Animação';
-        if (lower.includes('anime')) return 'Anime';
-        if (lower.includes('infantil') || lower.includes('kids')) return 'Kids';
-        if (lower.includes('documentário') || lower.includes('documentary')) return 'Doc';
-        if (lower.includes('crime') || lower.includes('policial')) return 'Crime';
-        if (lower.includes('guerra') || lower.includes('war')) return 'Guerra';
-        if (lower.includes('esporte') || lower.includes('sport')) return 'Esporte';
-        if (lower.includes('música') || lower.includes('music')) return 'Música';
-        if (type === 'live') return 'TV';
-        return type === 'vod' ? 'Filme' : 'Série';
-    };
-
     const getTypeLabel = () => {
         if (type === 'live') return 'Todos os Canais';
         if (type === 'vod') return 'Todos os Filmes';
@@ -123,7 +100,6 @@ export function CategoryMenu({
                             className={`category-item ${selectedCategory === 'all' ? 'selected' : ''}`}
                             onClick={() => handleSelectCategory('all')}
                         >
-                            <div className="category-icon">TV</div>
                             <span className="category-name">{getTypeLabel()}</span>
                             {selectedCategory === 'all' && <div className="selected-dot" />}
                         </button>
@@ -136,7 +112,6 @@ export function CategoryMenu({
                                 style={{ animationDelay: `${0.1 + index * 0.03}s` }}
                                 onClick={() => handleSelectCategory(cat.category_id)}
                             >
-                                <div className="category-icon">{getCategoryIcon(cat.category_name)}</div>
                                 <span className="category-name">{cat.category_name}</span>
                                 {selectedCategory === cat.category_id && <div className="selected-dot" />}
                             </button>
