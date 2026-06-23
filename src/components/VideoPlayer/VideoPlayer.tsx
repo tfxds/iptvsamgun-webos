@@ -18,6 +18,8 @@ export interface VideoPlayerProps {
     onPreviousEpisode?: () => void;
     canGoNext?: boolean;
     canGoPrevious?: boolean;
+    onChannelUp?: () => void;    // zapping (TV ao vivo): canal anterior
+    onChannelDown?: () => void;  // zapping (TV ao vivo): proximo canal
     contentType?: 'movie' | 'series' | 'live';
 }
 
@@ -39,6 +41,8 @@ export function VideoPlayer({
     onPreviousEpisode,
     canGoNext,
     canGoPrevious,
+    onChannelUp,
+    onChannelDown,
     contentType = 'movie'
 }: VideoPlayerProps) {
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -343,6 +347,12 @@ export function VideoPlayer({
                 setQualityMenuIndex(prev => Math.min(totalItems - 1, prev + 1));
             }
         } else {
+            // TV ao vivo: cima/baixo troca de canal (zapping)
+            if ((isLive || contentType === 'live') && (direction === 'up' || direction === 'down')) {
+                if (direction === 'up') onChannelUp?.();
+                else onChannelDown?.();
+                return;
+            }
             // Navigate controls with left/right
             if (direction === 'left' || direction === 'right') {
                 setControlsTouched(true); // a partir daqui o marcador de foco aparece
@@ -370,7 +380,7 @@ export function VideoPlayer({
                 }
             }
         }
-    }, [playerFocus, qualityLevels.length, focusedControl, getControlButtons, resetHideControlsTimer]);
+    }, [playerFocus, qualityLevels.length, focusedControl, getControlButtons, resetHideControlsTimer, isLive, contentType, onChannelUp, onChannelDown]);
 
     const handleEnter = useCallback(() => {
         resetHideControlsTimer();

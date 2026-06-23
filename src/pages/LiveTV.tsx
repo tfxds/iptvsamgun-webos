@@ -147,6 +147,14 @@ export function LiveTV() {
 
     const handleImageError = (id: number) => setBrokenImages((p) => new Set(p).add(id));
 
+    // Zapping no player ao vivo: troca pro canal anterior/proximo da lista filtrada
+    const zapChannel = (delta: number) => {
+        if (!selectedChannel) return;
+        const idx = filteredStreams.findIndex((c) => c.stream_id === selectedChannel.stream_id);
+        const next = filteredStreams[idx + delta];
+        if (next) { setSelectedChannel(next); setFocusedChannelIndex(idx + delta); }
+    };
+
     const fmtTime = (s: string) => {
         const m = /(\d{2}:\d{2})/.exec(s || '');
         return m ? m[1] : '';
@@ -300,6 +308,8 @@ export function LiveTV() {
                     poster={selectedChannel.stream_icon}
                     isLive
                     contentType="live"
+                    onChannelUp={() => zapChannel(-1)}
+                    onChannelDown={() => zapChannel(1)}
                     onClose={() => setShowPlayer(false)}
                 />
             )}
