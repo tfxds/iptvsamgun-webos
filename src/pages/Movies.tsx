@@ -1,15 +1,15 @@
-// Movies Page - Matching NeoStream Desktop Style
+// Movies Page - S.A Player (categorias na lateral | grid de filmes, estilo Canais)
 
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
 import type { VODStream, Category } from '../types';
 import { useTVNavigation } from '../hooks/useTVNavigation';
 import { useFocusZone } from '../contexts/FocusContext';
-import { CategoryMenu } from '../components/CategoryMenu';
-import { AnimatedSearchBar } from '../components/AnimatedSearchBar';
 import { ContentDetailModal } from '../components/ContentDetailModal';
 import { VideoPlayer } from '../components/VideoPlayer';
 import './Movies.css';
+
+const GRID_COLS = 5;
 
 export function Movies() {
     const { focusZone, setFocusZone } = useFocusZone();
@@ -24,40 +24,13 @@ export function Movies() {
     const [showPlayer, setShowPlayer] = useState(false);
     const [playingMovie, setPlayingMovie] = useState<VODStream | null>(null);
     const [brokenImages, setBrokenImages] = useState<Set<number>>(new Set());
-    const [visibleCount, setVisibleCount] = useState(24); // Start with reasonable default
+    const [visibleCount, setVisibleCount] = useState(30);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     // Focus states for TV navigation
     const [focusArea, setFocusArea] = useState<'categories' | 'movies'>('movies');
     const [focusedCategoryIndex, setFocusedCategoryIndex] = useState(0);
     const [focusedMovieIndex, setFocusedMovieIndex] = useState(0);
-
-    // Calculate initial visible count based on screen size
-    useEffect(() => {
-        const calculateVisibleItems = () => {
-            const container = scrollContainerRef.current;
-            if (!container) return;
-
-            // Card dimensions (160px min width + 20px gap)
-            const cardWidth = 180;
-            const cardHeight = 290; // 2:3 aspect ratio (~240px) + title (~50px)
-
-            const containerWidth = container.clientWidth - 32; // minus padding
-            const containerHeight = window.innerHeight;
-
-            // Calculate columns and rows that fit on screen + 1 extra row
-            const cols = Math.floor(containerWidth / cardWidth);
-            const rows = Math.ceil(containerHeight / cardHeight) + 1; // +1 extra row
-
-            const initialCount = cols * rows;
-            setVisibleCount(Math.max(initialCount, 12)); // Minimum 12 items
-        };
-
-        calculateVisibleItems();
-        window.addEventListener('resize', calculateVisibleItems);
-
-        return () => window.removeEventListener('resize', calculateVisibleItems);
-    }, [loading]); // Recalculate when loading finishes
 
     // Fetch data
     useEffect(() => {
@@ -87,147 +60,93 @@ export function Movies() {
         return matchesSearch && matchesCategory;
     });
 
-    // Lazy loading scroll - load one more row when scrolling near bottom
+    // Lazy loading scroll
     useEffect(() => {
         const container = scrollContainerRef.current;
         if (!container) return;
-
         const handleScroll = () => {
             const { scrollTop, scrollHeight, clientHeight } = container;
-            // Load more when user scrolls to 80% of the content
             if (scrollTop + clientHeight >= scrollHeight * 0.8 && visibleCount < filteredStreams.length) {
-                setVisibleCount(prev => Math.min(prev + 12, filteredStreams.length));
+                setVisibleCount(prev => Math.min(prev + GRID_COLS * 4, filteredStreams.length));
             }
         };
-
         container.addEventListener('scroll', handleScroll);
         return () => container.removeEventListener('scroll', handleScroll);
     }, [filteredStreams.length, visibleCount]);
 
-    // Reset on filter change - recalculate visible count
+    // Reset on filter change
     useEffect(() => {
-        const container = scrollContainerRef.current;
-        if (!container) return;
-
-        const cardWidth = 180;
-        const cardHeight = 290;
-        const containerWidth = container.clientWidth - 32;
-        const containerHeight = window.innerHeight;
-        const cols = Math.floor(containerWidth / cardWidth);
-        const rows = Math.ceil(containerHeight / cardHeight) + 1;
-
-        setVisibleCount(Math.max(cols * rows, 12));
+        setVisibleCount(30);
         setSelectedMovie(null);
+        setFocusedMovieIndex(0);
     }, [searchQuery, selectedCategory]);
 
     // TV Navigation
     const handleNavigate = (direction: 'up' | 'down' | 'left' | 'right') => {
         if (focusArea === 'categories') {
-            if (direction === 'left') {
-                if (focusedCategoryIndex === 0) {
-                    // At first category - go to sidebar
-                    setFocusZone('sidebar');
-                } else {
-                    setFocusedCategoryIndex(prev => Math.max(0, prev - 1));
-                }
-            } else if (direction === 'right') {
-                setFocusedCategoryIndex(prev => Math.min(categories.length, prev + 1));
-            } else if (direction === 'down') {
-                setFocusArea('movies');
-                setFocusedMovieIndex(0);
-            }
+            if (direction === 'up') setFocusedCategoryIndex(prev => Math.max(0, prev - 1));
+            else if (direction === 'down') setFocusedCategoryIndex(prev => Math.min(categories.length, prev + 1));
+            else if (direction === 'right') { setFocusArea('movies'); setFocusedMovieIndex(0); }
+            else if (direction === 'left') setFocusZone('sidebar');
         } else if (focusArea === 'movies') {
-            const cols = 6;
             const totalMovies = filteredStreams.length;
-            const currentCol = focusedMovieIndex % cols;
-
+            const currentCol = focusedMovieIndex % GRID_COLS;
             if (direction === 'up') {
-                if (focusedMovieIndex < cols) {
-                    setFocusArea('categories');
-                } else {
-                    setFocusedMovieIndex(prev => Math.max(0, prev - cols));
-                }
+                if (focusedMovieIndex < GRID_COLS) setFocusArea('categories');
+                else setFocusedMovieIndex(prev => Math.max(0, prev - GRID_COLS));
             } else if (direction === 'down') {
                 setFocusedMovieIndex(prev => {
-                    const next = Math.min(totalMovies - 1, prev + cols);
-                    // If we're getting close to the visible limit, load more
-                    if (next >= visibleCount - 10) {
-                        setVisibleCount(current => Math.min(current + cols * 4, totalMovies));
-                    }
+                    const next = Math.min(totalMovies - 1, prev + GRID_COLS);
+                    if (next >= visibleCount - GRID_COLS * 2) setVisibleCount(c => Math.min(c + GRID_COLS * 4, totalMovies));
                     return next;
                 });
             } else if (direction === 'left') {
-                if (currentCol === 0) {
-                    // At first column - go to sidebar
-                    setFocusZone('sidebar');
-                } else {
-                    setFocusedMovieIndex(prev => Math.max(0, prev - 1));
-                }
+                if (currentCol === 0) setFocusArea('categories');
+                else setFocusedMovieIndex(prev => Math.max(0, prev - 1));
             } else if (direction === 'right') {
                 setFocusedMovieIndex(prev => {
                     const next = Math.min(totalMovies - 1, prev + 1);
-                    if (next >= visibleCount - 5) {
-                        setVisibleCount(current => Math.min(current + cols * 4, totalMovies));
-                    }
+                    if (next >= visibleCount - GRID_COLS) setVisibleCount(c => Math.min(c + GRID_COLS * 4, totalMovies));
                     return next;
                 });
             }
         }
     };
 
-    // Scroll selected item into view when navigating with TV remote
+    // Auto-scroll focused movie into view
     useEffect(() => {
-        if (focusArea === 'movies' && focusZone === 'content') {
-            const container = scrollContainerRef.current;
-            const focusedItem = container?.querySelector('.movie-card.tv-focused') as HTMLElement;
-            
-            if (container && focusedItem) {
-                const containerRect = container.getBoundingClientRect();
-                const itemRect = focusedItem.getBoundingClientRect();
-                
-                // If item is below the view
-                if (itemRect.bottom > containerRect.bottom) {
-                    container.scrollTop += (itemRect.bottom - containerRect.bottom) + 20;
-                }
-                // If item is above the view
-                else if (itemRect.top < containerRect.top) {
-                    container.scrollTop -= (containerRect.top - itemRect.top) + 20;
-                }
-            }
-        }
+        if (focusArea !== 'movies' || focusZone !== 'content') return;
+        const el = scrollContainerRef.current?.querySelector('.movie-card.tv-focused') as HTMLElement | null;
+        el?.scrollIntoView({ block: 'nearest' });
     }, [focusedMovieIndex, focusArea, focusZone]);
+
+    // Auto-scroll focused category into view
+    useEffect(() => {
+        if (focusArea !== 'categories') return;
+        const el = document.querySelector('.movies-cat-col .cat-item.tv-focused') as HTMLElement | null;
+        el?.scrollIntoView({ block: 'nearest' });
+    }, [focusedCategoryIndex, focusArea]);
 
     const handleEnter = () => {
         if (focusArea === 'categories') {
-            if (focusedCategoryIndex === 0) {
-                setSelectedCategory('all');
-            } else {
-                setSelectedCategory(categories[focusedCategoryIndex - 1]?.category_id || 'all');
-            }
+            setSelectedCategory(focusedCategoryIndex === 0 ? 'all' : (categories[focusedCategoryIndex - 1]?.category_id || 'all'));
         } else if (focusArea === 'movies') {
             const movie = filteredStreams[focusedMovieIndex];
-            if (movie) {
-                setSelectedMovie(movie);
-                setShowModal(true);
-            }
+            if (movie) { setSelectedMovie(movie); setShowModal(true); }
         }
     };
 
-    // Only enable when content is focused
     useTVNavigation({
         onNavigate: handleNavigate,
         onEnter: handleEnter,
-        enabled: focusZone === 'content',
+        enabled: focusZone === 'content' && !showModal && !showPlayer,
     });
 
-    const handleImageError = (streamId: number) => {
-        setBrokenImages(prev => new Set(prev).add(streamId));
-    };
+    const handleImageError = (streamId: number) => setBrokenImages(prev => new Set(prev).add(streamId));
 
-    // Loading State
     if (loading) {
         return (
-            <div className="movies-page">
+            <div className="movies-page movies-page--cats">
                 <div className="movies-bg-gradient" />
                 <div className="movies-loading">
                     <div className="loading-grid">
@@ -243,7 +162,6 @@ export function Movies() {
         );
     }
 
-    // Error State
     if (error) {
         return (
             <div className="movies-error-container">
@@ -252,48 +170,93 @@ export function Movies() {
                     <div className="error-icon">🎬</div>
                     <h2>Erro ao carregar filmes</h2>
                     <p>{error}</p>
-                    <button onClick={() => window.location.reload()} className="retry-button">
-                        🔄 Tentar novamente
-                    </button>
+                    <button onClick={() => window.location.reload()} className="retry-button">🔄 Tentar novamente</button>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="movies-page">
-            {/* Dynamic Background */}
+        <div className="movies-page movies-page--cats">
             <div className="movies-bg-gradient" />
             {selectedMovie && (selectedMovie.stream_icon || selectedMovie.cover) && (
-                <div
-                    className="movies-backdrop"
-                    style={{ backgroundImage: `url(${selectedMovie.stream_icon || selectedMovie.cover})` }}
-                />
+                <div className="movies-backdrop" style={{ backgroundImage: `url(${selectedMovie.stream_icon || selectedMovie.cover})` }} />
             )}
 
-            {/* Animated Search Bar */}
-            <AnimatedSearchBar
-                value={searchQuery}
-                onChange={setSearchQuery}
-                placeholder="Buscar filmes..."
-            />
+            <div className="movies-layout">
+                {/* COL 1 — Categorias (pastas) */}
+                <aside className="cat-col movies-cat-col">
+                    <div className="cat-search">
+                        <span className="cat-search-icon">🔍</span>
+                        <input
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Buscar filmes..."
+                            className="cat-search-input"
+                            spellCheck={false}
+                            autoComplete="off"
+                        />
+                    </div>
+                    <div className="cat-list">
+                        <button
+                            className={`cat-item ${selectedCategory === 'all' ? 'active' : ''} ${focusArea === 'categories' && focusedCategoryIndex === 0 ? 'tv-focused' : ''}`}
+                            onClick={() => setSelectedCategory('all')}
+                        >Todos os Filmes</button>
+                        {categories.map((cat, i) => (
+                            <button
+                                key={cat.category_id}
+                                className={`cat-item ${selectedCategory === cat.category_id ? 'active' : ''} ${focusArea === 'categories' && focusedCategoryIndex === i + 1 ? 'tv-focused' : ''}`}
+                                onClick={() => setSelectedCategory(cat.category_id)}
+                            >{cat.category_name}</button>
+                        ))}
+                    </div>
+                </aside>
 
-            {/* Category Menu (Hamburger Button) */}
-            <CategoryMenu
-                categories={categories}
-                selectedCategory={selectedCategory}
-                onSelectCategory={setSelectedCategory}
-                type="vod"
-            />
+                {/* COL 2 — Grid de filmes */}
+                <div ref={scrollContainerRef} className="movies-content">
+                    {filteredStreams.length === 0 ? (
+                        <div className="no-results">
+                            <div className="no-results-icon">🎬</div>
+                            <p>Nenhum filme encontrado</p>
+                            <span>Tente buscar por outro termo</span>
+                        </div>
+                    ) : (
+                        <div className="movies-grid">
+                            {filteredStreams.slice(0, visibleCount).map((movie, index) => (
+                                <div
+                                    key={movie.stream_id}
+                                    className={`movie-card ${focusArea === 'movies' && focusedMovieIndex === index ? 'tv-focused' : ''} ${selectedMovie?.stream_id === movie.stream_id ? 'selected' : ''}`}
+                                    onClick={() => { setSelectedMovie(movie); setShowModal(true); }}
+                                    style={{ animationDelay: `${Math.min(index * 0.03, 0.5)}s` }}
+                                >
+                                    <div className="movie-poster">
+                                        {brokenImages.has(movie.stream_id) ? (
+                                            <div className="poster-placeholder">🎬</div>
+                                        ) : (
+                                            <img
+                                                src={movie.stream_icon || movie.cover}
+                                                alt={movie.name}
+                                                loading="lazy"
+                                                onError={() => handleImageError(movie.stream_id)}
+                                            />
+                                        )}
+                                        {movie.rating && parseFloat(movie.rating) > 0 && (
+                                            <div className="movie-rating">⭐ {movie.rating}</div>
+                                        )}
+                                    </div>
+                                    <div className="movie-title">{movie?.name || 'Filme Sem Nome'}</div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
 
             {/* Content Detail Modal */}
             {selectedMovie && (
                 <ContentDetailModal
                     isOpen={showModal}
-                    onClose={() => {
-                        setShowModal(false);
-                        setSelectedMovie(null);
-                    }}
+                    onClose={() => { setShowModal(false); setSelectedMovie(null); }}
                     contentId={String(selectedMovie.stream_id)}
                     contentType="movie"
                     contentData={{
@@ -307,12 +270,7 @@ export function Movies() {
                         release_date: selectedMovie.release_date,
                         container_extension: selectedMovie.container_extension,
                     }}
-                    onPlay={() => {
-                        // Start video playback
-                        setPlayingMovie(selectedMovie);
-                        setShowPlayer(true);
-                        setShowModal(false);
-                    }}
+                    onPlay={() => { setPlayingMovie(selectedMovie); setShowPlayer(true); setShowModal(false); }}
                 />
             )}
 
@@ -322,60 +280,14 @@ export function Movies() {
                     src={api.getVodStreamUrl(playingMovie.stream_id, playingMovie.container_extension || 'mp4')}
                     title={playingMovie.name}
                     poster={playingMovie.stream_icon || playingMovie.cover}
-                    onClose={() => {
-                        setShowPlayer(false);
-                        setPlayingMovie(null);
-                    }}
+                    onClose={() => { setShowPlayer(false); setPlayingMovie(null); }}
                 />
             )}
 
-            {/* Movies Grid */}
-            <div ref={scrollContainerRef} className="movies-content">
-                {filteredStreams.length === 0 ? (
-                    <div className="no-results">
-                        <div className="no-results-icon">🎬</div>
-                        <p>Nenhum filme encontrado</p>
-                        <span>Tente buscar por outro termo</span>
-                    </div>
-                ) : (
-                    <div className="movies-grid">
-                        {filteredStreams.slice(0, visibleCount).map((movie, index) => (
-                            <div
-                                key={movie.stream_id}
-                                className={`movie-card ${focusArea === 'movies' && focusedMovieIndex === index ? 'tv-focused' : ''} ${selectedMovie?.stream_id === movie.stream_id ? 'selected' : ''}`}
-                                onClick={() => {
-                                    setSelectedMovie(movie);
-                                    setShowModal(true);
-                                }}
-                                style={{ animationDelay: `${Math.min(index * 0.03, 0.5)}s` }}
-                            >
-                                <div className="movie-poster">
-                                    {brokenImages.has(movie.stream_id) ? (
-                                        <div className="poster-placeholder">🎬</div>
-                                    ) : (
-                                        <img
-                                            src={movie.stream_icon || movie.cover}
-                                            alt={movie.name}
-                                            loading="lazy"
-                                            onError={() => handleImageError(movie.stream_id)}
-                                        />
-                                    )}
-                                    {movie.rating && parseFloat(movie.rating) > 0 && (
-                                        <div className="movie-rating">⭐ {movie.rating}</div>
-                                    )}
-                                </div>
-                                <div className="movie-title">{movie?.name || 'Filme Sem Nome'}</div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-
-            {/* Footer Hints */}
             <div className="movies-hints">
                 <span>↑↓←→ Navegar</span>
                 <span>OK Selecionar</span>
-                <span>← Voltar</span>
+                <span>← Categorias</span>
             </div>
         </div>
     );
