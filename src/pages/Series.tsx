@@ -26,6 +26,7 @@ export function Series() {
     const [brokenImages, setBrokenImages] = useState<Set<number>>(new Set());
     const [visibleCount, setVisibleCount] = useState(30);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const searchRef = useRef<HTMLInputElement>(null);
 
     // Focus states for TV navigation
     const [focusArea, setFocusArea] = useState<'categories' | 'series'>('series');
@@ -84,7 +85,8 @@ export function Series() {
     // TV Navigation
     const handleNavigate = (direction: 'up' | 'down' | 'left' | 'right') => {
         if (focusArea === 'categories') {
-            if (direction === 'up') setFocusedCategoryIndex(prev => Math.max(0, prev - 1));
+            // -1 = campo de busca (acima do "Todas as Séries")
+            if (direction === 'up') setFocusedCategoryIndex(prev => Math.max(-1, prev - 1));
             else if (direction === 'down') setFocusedCategoryIndex(prev => Math.min(categories.length, prev + 1));
             else if (direction === 'right') { setFocusArea('series'); setFocusedSeriesIndex(0); }
             else if (direction === 'left') setFocusZone('sidebar');
@@ -129,6 +131,7 @@ export function Series() {
 
     const handleEnter = () => {
         if (focusArea === 'categories') {
+            if (focusedCategoryIndex === -1) { searchRef.current?.focus(); return; } // abre teclado do sistema (TV)
             setSelectedCategory(focusedCategoryIndex === 0 ? 'all' : (categories[focusedCategoryIndex - 1]?.category_id || 'all'));
         } else if (focusArea === 'series') {
             const item = filteredSeries[focusedSeriesIndex];
@@ -186,9 +189,10 @@ export function Series() {
             <div className="series-layout">
                 {/* COL 1 — Categorias (pastas) */}
                 <aside className="cat-col series-cat-col">
-                    <div className="cat-search">
+                    <div className={`cat-search ${focusArea === 'categories' && focusedCategoryIndex === -1 ? 'tv-focused' : ''}`}>
                         <span className="cat-search-icon">🔍</span>
                         <input
+                            ref={searchRef}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="Buscar séries..."

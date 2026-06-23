@@ -24,6 +24,7 @@ export function LiveTV() {
     const [showPlayer, setShowPlayer] = useState(false);
 
     const channelsScrollRef = useRef<HTMLDivElement>(null);
+    const searchRef = useRef<HTMLInputElement>(null);
 
     // Focus areas (3 colunas)
     const [focusArea, setFocusArea] = useState<'categories' | 'channels' | 'info'>('channels');
@@ -91,7 +92,8 @@ export function LiveTV() {
     // TV Navigation
     const handleNavigate = (direction: 'up' | 'down' | 'left' | 'right') => {
         if (focusArea === 'categories') {
-            if (direction === 'up') setFocusedCategoryIndex((p) => Math.max(0, p - 1));
+            // -1 = campo de busca (acima do "Todos")
+            if (direction === 'up') setFocusedCategoryIndex((p) => Math.max(-1, p - 1));
             else if (direction === 'down') setFocusedCategoryIndex((p) => Math.min(categories.length, p + 1));
             else if (direction === 'right') setFocusArea('channels');
             else if (direction === 'left') setFocusZone('sidebar');
@@ -112,6 +114,7 @@ export function LiveTV() {
     const handleEnter = () => {
         if (focusArea === 'categories') {
             const idx = focusedCategoryIndex;
+            if (idx === -1) { searchRef.current?.focus(); return; } // abre o teclado do sistema (TV)
             setSelectedCategory(idx === 0 ? 'all' : (categories[idx - 1]?.category_id || 'all'));
         } else if (focusArea === 'channels') {
             const ch = filteredStreams[focusedChannelIndex];
@@ -160,9 +163,10 @@ export function LiveTV() {
         <div className="livetv2">
             {/* COL 1 — Categorias */}
             <aside className="cat-col">
-                <div className="cat-search">
+                <div className={`cat-search ${focusArea === 'categories' && focusedCategoryIndex === -1 ? 'tv-focused' : ''}`}>
                     <span className="cat-search-icon">🔍</span>
                     <input
+                        ref={searchRef}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Buscar..."
