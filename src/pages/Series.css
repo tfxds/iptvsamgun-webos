@@ -304,9 +304,9 @@
     z-index: 10;
 }
 
-.series-card.tv-focused {
-    box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.5);
-    border-radius: 12px;
+/* borda de foco SO no poster (nao no card inteiro) — senao a linha cruza o card vizinho */
+.series-card.tv-focused .series-poster {
+    box-shadow: 0 0 0 3px #a855f7, 0 16px 36px rgba(168, 85, 247, 0.35);
 }
 
 .series-card.selected {
