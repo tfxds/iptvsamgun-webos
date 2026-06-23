@@ -23,7 +23,7 @@ export function Favorites() {
     const [removingId, setRemovingId] = useState<string | null>(null);
 
     // Focus states for TV navigation
-    const [focusArea, setFocusArea] = useState<'tabs' | 'items'>('items');
+    const [focusArea, setFocusArea] = useState<'tabs' | 'items' | 'clear'>('items');
     const [focusedTabIndex, setFocusedTabIndex] = useState(0);
     const [focusedItemIndex, setFocusedItemIndex] = useState(0);
 
@@ -58,12 +58,17 @@ export function Favorites() {
 
     // TV Navigation
     const handleNavigate = (direction: 'up' | 'down' | 'left' | 'right') => {
-        if (focusArea === 'tabs') {
+        if (focusArea === 'clear') {
+            if (direction === 'down') setFocusArea('tabs');
+            else if (direction === 'left') setFocusZone('sidebar');
+        } else if (focusArea === 'tabs') {
             if (direction === 'left') {
                 if (focusedTabIndex === 0) setFocusZone('sidebar');
                 else setFocusedTabIndex(prev => Math.max(0, prev - 1));
             } else if (direction === 'right') {
                 setFocusedTabIndex(prev => Math.min(tabs.length - 1, prev + 1));
+            } else if (direction === 'up') {
+                setFocusArea('clear');
             } else if (direction === 'down') {
                 setFocusArea('items');
                 setFocusedItemIndex(0);
@@ -90,7 +95,9 @@ export function Favorites() {
     };
 
     const handleEnter = () => {
-        if (focusArea === 'tabs') {
+        if (focusArea === 'clear') {
+            clearAll();
+        } else if (focusArea === 'tabs') {
             setActiveTab(tabs[focusedTabIndex]);
         }
     };
@@ -145,7 +152,7 @@ export function Favorites() {
                     </div>
                 </div>
                 {items.length > 0 && (
-                    <button className="clear-btn" onClick={clearAll}>
+                    <button className={`clear-btn ${focusArea === 'clear' ? 'tv-focused' : ''}`} onClick={clearAll}>
                         <span>Excluir</span>
                         <span>Limpar Tudo</span>
                     </button>

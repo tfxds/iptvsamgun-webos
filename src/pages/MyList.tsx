@@ -16,7 +16,7 @@ export function MyList() {
     const [player, setPlayer] = useState<{ src: string; title: string; poster: string; resume: number; item: ProgressItem } | null>(null);
 
     // Focus states for TV navigation
-    const [focusArea, setFocusArea] = useState<'tabs' | 'items'>('items');
+    const [focusArea, setFocusArea] = useState<'tabs' | 'items' | 'clear'>('items');
     const [focusedTabIndex, setFocusedTabIndex] = useState(0);
     const [focusedItemIndex, setFocusedItemIndex] = useState(0);
 
@@ -67,12 +67,17 @@ export function MyList() {
 
     // TV Navigation
     const handleNavigate = (direction: 'up' | 'down' | 'left' | 'right') => {
-        if (focusArea === 'tabs') {
+        if (focusArea === 'clear') {
+            if (direction === 'down') setFocusArea('tabs');
+            else if (direction === 'left') setFocusZone('sidebar');
+        } else if (focusArea === 'tabs') {
             if (direction === 'left') {
                 if (focusedTabIndex === 0) setFocusZone('sidebar');
                 else setFocusedTabIndex(prev => Math.max(0, prev - 1));
             } else if (direction === 'right') {
                 setFocusedTabIndex(prev => Math.min(tabs.length - 1, prev + 1));
+            } else if (direction === 'up') {
+                setFocusArea('clear'); // sobe pro botao Limpar Tudo
             } else if (direction === 'down') {
                 setFocusArea('items');
                 setFocusedItemIndex(0);
@@ -95,7 +100,9 @@ export function MyList() {
     };
 
     const handleEnter = () => {
-        if (focusArea === 'tabs') {
+        if (focusArea === 'clear') {
+            clearAll();
+        } else if (focusArea === 'tabs') {
             setActiveTab(tabs[focusedTabIndex]);
         } else if (focusArea === 'items') {
             const it = displayItems[focusedItemIndex];
@@ -143,7 +150,7 @@ export function MyList() {
                         <p className="subtitle">{items.length} em andamento</p>
                     </div>
                 </div>
-                <button className="clear-btn" onClick={clearAll}>
+                <button className={`clear-btn ${focusArea === 'clear' ? 'tv-focused' : ''}`} onClick={clearAll}>
                     <span>🗑️</span>
                     <span>Limpar Tudo</span>
                 </button>
