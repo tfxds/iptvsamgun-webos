@@ -1,8 +1,6 @@
 // Sidebar Navigation Component - Matching NeoStream Desktop Design
 
 import { useState, useMemo } from 'react';
-import { FaHome, FaTv, FaFilm, FaPhotoVideo, FaListUl, FaHeart, FaCog } from 'react-icons/fa';
-import type { IconType } from 'react-icons';
 import { useTVNavigation } from '../../hooks/useTVNavigation';
 import { useFocusZone } from '../../contexts/FocusContext';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -21,20 +19,20 @@ interface SidebarProps {
 interface MenuItem {
     id: string;
     label: string;
-    icon: IconType;
+    emoji: string;
     gradient: string;
     requiresTV?: boolean;
     requiresVOD?: boolean;
 }
 
 const allMenuItems: MenuItem[] = [
-    { id: 'home', label: 'Início', icon: FaHome, gradient: 'linear-gradient(135deg, #0ea5e9, #38bdf8)' },
-    { id: 'live', label: 'TV ao Vivo', icon: FaTv, gradient: 'linear-gradient(135deg, #0ea5e9, #38bdf8)', requiresTV: true },
-    { id: 'movies', label: 'Filmes', icon: FaFilm, gradient: 'linear-gradient(135deg, #0ea5e9, #38bdf8)', requiresVOD: true },
-    { id: 'series', label: 'Séries', icon: FaPhotoVideo, gradient: 'linear-gradient(135deg, #0ea5e9, #38bdf8)', requiresVOD: true },
-    { id: 'mylist', label: 'Minha Lista', icon: FaListUl, gradient: 'linear-gradient(135deg, #0ea5e9, #38bdf8)' },
-    { id: 'favorites', label: 'Favoritos', icon: FaHeart, gradient: 'linear-gradient(135deg, #0ea5e9, #38bdf8)' },
-    { id: 'settings', label: 'Configurações', icon: FaCog, gradient: 'linear-gradient(135deg, #0ea5e9, #38bdf8)' },
+    { id: 'home', label: 'Início', emoji: '🏠', gradient: 'linear-gradient(135deg, #f59e0b, #d97706)' },
+    { id: 'live', label: 'TV ao Vivo', emoji: '📺', gradient: 'linear-gradient(135deg, #a855f7, #7c3aed)', requiresTV: true },
+    { id: 'movies', label: 'Filmes', emoji: '🎬', gradient: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', requiresVOD: true },
+    { id: 'series', label: 'Séries', emoji: '📺', gradient: 'linear-gradient(135deg, #ec4899, #db2777)', requiresVOD: true },
+    { id: 'mylist', label: 'Minha Lista', emoji: '📑', gradient: 'linear-gradient(135deg, #14b8a6, #0891b2)' },
+    { id: 'favorites', label: 'Favoritos', emoji: '❤️', gradient: 'linear-gradient(135deg, #ef4444, #dc2626)' },
+    { id: 'settings', label: 'Configurações', emoji: '⚙️', gradient: 'linear-gradient(135deg, #6b7280, #4b5563)' },
 ];
 
 export function Sidebar({ activeItem, onItemSelect, onLogout, onProfileClick, focused = false, logoUrl }: SidebarProps) {
@@ -131,7 +129,6 @@ export function Sidebar({ activeItem, onItemSelect, onLogout, onProfileClick, fo
                         const isActive = activeItem === item.id;
                         const isFocused = focused && focusedIndex === index;
                         const isHovered = hoveredItem === item.id;
-                        const Icon = item.icon;
 
                         return (
                             <button
@@ -155,7 +152,7 @@ export function Sidebar({ activeItem, onItemSelect, onLogout, onProfileClick, fo
 
                                 {/* Icon */}
                                 <div className="item-icon-wrapper">
-                                    <span className="item-icon"><Icon size={24} /></span>
+                                    <span className="item-icon">{item.emoji}</span>
                                 </div>
 
                                 {/* Active Indicator */}
@@ -167,7 +164,7 @@ export function Sidebar({ activeItem, onItemSelect, onLogout, onProfileClick, fo
 
                                 {/* Tooltip */}
                                 <div className={`tooltip ${isFocused || isHovered ? 'visible' : ''}`}>
-                                    <span className="tooltip-emoji"><Icon size={16} /></span>
+                                    <span className="tooltip-emoji">{item.emoji}</span>
                                     <span className="tooltip-label">{t(`sidebar_${item.id}` as TranslationKey)}</span>
                                 </div>
                             </button>
