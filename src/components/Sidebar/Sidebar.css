@@ -423,3 +423,21 @@
     display: block;
     margin: 0 auto;
 }
+
+/* Ícones do menu (react-icons) — paleta sky */
+.item-icon {
+    color: #94a3b8;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.nav-item.active .item-icon,
+.nav-item.tv-focused .item-icon,
+.nav-item:hover .item-icon {
+    color: #38bdf8;
+}
+.tooltip-emoji {
+    color: #38bdf8;
+    display: inline-flex;
+    align-items: center;
+}
