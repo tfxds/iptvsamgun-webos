@@ -109,6 +109,7 @@ export function ContentDetailModal({
 
     // TMDB data states
     const [tmdbData, setTmdbData] = useState<TMDBMovieDetails | TMDBSeriesDetails | null>(null);
+    const [xtreamPlot, setXtreamPlot] = useState('');
     const [tmdbLoading, setTmdbLoading] = useState(false);
 
     // Focus management for TV navigation
@@ -142,6 +143,20 @@ export function ContentDetailModal({
                 setSeriesInfo(null);
             })
             .finally(() => setLoading(false));
+    }, [isOpen, contentId, contentType]);
+
+    // Plot real do Xtream pro FILME (a lista get_vod_streams NAO traz plot; get_vod_info traz)
+    useEffect(() => {
+        if (!isOpen || contentType !== 'movie') { setXtreamPlot(''); return; }
+        let cancelled = false;
+        api.getVodInfo(Number(contentId))
+            .then(d => {
+                const md = (d?.movie_data || {}) as Record<string, unknown>;
+                const p = d?.info?.plot || (md.plot as string) || (md.description as string) || '';
+                if (!cancelled) setXtreamPlot(typeof p === 'string' ? p : '');
+            })
+            .catch(() => { if (!cancelled) setXtreamPlot(''); });
+        return () => { cancelled = true; };
     }, [isOpen, contentId, contentType]);
 
     // Fetch TMDB data
@@ -349,7 +364,8 @@ export function ContentDetailModal({
     if (!isOpen) return null;
 
     // Use TMDB data if available, fallback to IPTV data
-    const overview = tmdbData?.overview || contentData.plot || 'Sem descrição disponível.';
+    const seriesPlot = (seriesInfo?.info as Record<string, unknown> | undefined)?.plot as string | undefined;
+    const overview = tmdbData?.overview || xtreamPlot || seriesPlot || contentData.plot || 'Sem descrição disponível.';
     const rating = tmdbData?.vote_average ? tmdbData.vote_average.toFixed(1) : contentData.rating;
     const genres = tmdbData?.genres ? formatGenres(tmdbData.genres) : contentData.genre;
     const backdropUrl = tmdbData?.backdrop_path ? getImageUrl(tmdbData.backdrop_path, 'w1280') : null;
