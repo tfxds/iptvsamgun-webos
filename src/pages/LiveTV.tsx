@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
+import { storage, ADULT_RE } from '../services/storage';
 import type { LiveStream, Category, EPGProgram } from '../types';
 import { useTVNavigation } from '../hooks/useTVNavigation';
 import { useFocusZone } from '../contexts/FocusContext';
@@ -51,11 +52,17 @@ export function LiveTV() {
         fetchData();
     }, []);
 
+    // Controle parental: esconde categorias/canais adultos quando ligado
+    const adultBlocked = storage.isAdultBlocked();
+    const adultCatIds = new Set(categories.filter(c => ADULT_RE.test(c.category_name || '')).map(c => c.category_id));
+    const cats = adultBlocked ? categories.filter(c => !ADULT_RE.test(c.category_name || '')) : categories;
+
     const filteredStreams = streams.filter((s) => {
         const name = (s.name || '').toLowerCase();
         const matchesSearch = name.includes(searchQuery.toLowerCase());
         const matchesCategory = selectedCategory === 'all' || s.category_id === selectedCategory;
-        return matchesSearch && matchesCategory;
+        const allowed = !adultBlocked || (!adultCatIds.has(s.category_id) && !ADULT_RE.test(s.name || ''));
+        return matchesSearch && matchesCategory && allowed;
     });
 
     // Reset on filter change
@@ -94,7 +101,7 @@ export function LiveTV() {
         if (focusArea === 'categories') {
             // -1 = campo de busca (acima do "Todos")
             if (direction === 'up') setFocusedCategoryIndex((p) => Math.max(-1, p - 1));
-            else if (direction === 'down') setFocusedCategoryIndex((p) => Math.min(categories.length, p + 1));
+            else if (direction === 'down') setFocusedCategoryIndex((p) => Math.min(cats.length, p + 1));
             else if (direction === 'right') setFocusArea('channels');
             else if (direction === 'left') setFocusZone('sidebar');
         } else if (focusArea === 'channels') {
@@ -115,7 +122,7 @@ export function LiveTV() {
         if (focusArea === 'categories') {
             const idx = focusedCategoryIndex;
             if (idx === -1) { searchRef.current?.focus(); return; } // abre o teclado do sistema (TV)
-            setSelectedCategory(idx === 0 ? 'all' : (categories[idx - 1]?.category_id || 'all'));
+            setSelectedCategory(idx === 0 ? 'all' : (cats[idx - 1]?.category_id || "all"));
         } else if (focusArea === 'channels') {
             const ch = filteredStreams[focusedChannelIndex];
             if (ch) setSelectedChannel(ch);
@@ -180,7 +187,7 @@ export function LiveTV() {
                         className={`cat-item ${selectedCategory === 'all' ? 'active' : ''} ${focusArea === 'categories' && focusedCategoryIndex === 0 ? 'tv-focused' : ''}`}
                         onClick={() => setSelectedCategory('all')}
                     >Todos</button>
-                    {categories.map((cat, i) => (
+                    {cats.map((cat, i) => (
                         <button
                             key={cat.category_id}
                             className={`cat-item ${selectedCategory === cat.category_id ? 'active' : ''} ${focusArea === 'categories' && focusedCategoryIndex === i + 1 ? 'tv-focused' : ''}`}

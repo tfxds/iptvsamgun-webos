@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
-import { storage } from '../services/storage';
+import { storage, ADULT_RE } from '../services/storage';
 import type { VODStream, Category } from '../types';
 import { useTVNavigation } from '../hooks/useTVNavigation';
 import { useFocusZone } from '../contexts/FocusContext';
@@ -54,12 +54,18 @@ export function Movies() {
         fetchData();
     }, []);
 
+    // Controle parental: esconde categorias/titulos adultos quando ligado
+    const adultBlocked = storage.isAdultBlocked();
+    const adultCatIds = new Set(categories.filter(c => ADULT_RE.test(c.category_name || '')).map(c => c.category_id));
+    const cats = adultBlocked ? categories.filter(c => !ADULT_RE.test(c.category_name || '')) : categories;
+
     // Filter streams
     const filteredStreams = streams.filter((stream) => {
         const streamName = stream.name || '';
         const matchesSearch = streamName.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesCategory = selectedCategory === 'all' || stream.category_id === selectedCategory;
-        return matchesSearch && matchesCategory;
+        const allowed = !adultBlocked || (!adultCatIds.has(stream.category_id) && !ADULT_RE.test(streamName));
+        return matchesSearch && matchesCategory && allowed;
     });
 
     // Lazy loading scroll
@@ -88,7 +94,7 @@ export function Movies() {
         if (focusArea === 'categories') {
             // -1 = campo de busca (acima do "Todos os Filmes")
             if (direction === 'up') setFocusedCategoryIndex(prev => Math.max(-1, prev - 1));
-            else if (direction === 'down') setFocusedCategoryIndex(prev => Math.min(categories.length, prev + 1));
+            else if (direction === 'down') setFocusedCategoryIndex(prev => Math.min(cats.length, prev + 1));
             else if (direction === 'right') { setFocusArea('movies'); setFocusedMovieIndex(0); }
             else if (direction === 'left') setFocusZone('sidebar');
         } else if (focusArea === 'movies') {
@@ -133,7 +139,7 @@ export function Movies() {
     const handleEnter = () => {
         if (focusArea === 'categories') {
             if (focusedCategoryIndex === -1) { searchRef.current?.focus(); return; } // abre teclado do sistema (TV)
-            setSelectedCategory(focusedCategoryIndex === 0 ? 'all' : (categories[focusedCategoryIndex - 1]?.category_id || 'all'));
+            setSelectedCategory(focusedCategoryIndex === 0 ? 'all' : (cats[focusedCategoryIndex - 1]?.category_id || 'all'));
         } else if (focusArea === 'movies') {
             const movie = filteredStreams[focusedMovieIndex];
             if (movie) { setSelectedMovie(movie); setShowModal(true); }
@@ -207,7 +213,7 @@ export function Movies() {
                             className={`cat-item ${selectedCategory === 'all' ? 'active' : ''} ${focusArea === 'categories' && focusedCategoryIndex === 0 ? 'tv-focused' : ''}`}
                             onClick={() => setSelectedCategory('all')}
                         >Todos os Filmes</button>
-                        {categories.map((cat, i) => (
+                        {cats.map((cat, i) => (
                             <button
                                 key={cat.category_id}
                                 className={`cat-item ${selectedCategory === cat.category_id ? 'active' : ''} ${focusArea === 'categories' && focusedCategoryIndex === i + 1 ? 'tv-focused' : ''}`}

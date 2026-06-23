@@ -68,6 +68,9 @@ export function VideoPlayer({
     const [qualityMenuIndex, setQualityMenuIndex] = useState(0);
     const [playerFocus, setPlayerFocus] = useState<PlayerFocus>('controls');
     const [focusedControl, setFocusedControl] = useState<ControlButton>('play');
+    // So mostra o marcador de foco nos botoes DEPOIS que o usuario navega; some quando
+    // os controles escondem. Evita botao "marcado" ao abrir/reabrir o player.
+    const [controlsTouched, setControlsTouched] = useState(false);
 
     // HLS hook with quality support
     const {
@@ -172,6 +175,7 @@ export function VideoPlayer({
         hideControlsTimeoutRef.current = setTimeout(() => {
             if (playing && !showQualityMenu) {
                 setShowControls(false);
+                setControlsTouched(false); // ao esconder, zera o marcador de foco
             }
         }, 3000);
     }, [playing, showQualityMenu]);
@@ -341,6 +345,7 @@ export function VideoPlayer({
         } else {
             // Navigate controls with left/right
             if (direction === 'left' || direction === 'right') {
+                setControlsTouched(true); // a partir daqui o marcador de foco aparece
                 const buttons = getControlButtons();
                 const currentIndex = buttons.indexOf(focusedControl);
                 if (direction === 'left') {
@@ -447,7 +452,7 @@ export function VideoPlayer({
             {/* Close Button */}
             {onClose && showControls && (
                 <button
-                    className={`video-player-close ${focusedControl === 'close' && playerFocus === 'controls' ? 'focused' : ''}`}
+                    className={`video-player-close ${focusedControl === 'close' && playerFocus === 'controls' && controlsTouched ? 'focused' : ''}`}
                     onClick={handleClose}
                 >
                     ✕
@@ -584,7 +589,7 @@ export function VideoPlayer({
                         {/* Previous Episode */}
                         {canGoPrevious && onPreviousEpisode && (
                             <button
-                                className={`control-btn ${focusedControl === 'prev' && playerFocus === 'controls' ? 'focused' : ''}`}
+                                className={`control-btn ${focusedControl === 'prev' && playerFocus === 'controls' && controlsTouched ? 'focused' : ''}`}
                                 onClick={onPreviousEpisode}
                             >
                                 <FaStepBackward />
@@ -594,7 +599,7 @@ export function VideoPlayer({
                         {/* Voltar 10s (VOD) */}
                         {!isLive && contentType !== 'live' && (
                             <button
-                                className={`control-btn ${focusedControl === 'rewind' && playerFocus === 'controls' ? 'focused' : ''}`}
+                                className={`control-btn ${focusedControl === 'rewind' && playerFocus === 'controls' && controlsTouched ? 'focused' : ''}`}
                                 onClick={() => scrubBy(-SEEK_STEP)}
                                 title="Voltar 10s"
                             >
@@ -604,7 +609,7 @@ export function VideoPlayer({
 
                         {/* Play/Pause */}
                         <button
-                            className={`control-btn ${focusedControl === 'play' && playerFocus === 'controls' ? 'focused' : ''}`}
+                            className={`control-btn ${focusedControl === 'play' && playerFocus === 'controls' && controlsTouched ? 'focused' : ''}`}
                             onClick={togglePlay}
                         >
                             {playing ? <FaPause /> : <FaPlay />}
@@ -613,7 +618,7 @@ export function VideoPlayer({
                         {/* Avancar 10s (VOD) */}
                         {!isLive && contentType !== 'live' && (
                             <button
-                                className={`control-btn ${focusedControl === 'forward' && playerFocus === 'controls' ? 'focused' : ''}`}
+                                className={`control-btn ${focusedControl === 'forward' && playerFocus === 'controls' && controlsTouched ? 'focused' : ''}`}
                                 onClick={() => scrubBy(SEEK_STEP)}
                                 title="Avancar 10s"
                             >
@@ -624,7 +629,7 @@ export function VideoPlayer({
                         {/* Next Episode */}
                         {canGoNext && onNextEpisode && (
                             <button
-                                className={`control-btn ${focusedControl === 'next' && playerFocus === 'controls' ? 'focused' : ''}`}
+                                className={`control-btn ${focusedControl === 'next' && playerFocus === 'controls' && controlsTouched ? 'focused' : ''}`}
                                 onClick={onNextEpisode}
                             >
                                 <FaStepForward />
@@ -648,7 +653,7 @@ export function VideoPlayer({
                         {/* Quality Button */}
                         {qualityLevels.length > 0 && (
                             <button
-                                className={`control-btn quality-btn ${focusedControl === 'quality' && playerFocus === 'controls' ? 'focused' : ''}`}
+                                className={`control-btn quality-btn ${focusedControl === 'quality' && playerFocus === 'controls' && controlsTouched ? 'focused' : ''}`}
                                 onClick={openQualityMenu}
                                 title="Qualidade"
                             >
