@@ -57,6 +57,11 @@ export function VideoPlayer({
     const [showControls, setShowControls] = useState(true);
     const [hoverTime, setHoverTime] = useState<number | null>(null);
     const [hoverPosition, setHoverPosition] = useState(0);
+    // Scrub estilo Netflix: ao avancar/voltar mostra a posicao de destino e so aplica
+    // o seek depois de uma pausa (preview de tempo).
+    const [scrubTarget, setScrubTarget] = useState<number | null>(null);
+    const scrubTargetRef = useRef<number | null>(null);
+    const scrubCommitRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
     // Focus management
     const [showQualityMenu, setShowQualityMenu] = useState(false);
@@ -257,6 +262,23 @@ export function VideoPlayer({
         }
     }, []);
 
+    // Scrub: acumula o destino e mostra preview; aplica o seek ~600ms apos o ultimo toque
+    const scrubBy = useCallback((delta: number) => {
+        const base = scrubTargetRef.current ?? (videoRef.current?.currentTime || 0);
+        const max = (duration && isFinite(duration)) ? duration : Number.MAX_SAFE_INTEGER;
+        const t = Math.max(0, Math.min(max, base + delta));
+        scrubTargetRef.current = t;
+        setScrubTarget(t);
+        if (scrubCommitRef.current) clearTimeout(scrubCommitRef.current);
+        scrubCommitRef.current = setTimeout(() => {
+            if (scrubTargetRef.current !== null) {
+                seek(scrubTargetRef.current);
+                scrubTargetRef.current = null;
+                setScrubTarget(null);
+            }
+        }, 600);
+    }, [duration, seek]);
+
     // Quality menu handlers
     const openQualityMenu = useCallback(() => {
         setShowQualityMenu(true);
@@ -288,13 +310,13 @@ export function VideoPlayer({
                 onPreviousEpisode?.();
                 break;
             case 'rewind':
-                seek(Math.max(0, (videoRef.current?.currentTime || 0) - SEEK_STEP));
+                scrubBy(-SEEK_STEP);
                 break;
             case 'play':
                 togglePlay();
                 break;
             case 'forward':
-                seek(Math.min(duration || Infinity, (videoRef.current?.currentTime || 0) + SEEK_STEP));
+                scrubBy(SEEK_STEP);
                 break;
             case 'next':
                 onNextEpisode?.();
@@ -303,7 +325,7 @@ export function VideoPlayer({
                 openQualityMenu();
                 break;
         }
-    }, [focusedControl, handleClose, onPreviousEpisode, togglePlay, onNextEpisode, openQualityMenu, seek, duration]);
+    }, [focusedControl, handleClose, onPreviousEpisode, togglePlay, onNextEpisode, openQualityMenu, scrubBy]);
 
     // TV Navigation handler
     const handleNavigate = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
@@ -448,6 +470,20 @@ export function VideoPlayer({
                 />
             </div>
 
+            {/* Scrub preview (estilo Netflix): mostra a posicao de destino ao avancar/voltar */}
+            {scrubTarget !== null && (
+                <div className="scrub-preview">
+                    <div className="scrub-preview-time">
+                        {formatTime(scrubTarget)}
+                        <span className="scrub-preview-total"> / {formatTime(duration)}</span>
+                    </div>
+                    <div className="scrub-preview-bar">
+                        <div className="scrub-preview-fill" style={{ width: `${percentage(scrubTarget, duration)}%` }} />
+                        <div className="scrub-preview-marker" style={{ left: `${percentage(scrubTarget, duration)}%` }} />
+                    </div>
+                </div>
+            )}
+
             {/* Central Play Button */}
             {!playing && !loading && !error && (
                 <div className="central-play-button" onClick={togglePlay}>
@@ -559,7 +595,7 @@ export function VideoPlayer({
                         {!isLive && contentType !== 'live' && (
                             <button
                                 className={`control-btn ${focusedControl === 'rewind' && playerFocus === 'controls' ? 'focused' : ''}`}
-                                onClick={() => seek(Math.max(0, currentTime - SEEK_STEP))}
+                                onClick={() => scrubBy(-SEEK_STEP)}
                                 title="Voltar 10s"
                             >
                                 <FaBackward />
@@ -578,7 +614,7 @@ export function VideoPlayer({
                         {!isLive && contentType !== 'live' && (
                             <button
                                 className={`control-btn ${focusedControl === 'forward' && playerFocus === 'controls' ? 'focused' : ''}`}
-                                onClick={() => seek(Math.min(duration || Infinity, currentTime + SEEK_STEP))}
+                                onClick={() => scrubBy(SEEK_STEP)}
                                 title="Avancar 10s"
                             >
                                 <FaForward />
