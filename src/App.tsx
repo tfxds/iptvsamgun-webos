@@ -117,6 +117,14 @@ function App() {
   return (
     <FocusContext.Provider value={{ focusZone, setFocusZone }}>
       <div className="app">
+        {/* Fundo do revendedor (whitelabel) */}
+        {branding.imgBg && (
+          <div
+            aria-hidden
+            className="app-reseller-bg"
+            style={{ backgroundImage: `url(${branding.imgBg})` }}
+          />
+        )}
         <Sidebar
           activeItem={currentPage}
           onItemSelect={handlePageChange}
@@ -126,7 +134,7 @@ function App() {
           logoUrl={branding.imgLogo}
         />
         <main className="app-content">
-          {currentPage === 'home' && <Home onNavigate={handlePageChange} />}
+          {currentPage === 'home' && <Home />}
           {currentPage === 'live' && <LiveTV />}
           {currentPage === 'movies' && <Movies />}
           {currentPage === 'series' && <Series />}

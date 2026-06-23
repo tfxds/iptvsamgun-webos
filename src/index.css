@@ -266,3 +266,14 @@ body {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
+
+/* Fundo do revendedor (whitelabel) — backdrop sutil atrás do app */
+.app-reseller-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background-size: cover;
+    background-position: center;
+    opacity: 0.18;
+    pointer-events: none;
+}

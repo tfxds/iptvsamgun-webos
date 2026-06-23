@@ -1,32 +1,26 @@
-// Home Page - Matching NeoStream Desktop
+// Home Page - S.A Player
 
 import { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import type { VODStream, Series } from '../types';
 import { useTVNavigation } from '../hooks/useTVNavigation';
 import { useFocusZone } from '../contexts/FocusContext';
+import { ContentDetailModal } from '../components/ContentDetailModal';
+import { VideoPlayer } from '../components/VideoPlayer';
 import './Home.css';
 
-interface HomeProps {
-    onNavigate?: (page: string) => void;
-}
-
-interface ContentCounts {
-    live: number;
-    vod: number;
-    series: number;
-}
-
-export function Home({ onNavigate }: HomeProps) {
+export function Home() {
     const { focusZone, setFocusZone } = useFocusZone();
-    const [loading, setLoading] = useState(true);
-    const [counts, setCounts] = useState<ContentCounts>({ live: 0, vod: 0, series: 0 });
     const [recentMovies, setRecentMovies] = useState<VODStream[]>([]);
     const [recentSeries, setRecentSeries] = useState<Series[]>([]);
     const [recommendations, setRecommendations] = useState<(VODStream | Series)[]>([]);
     const [currentTime, setCurrentTime] = useState(new Date());
     const [focusedSection, setFocusedSection] = useState(0);
     const [focusedItem, setFocusedItem] = useState(0);
+    const [selectedItem, setSelectedItem] = useState<VODStream | Series | null>(null);
+    const [showModal, setShowModal] = useState(false);
+    const [showPlayer, setShowPlayer] = useState(false);
+    const [playerInfo, setPlayerInfo] = useState<{ url: string; title: string; poster: string } | null>(null);
 
     // Update clock every minute
     useEffect(() => {
@@ -38,60 +32,33 @@ export function Home({ onNavigate }: HomeProps) {
     useEffect(() => {
         async function fetchData() {
             try {
-                setLoading(true);
-                const [streams, movies, series] = await Promise.all([
-                    api.getLiveStreams(),
+                const [movies, series] = await Promise.all([
                     api.getVODStreams(),
                     api.getSeries()
                 ]);
 
-                setCounts({
-                    live: streams.length,
-                    vod: movies.length,
-                    series: series.length
-                });
-
-                // Get recent items (newest first based on 'added' field)
                 const sortedMovies = [...movies].sort((a, b) =>
                     parseInt(b.added || '0') - parseInt(a.added || '0')
                 ).slice(0, 15);
-
                 const sortedSeries = [...series].sort((a, b) =>
                     new Date(b.last_modified || 0).getTime() - new Date(a.last_modified || 0).getTime()
                 ).slice(0, 15);
-
                 setRecentMovies(sortedMovies);
                 setRecentSeries(sortedSeries);
 
-                // Recommendations: mix of random movies and series
+                // Recommendations: mistura aleatoria de filmes e series
                 const randomMovies = [...movies].sort(() => Math.random() - 0.5).slice(0, 8);
                 const randomSeries = [...series].sort(() => Math.random() - 0.5).slice(0, 7);
                 setRecommendations([...randomMovies, ...randomSeries].sort(() => Math.random() - 0.5));
-
             } catch (error) {
                 console.error('Failed to fetch data:', error);
-            } finally {
-                setLoading(false);
             }
         }
-
         fetchData();
     }, []);
 
-    // Time formatting
-    const formatTime = (date: Date) => {
-        return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-    };
-
-    const formatDate = (date: Date) => {
-        return date.toLocaleDateString('pt-BR', {
-            weekday: 'long',
-            day: 'numeric',
-            month: 'long'
-        });
-    };
-
-    // Greeting based on time of day (as per original app)
+    const formatTime = (date: Date) => date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const formatDate = (date: Date) => date.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
     const getGreeting = () => {
         const hour = currentTime.getHours();
         if (hour < 12) return 'Bom dia';
@@ -99,13 +66,50 @@ export function Home({ onNavigate }: HomeProps) {
         return 'Boa noite';
     };
 
-    // TV Navigation - Updated sections
+    const isMovie = (item: VODStream | Series): item is VODStream => 'stream_id' in item;
+    const getCover = (item: VODStream | Series) => (isMovie(item) ? item.stream_icon || item.cover || '' : item.cover || '');
+    const getName = (item: VODStream | Series) => item.name;
+    const getId = (item: VODStream | Series) => (isMovie(item) ? item.stream_id : item.series_id);
+
+    // Opcao A: clicar num item abre a tela de detalhe (com Reproduzir), igual Filmes/Series.
+    const openDetail = (item: VODStream | Series) => {
+        setSelectedItem(item);
+        setShowModal(true);
+    };
+
+    const handlePlay = async (season?: number, episode?: number) => {
+        const item = selectedItem;
+        if (!item) return;
+        try {
+            if (isMovie(item)) {
+                setPlayerInfo({
+                    url: api.getVodStreamUrl(item.stream_id, item.container_extension || 'mp4'),
+                    title: item.name,
+                    poster: item.stream_icon || item.cover || '',
+                });
+            } else {
+                const info = await api.getSeriesInfo(item.series_id);
+                const eps = info?.episodes?.[season || 1] || [];
+                const ep = eps.find(e => e.episode_num === episode) || eps[0];
+                if (!ep) { setShowModal(false); return; }
+                setPlayerInfo({
+                    url: api.getSeriesStreamUrl(ep.id, ep.container_extension || 'mp4'),
+                    title: `${item.name} - T${season || 1} E${episode || 1}`,
+                    poster: item.cover || '',
+                });
+            }
+            setShowPlayer(true);
+        } catch (err) {
+            console.error('Error starting playback:', err);
+        }
+        setShowModal(false);
+    };
+
+    // TV Navigation
     const sections = [
-        { id: 'stats', items: 3 },
         { id: 'recommendations', items: recommendations.length },
         { id: 'series', items: recentSeries.length },
-        { id: 'movies', items: recentMovies.length },
-        { id: 'quick', items: 5 }
+        { id: 'movies', items: recentMovies.length }
     ];
 
     const handleNavigate = (direction: 'up' | 'down' | 'left' | 'right') => {
@@ -117,7 +121,6 @@ export function Home({ onNavigate }: HomeProps) {
             setFocusedItem(0);
         } else if (direction === 'left') {
             if (focusedItem === 0) {
-                // At first item - move focus to Sidebar
                 setFocusZone('sidebar');
             } else {
                 setFocusedItem(prev => Math.max(0, prev - 1));
@@ -130,59 +133,38 @@ export function Home({ onNavigate }: HomeProps) {
 
     const handleEnter = () => {
         const section = sections[focusedSection];
-        if (section?.id === 'stats') {
-            const pages = ['live', 'movies', 'series'];
-            onNavigate?.(pages[focusedItem] || 'live');
-        } else if (section?.id === 'quick') {
-            const pages = ['live', 'movies', 'series', 'favorites', 'settings'];
-            onNavigate?.(pages[focusedItem] || 'live');
-        } else if (section?.id === 'movies' || section?.id === 'recommendations') {
-            onNavigate?.('movies');
+        if (section?.id === 'recommendations') {
+            const it = recommendations[focusedItem];
+            if (it) openDetail(it);
         } else if (section?.id === 'series') {
-            onNavigate?.('series');
+            const it = recentSeries[focusedItem];
+            if (it) openDetail(it);
+        } else if (section?.id === 'movies') {
+            const it = recentMovies[focusedItem];
+            if (it) openDetail(it);
         }
     };
 
-    // Only enable navigation when content is focused
     useTVNavigation({
         onNavigate: handleNavigate,
         onEnter: handleEnter,
         enabled: focusZone === 'content',
     });
 
-    // Auto-scroll to focused section when it changes
+    // Auto-scroll to focused section
     useEffect(() => {
-        const sectionIds = ['home-stats', 'home-recommendations', 'home-series', 'home-movies', 'home-quick'];
+        const sectionIds = ['home-recommendations', 'home-series', 'home-movies'];
         const sectionId = sectionIds[focusedSection];
         if (sectionId) {
             const element = document.getElementById(sectionId);
-            if (element) {
-                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
+            if (element) element.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
     }, [focusedSection]);
 
-    // Helper to get cover image
-    const getCover = (item: VODStream | Series) => {
-        if ('stream_id' in item) {
-            // VODStream - use stream_icon as primary
-            return item.stream_icon || item.cover || '';
-        }
-        // Series - use cover
-        return item.cover || '';
-    };
-
-    const getName = (item: VODStream | Series) => {
-        return item.name;
-    };
-
-    const getId = (item: VODStream | Series) => {
-        return 'stream_id' in item ? item.stream_id : item.series_id;
-    };
+    const fallbackPoster = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 150"><rect fill="%231a1a2e" width="100" height="150"/><text x="50" y="80" text-anchor="middle" fill="%23666" font-size="40">🎬</text></svg>';
 
     return (
         <div className="home-page">
-            {/* Background decorations */}
             <div className="home-bg-decoration home-bg-decoration-1" />
             <div className="home-bg-decoration home-bg-decoration-2" />
 
@@ -198,41 +180,8 @@ export function Home({ onNavigate }: HomeProps) {
                 <div className="home-clock">{formatTime(currentTime)}</div>
             </header>
 
-            {/* Stats Cards */}
-            <section id="home-stats" className="home-stats">
-                <button
-                    className={`stat-card stat-card-live ${focusedSection === 0 && focusedItem === 0 ? 'tv-focused' : ''}`}
-                    onClick={() => onNavigate?.('live')}
-                >
-                    <div className="stat-icon">📺</div>
-                    <div className="stat-value">{loading ? '...' : counts.live.toLocaleString()}</div>
-                    <div className="stat-label">Canais</div>
-                </button>
-
-                <button
-                    className={`stat-card stat-card-vod ${focusedSection === 0 && focusedItem === 1 ? 'tv-focused' : ''}`}
-                    onClick={() => onNavigate?.('movies')}
-                >
-                    <div className="stat-icon">🎬</div>
-                    <div className="stat-value">{loading ? '...' : counts.vod.toLocaleString()}</div>
-                    <div className="stat-label">Filmes</div>
-                </button>
-
-                <button
-                    className={`stat-card stat-card-series ${focusedSection === 0 && focusedItem === 2 ? 'tv-focused' : ''}`}
-                    onClick={() => onNavigate?.('series')}
-                >
-                    <div className="stat-icon">📺</div>
-                    <div className="stat-value">{loading ? '...' : counts.series.toLocaleString()}</div>
-                    <div className="stat-label">Séries</div>
-                </button>
-            </section>
-
-            {/* Content Rows - Matching Original App */}
+            {/* Content Rows */}
             <section className="home-content">
-                {/* Continue Watching - Placeholder for now */}
-                {/* This would need watchProgressService implementation */}
-
                 {/* Recommendations */}
                 <div id="home-recommendations" className="content-section">
                     <h2 className="section-title">💡 Recomendados Para Você</h2>
@@ -240,14 +189,14 @@ export function Home({ onNavigate }: HomeProps) {
                         {recommendations.map((item, index) => (
                             <button
                                 key={getId(item)}
-                                className={`content-card ${focusedSection === 1 && focusedItem === index ? 'tv-focused' : ''}`}
-                                onClick={() => onNavigate?.('stream_id' in item ? 'movies' : 'series')}
+                                className={`content-card ${focusedSection === 0 && focusedItem === index ? 'tv-focused' : ''}`}
+                                onClick={() => openDetail(item)}
                             >
                                 <div className="card-image card-image-poster">
                                     <img
                                         src={getCover(item)}
                                         alt={getName(item)}
-                                        onError={(e) => { (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 150"><rect fill="%231a1a2e" width="100" height="150"/><text x="50" y="80" text-anchor="middle" fill="%23666" font-size="40">🎬</text></svg>'; }}
+                                        onError={(e) => { (e.target as HTMLImageElement).src = fallbackPoster; }}
                                     />
                                 </div>
                                 <div className="card-title">{getName(item)}</div>
@@ -263,14 +212,14 @@ export function Home({ onNavigate }: HomeProps) {
                         {recentSeries.map((series, index) => (
                             <button
                                 key={series.series_id}
-                                className={`content-card ${focusedSection === 2 && focusedItem === index ? 'tv-focused' : ''}`}
-                                onClick={() => onNavigate?.('series')}
+                                className={`content-card ${focusedSection === 1 && focusedItem === index ? 'tv-focused' : ''}`}
+                                onClick={() => openDetail(series)}
                             >
                                 <div className="card-image card-image-poster">
                                     <img
                                         src={series.cover}
                                         alt={series.name}
-                                        onError={(e) => { (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 150"><rect fill="%231a1a2e" width="100" height="150"/><text x="50" y="80" text-anchor="middle" fill="%23666" font-size="40">📺</text></svg>'; }}
+                                        onError={(e) => { (e.target as HTMLImageElement).src = fallbackPoster; }}
                                     />
                                 </div>
                                 <div className="card-title">{series.name}</div>
@@ -286,14 +235,14 @@ export function Home({ onNavigate }: HomeProps) {
                         {recentMovies.map((movie, index) => (
                             <button
                                 key={movie.stream_id}
-                                className={`content-card ${focusedSection === 3 && focusedItem === index ? 'tv-focused' : ''}`}
-                                onClick={() => onNavigate?.('movies')}
+                                className={`content-card ${focusedSection === 2 && focusedItem === index ? 'tv-focused' : ''}`}
+                                onClick={() => openDetail(movie)}
                             >
                                 <div className="card-image card-image-poster">
                                     <img
                                         src={movie.stream_icon || movie.cover}
                                         alt={movie.name}
-                                        onError={(e) => { (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 150"><rect fill="%231a1a2e" width="100" height="150"/><text x="50" y="80" text-anchor="middle" fill="%23666" font-size="40">🎬</text></svg>'; }}
+                                        onError={(e) => { (e.target as HTMLImageElement).src = fallbackPoster; }}
                                     />
                                 </div>
                                 <div className="card-title">{movie.name}</div>
@@ -303,53 +252,43 @@ export function Home({ onNavigate }: HomeProps) {
                 </div>
             </section>
 
-            {/* Quick Access */}
-            <section id="home-quick" className="home-quick-access">
-                <h2 className="section-title">⚡ Acesso Rápido</h2>
-                <div className="quick-grid">
-                    <button
-                        className={`quick-item ${focusedSection === 4 && focusedItem === 0 ? 'tv-focused' : ''}`}
-                        onClick={() => onNavigate?.('live')}
-                    >
-                        <span className="quick-icon">🔴</span>
-                        <span className="quick-label">TV ao Vivo</span>
-                    </button>
-                    <button
-                        className={`quick-item ${focusedSection === 4 && focusedItem === 1 ? 'tv-focused' : ''}`}
-                        onClick={() => onNavigate?.('movies')}
-                    >
-                        <span className="quick-icon">🎥</span>
-                        <span className="quick-label">Filmes</span>
-                    </button>
-                    <button
-                        className={`quick-item ${focusedSection === 4 && focusedItem === 2 ? 'tv-focused' : ''}`}
-                        onClick={() => onNavigate?.('series')}
-                    >
-                        <span className="quick-icon">📺</span>
-                        <span className="quick-label">Séries</span>
-                    </button>
-                    <button
-                        className={`quick-item ${focusedSection === 4 && focusedItem === 3 ? 'tv-focused' : ''}`}
-                        onClick={() => onNavigate?.('favorites')}
-                    >
-                        <span className="quick-icon">❤️</span>
-                        <span className="quick-label">Favoritos</span>
-                    </button>
-                    <button
-                        className={`quick-item ${focusedSection === 4 && focusedItem === 4 ? 'tv-focused' : ''}`}
-                        onClick={() => onNavigate?.('settings')}
-                    >
-                        <span className="quick-icon">⚙️</span>
-                        <span className="quick-label">Configurações</span>
-                    </button>
-                </div>
-            </section>
-
             {/* Footer */}
             <footer className="home-footer">
                 <span>S.A Player</span>
                 <span>v1.0.0</span>
             </footer>
+
+            {/* Content Detail Modal (Opcao A) */}
+            {selectedItem && (
+                <ContentDetailModal
+                    isOpen={showModal}
+                    onClose={() => { setShowModal(false); setSelectedItem(null); }}
+                    contentId={String(getId(selectedItem))}
+                    contentType={isMovie(selectedItem) ? 'movie' : 'series'}
+                    contentData={{
+                        name: selectedItem.name,
+                        cover: getCover(selectedItem),
+                        rating: selectedItem.rating,
+                        plot: selectedItem.plot,
+                        genre: selectedItem.genre,
+                        cast: selectedItem.cast,
+                        director: selectedItem.director,
+                        release_date: selectedItem.release_date,
+                        container_extension: isMovie(selectedItem) ? selectedItem.container_extension : undefined,
+                    }}
+                    onPlay={handlePlay}
+                />
+            )}
+
+            {/* Video Player */}
+            {showPlayer && playerInfo && (
+                <VideoPlayer
+                    src={playerInfo.url}
+                    title={playerInfo.title}
+                    poster={playerInfo.poster}
+                    onClose={() => { setShowPlayer(false); setPlayerInfo(null); }}
+                />
+            )}
         </div>
     );
 }

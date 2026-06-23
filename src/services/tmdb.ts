@@ -114,8 +114,10 @@ function normalizeSearchKey(name: string, year?: string): string {
     return year ? `${cleanName}:${year}` : cleanName;
 }
 
+// Chave TMDB do cliente (hardcoded) — enriquece poster/sinopse out-of-the-box.
+const DEFAULT_TMDB_API_KEY = '2f87a5624036d202f0b0c3199d5d0e40';
 function getTmdbApiKey(): string {
-    return storage.getTmdbApiKey();
+    return storage.getTmdbApiKey() || DEFAULT_TMDB_API_KEY;
 }
 
 function buildTmdbUrl(path: string, params: Record<string, string>): string | null {
