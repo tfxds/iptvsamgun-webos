@@ -342,9 +342,17 @@ export function ContentDetailModal({
         }
     }, [isOpen, focusZone, contentType, selectedSeason, selectedEpisode, contentId, contentData, tmdbData, seasons, seasonFocusIndex, episodes, episodeFocusIndex, onPlay, handleClose]);
 
+    // Voltar SOBE um nível (episódio -> temporada -> play). Só fecha o modal quando já
+    // está no play/topo. Na TV o botão Voltar do controle cai aqui (onBack).
     const handleBack = useCallback(() => {
-        handleClose();
-    }, [handleClose]);
+        if (focusZone === 'episode') {
+            setFocusZone(seasons.length > 0 ? 'season' : 'play');
+        } else if (focusZone === 'season' || focusZone === 'watchLater' || focusZone === 'favorite' || focusZone === 'close') {
+            setFocusZone('play');
+        } else {
+            handleClose();
+        }
+    }, [focusZone, seasons.length, handleClose]);
 
     // TV Navigation hook
     useTVNavigation({
