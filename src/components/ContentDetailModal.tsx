@@ -293,6 +293,13 @@ export function ContentDetailModal({
         el?.scrollIntoView({ block: 'nearest' });
     }, [episodeFocusIndex, focusZone]);
 
+    // Auto-scroll: temporada focada visível na linha rolável (muitas temporadas)
+    useEffect(() => {
+        if (focusZone !== 'season') return;
+        const el = document.querySelector('.season-tab.focused') as HTMLElement | null;
+        el?.scrollIntoView({ block: 'nearest', inline: 'center' });
+    }, [seasonFocusIndex, focusZone]);
+
     const handleEnter = useCallback(() => {
         if (!isOpen) return;
 
@@ -407,13 +414,19 @@ export function ContentDetailModal({
                     X
                 </button>
 
-                {/* HERO banner no topo (backdrop TMDB, fallback poster) */}
-                <div className="modal-hero-banner">
-                    <div
-                        className="modal-hero-img"
-                        style={{ backgroundImage: `url(${backdropUrl || posterUrl || contentData.cover})` }}
+                {/* Backdrop sutil de fundo (TMDB) */}
+                {backdropUrl && (
+                    <div className="modal-backdrop-image" style={{ backgroundImage: `url(${backdropUrl})` }} />
+                )}
+
+                {/* Banner lateral (poster) com efeito shine */}
+                <div className="modal-poster">
+                    <img
+                        src={posterUrl || contentData.cover}
+                        alt={contentData.name}
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                     />
-                    <div className="modal-hero-fade" />
+                    <div className="poster-gradient" />
                     {tmdbLoading && (
                         <div className="tmdb-loading-overlay">
                             <div className="tmdb-loading-spinner" />
