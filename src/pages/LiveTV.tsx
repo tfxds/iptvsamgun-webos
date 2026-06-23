@@ -4,10 +4,12 @@ import { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
 import type { LiveStream, Category, EPGProgram } from '../types';
 import { useTVNavigation } from '../hooks/useTVNavigation';
+import { useFocusZone } from '../contexts/FocusContext';
 import { VideoPlayer } from '../components/VideoPlayer';
 import './LiveTV.css';
 
 export function LiveTV() {
+    const { focusZone, setFocusZone } = useFocusZone();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [streams, setStreams] = useState<LiveStream[]>([]);
@@ -92,6 +94,7 @@ export function LiveTV() {
             if (direction === 'up') setFocusedCategoryIndex((p) => Math.max(0, p - 1));
             else if (direction === 'down') setFocusedCategoryIndex((p) => Math.min(categories.length, p + 1));
             else if (direction === 'right') setFocusArea('channels');
+            else if (direction === 'left') setFocusZone('sidebar');
         } else if (focusArea === 'channels') {
             if (direction === 'up') setFocusedChannelIndex((p) => Math.max(0, p - 1));
             else if (direction === 'down') setFocusedChannelIndex((p) => {
@@ -118,7 +121,7 @@ export function LiveTV() {
         }
     };
 
-    useTVNavigation({ onNavigate: handleNavigate, onEnter: handleEnter, enabled: !showPlayer });
+    useTVNavigation({ onNavigate: handleNavigate, onEnter: handleEnter, enabled: focusZone === 'content' && !showPlayer });
 
     // Auto-scroll focused channel into view
     useEffect(() => {

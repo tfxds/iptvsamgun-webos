@@ -29,7 +29,7 @@ const allMenuItems: MenuItem[] = [
     { id: 'home', label: 'Início', emoji: '🏠', gradient: 'linear-gradient(135deg, #f59e0b, #d97706)' },
     { id: 'live', label: 'TV ao Vivo', emoji: '📺', gradient: 'linear-gradient(135deg, #a855f7, #7c3aed)', requiresTV: true },
     { id: 'movies', label: 'Filmes', emoji: '🎬', gradient: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', requiresVOD: true },
-    { id: 'series', label: 'Séries', emoji: '📺', gradient: 'linear-gradient(135deg, #ec4899, #db2777)', requiresVOD: true },
+    { id: 'series', label: 'Séries', emoji: '🎭', gradient: 'linear-gradient(135deg, #ec4899, #db2777)', requiresVOD: true },
     { id: 'mylist', label: 'Minha Lista', emoji: '📑', gradient: 'linear-gradient(135deg, #14b8a6, #0891b2)' },
     { id: 'favorites', label: 'Favoritos', emoji: '❤️', gradient: 'linear-gradient(135deg, #ef4444, #dc2626)' },
     { id: 'settings', label: 'Configurações', emoji: '⚙️', gradient: 'linear-gradient(135deg, #6b7280, #4b5563)' },
