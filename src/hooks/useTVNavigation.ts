@@ -15,9 +15,11 @@ const TV_KEYS = {
     BACK: ['Backspace', 'XF86Back', '10009', '8', '461'], // Samsung, LG, etc.
 
     // Media keys
-    PLAY: ['MediaPlayPause', '415'],
+    PLAY: ['MediaPlayPause', 'MediaPlay', '415', '10252', '179'],
     PAUSE: ['MediaPause', '19'],
     STOP: ['MediaStop', '413'],
+    FORWARD: ['MediaFastForward', '417', '228'],
+    REWIND: ['MediaRewind', '412', '227'],
 
     // Color keys (Samsung/LG)
     RED: ['ColorF0Red', '403'],
@@ -27,7 +29,7 @@ const TV_KEYS = {
 };
 
 type Direction = 'up' | 'down' | 'left' | 'right';
-type TVAction = 'enter' | 'back' | 'play' | 'pause' | 'stop';
+type TVAction = 'enter' | 'back' | 'play' | 'pause' | 'stop' | 'forward' | 'rewind';
 type TizenHardwareKeyEvent = Event & { keyName?: string };
 
 interface UseTVNavigationOptions {
@@ -109,6 +111,10 @@ export function useTVNavigation(options: UseTVNavigationOptions = {}) {
             if (onAction) { event.preventDefault(); onAction('pause'); }
         } else if (matchKey(key, TV_KEYS.STOP)) {
             if (onAction) { event.preventDefault(); onAction('stop'); }
+        } else if (matchKey(key, TV_KEYS.FORWARD)) {
+            if (onAction) { event.preventDefault(); onAction('forward'); }
+        } else if (matchKey(key, TV_KEYS.REWIND)) {
+            if (onAction) { event.preventDefault(); onAction('rewind'); }
         }
     }, [enabled, onNavigate, onAction, onBack, onEnter]);
 

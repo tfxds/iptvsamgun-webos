@@ -395,11 +395,20 @@ export function VideoPlayer({
         }
     }, [playerFocus, closeQualityMenu, handleClose, onClose]);
 
+    // Teclas de mídia do controle remoto (play/pause/stop/avançar/voltar)
+    const handleMediaAction = useCallback((action: 'enter' | 'back' | 'play' | 'pause' | 'stop' | 'forward' | 'rewind') => {
+        if (action === 'play' || action === 'pause') { resetHideControlsTimer(); togglePlay(); }
+        else if (action === 'stop') handleClose();
+        else if (action === 'forward') { resetHideControlsTimer(); scrubBy(SEEK_STEP); }
+        else if (action === 'rewind') { resetHideControlsTimer(); scrubBy(-SEEK_STEP); }
+    }, [togglePlay, handleClose, scrubBy, resetHideControlsTimer]);
+
     // TV Navigation hook
     useTVNavigation({
         onNavigate: handleNavigate,
         onEnter: handleEnter,
         onBack: handleBack,
+        onAction: handleMediaAction,
         enabled: true
     });
 
