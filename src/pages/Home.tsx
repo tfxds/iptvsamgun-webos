@@ -151,15 +151,19 @@ export function Home() {
         enabled: focusZone === 'content',
     });
 
-    // Auto-scroll to focused section
+    // Auto-scroll: segue o card focado (rola a fileira na horizontal + a secao na vertical)
     useEffect(() => {
         const sectionIds = ['home-recommendations', 'home-series', 'home-movies'];
         const sectionId = sectionIds[focusedSection];
-        if (sectionId) {
-            const element = document.getElementById(sectionId);
-            if (element) element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const section = sectionId ? document.getElementById(sectionId) : null;
+        const card = section?.querySelectorAll('.content-card')[focusedItem] as HTMLElement | undefined;
+        if (card) {
+            // inline:center -> rola a .content-row pra centralizar o card; block:nearest -> ajuste vertical suave
+            card.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        } else if (section) {
+            section.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
-    }, [focusedSection]);
+    }, [focusedSection, focusedItem]);
 
     const fallbackPoster = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 150"><rect fill="%231a1a2e" width="100" height="150"/><text x="50" y="80" text-anchor="middle" fill="%23666" font-size="40">🎬</text></svg>';
 
