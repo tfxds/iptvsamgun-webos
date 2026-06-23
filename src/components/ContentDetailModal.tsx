@@ -26,10 +26,20 @@ interface ContentDetailModalProps {
     onPlay: (season?: number, episode?: number) => void;
 }
 
-// Simple favorites service (localStorage based)
+// Simple favorites service (localStorage based) — guarda o item completo
+// (title/poster/rating) pra pagina de Favoritos conseguir renderizar os cards.
+interface FavoriteItemData {
+    id: string;
+    type: string;
+    title?: string;
+    poster?: string;
+    rating?: string;
+    addedAt?: number;
+}
+
 const favoritesService = {
     KEY: 'neostream_favorites',
-    getAll(): Array<{ id: string; type: string }> {
+    getAll(): FavoriteItemData[] {
         try {
             return JSON.parse(localStorage.getItem(this.KEY) || '[]');
         } catch { return []; }
@@ -37,13 +47,13 @@ const favoritesService = {
     has(id: string, type: string): boolean {
         return this.getAll().some(f => f.id === id && f.type === type);
     },
-    toggle(id: string, type: string): void {
+    toggle(id: string, type: string, title?: string, poster?: string, rating?: string): void {
         const all = this.getAll();
         const index = all.findIndex(f => f.id === id && f.type === type);
         if (index >= 0) {
             all.splice(index, 1);
         } else {
-            all.push({ id, type });
+            all.push({ id, type, title, poster, rating, addedAt: Date.now() });
         }
         localStorage.setItem(this.KEY, JSON.stringify(all));
     }
@@ -280,7 +290,14 @@ export function ContentDetailModal({
             );
             setRefresh(r => r + 1);
         } else if (focusZone === 'favorite') {
-            favoritesService.toggle(contentId, contentType);
+            const posterForFav = tmdbData?.poster_path ? getImageUrl(tmdbData.poster_path, 'w500') : contentData.cover;
+            favoritesService.toggle(
+                contentId,
+                contentType,
+                contentData.name,
+                posterForFav || undefined,
+                tmdbData?.vote_average ? tmdbData.vote_average.toFixed(1) : contentData.rating
+            );
             setRefresh(r => r + 1);
         } else if (focusZone === 'close') {
             handleClose();
@@ -500,7 +517,14 @@ export function ContentDetailModal({
                         <button
                             className={`action-btn favorite-btn ${favoritesService.has(contentId, contentType) ? 'active' : ''} ${focusZone === 'favorite' ? 'focused' : ''}`}
                             onClick={() => {
-                                favoritesService.toggle(contentId, contentType);
+                                const posterForFav = tmdbData?.poster_path ? getImageUrl(tmdbData.poster_path, 'w500') : contentData.cover;
+                                favoritesService.toggle(
+                                    contentId,
+                                    contentType,
+                                    contentData.name,
+                                    posterForFav || undefined,
+                                    tmdbData?.vote_average ? tmdbData.vote_average.toFixed(1) : contentData.rating
+                                );
                                 setRefresh(r => r + 1);
                             }}
                             title={favoritesService.has(contentId, contentType) ? 'Remover dos Favoritos' : 'Adicionar aos Favoritos'}

@@ -31,7 +31,7 @@ export function VideoPlayer({
     poster,
     onClose,
     isLive = false,
-    autoPlay = false,
+    autoPlay = true,
     resumeTime,
     onTimeUpdate,
     onNextEpisode,

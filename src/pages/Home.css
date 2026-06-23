@@ -3,7 +3,7 @@
 .home-page {
     height: 100%;
     max-height: 100vh;
-    background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+    background: transparent;
     padding: 40px;
     padding-left: 52px;
     /* Extra padding for zoomed items not to be cut */
