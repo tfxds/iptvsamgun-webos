@@ -1,0 +1,17 @@
+:root {
+  --sa-bg: #060912;
+  --sa-bg2: #0a0f1c;
+  --sa-accent: #0ea5e9;
+  --sa-accent2: #38bdf8;
+  --sa-grad: linear-gradient(135deg, #0ea5e9, #38bdf8);
+  --sa-text: #f1f5f9;
+  --sa-muted: #94a3b8;
+  --sa-card: rgba(255, 255, 255, 0.04);
+  --sa-border: rgba(255, 255, 255, 0.1);
+}
+html,
+body,
+#root {
+  background-color: var(--sa-bg);
+  color: var(--sa-text);
+}
