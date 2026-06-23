@@ -109,7 +109,9 @@ body {
 
 .tv-focused {
   transform: scale(1.05);
-  box-shadow: 0 0 0 4px var(--focus-ring), var(--shadow-md);
+  /* NAO usar box-shadow global aqui: cada componente (card, poster, item) define o
+     proprio destaque arredondado. O box-shadow global desenhava uma borda QUADRADA
+     no elemento inteiro junto da arredondada (card duplo). */
   z-index: 10;
 }
 
