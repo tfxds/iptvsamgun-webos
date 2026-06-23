@@ -661,3 +661,42 @@
     color: #f87171;
     font-size: 14px;
 }
+/* Painel de conta do usuário (dados Xtream, estilo Roku) */
+.pm-account {
+    max-width: 880px;
+    margin: 28px auto 0;
+    padding: 22px 26px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 18px;
+}
+.pm-account-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0 0 16px;
+}
+.pm-account-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+}
+.pm-account-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 14px;
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 12px;
+}
+.pm-account-item span {
+    font-size: 11px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.pm-account-item strong { font-size: 17px; color: #f1f5f9; }
+.pm-account-item strong.ok { color: #22c55e; }
+.pm-account-item strong.warn { color: #f87171; }

@@ -1,9 +1,20 @@
 ﻿// ProfileManager Component - TV Optimized
 import { useState, useEffect, useCallback } from 'react';
 import { profileService } from '../../services/profileService';
+import { api } from '../../services/api';
+import { storage } from '../../services/storage';
 import type { Profile } from '../../types/profile';
+import type { UserInfo } from '../../types';
 import { useTVNavigation } from '../../hooks/useTVNavigation';
 import './ProfileManager.css';
+
+// Formata o exp_date (unix em segundos) pra data BR
+function fmtExp(exp?: string): string {
+    if (!exp) return '—';
+    const n = Number(exp);
+    if (!n) return '—';
+    return new Date(n * 1000).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
 
 interface ProfileManagerProps {
     onClose: () => void;
@@ -38,6 +49,15 @@ export function ProfileManager({ onClose }: ProfileManagerProps) {
 
     // Close button focus
     const [closeButtonFocused, setCloseButtonFocused] = useState(false);
+
+    // Dados da conta do usuário (Xtream user_info)
+    const [account, setAccount] = useState<UserInfo | null>(null);
+    useEffect(() => {
+        let cancelled = false;
+        api.getUserInfo().then(r => { if (!cancelled) setAccount(r?.user_info || null); }).catch(() => {});
+        return () => { cancelled = true; };
+    }, []);
+    const accountServer = storage.getCredentials()?.url || '';
 
     const refreshProfiles = useCallback(() => {
         setProfiles(profileService.getAllProfiles());
@@ -291,6 +311,7 @@ export function ProfileManager({ onClose }: ProfileManagerProps) {
 
             {/* Main Content */}
             {mode === 'list' && (
+                <>
                 <div className="pm-profiles-grid">
                     {profiles.map((profile, index) => {
                         const isActive = profile.id === activeProfile?.id;
@@ -381,6 +402,22 @@ export function ProfileManager({ onClose }: ProfileManagerProps) {
                         </button>
                     )}
                 </div>
+
+                {/* Dados da conta do usuário (igual Roku) */}
+                {account && (
+                    <div className="pm-account">
+                        <h2 className="pm-account-title">Sua Conta</h2>
+                        <div className="pm-account-grid">
+                            <div className="pm-account-item"><span>Usuário</span><strong>{account.username}</strong></div>
+                            <div className="pm-account-item"><span>Status</span><strong className={account.status === 'Active' ? 'ok' : 'warn'}>{account.status === 'Active' ? 'Ativo' : (account.status || '—')}</strong></div>
+                            <div className="pm-account-item"><span>Vencimento</span><strong>{account.exp_date ? fmtExp(account.exp_date) : 'Sem validade'}</strong></div>
+                            <div className="pm-account-item"><span>Conexões</span><strong>{account.active_cons || 0} / {account.max_connections || '—'}</strong></div>
+                            <div className="pm-account-item"><span>Teste (trial)</span><strong>{account.is_trial === '1' ? 'Sim' : 'Não'}</strong></div>
+                            {accountServer && <div className="pm-account-item"><span>Servidor</span><strong>{accountServer.replace(/^https?:\/\//, '')}</strong></div>}
+                        </div>
+                    </div>
+                )}
+                </>
             )}
 
             {/* Create/Edit Profile Modal */}

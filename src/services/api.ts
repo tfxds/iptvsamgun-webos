@@ -236,6 +236,11 @@ class XtreamAPI {
         return this.listCache.vod;
     }
 
+    // Dados da conta (player_api.php sem action -> { user_info, server_info })
+    async getUserInfo(): Promise<AuthResponse> {
+        return this.makeRequest<AuthResponse>('');
+    }
+
     async getSeries(): Promise<Series[]> {
         if (this.listCache.series) return this.listCache.series;
         this.listCache.series = await this.makeRequest<Series[]>('get_series');
