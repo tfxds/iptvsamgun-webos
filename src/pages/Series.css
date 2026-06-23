@@ -561,6 +561,11 @@
     padding: 22px 18px 90px;
 }
 
+/* 5 colunas no layout com lateral — TEM que bater com GRID_COLS=5 da navegacao */
+.series-page--cats .series-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
 .series-cat-col {
     width: 250px;
     flex-shrink: 0;

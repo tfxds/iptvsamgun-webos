@@ -561,6 +561,12 @@
     padding: 22px 18px 90px;
 }
 
+/* 5 colunas no layout com lateral — TEM que bater com GRID_COLS=5 da navegacao
+   (senao a seta desce na diagonal e o "voltar pra categoria" dispara na coluna errada) */
+.movies-page--cats .movies-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
 /* Coluna de categorias (mesmo visual do Canais) */
 .movies-cat-col {
     width: 250px;
