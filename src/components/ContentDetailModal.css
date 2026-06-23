@@ -437,14 +437,18 @@
 
 /* Episode List */
 .episode-list {
-    max-height: 180px;
+    max-height: 320px;
     overflow-y: auto;
     margin-bottom: 22px;
     background: rgba(0, 0, 0, 0.25);
     border-radius: 14px;
     padding: 10px;
     border: 1px solid rgba(255, 255, 255, 0.05);
+    scrollbar-width: thin;
+    scrollbar-color: rgba(56, 189, 248, 0.4) transparent;
 }
+.episode-list::-webkit-scrollbar { width: 6px; }
+.episode-list::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.4); border-radius: 3px; }
 
 .episode-list::-webkit-scrollbar {
     width: 5px;

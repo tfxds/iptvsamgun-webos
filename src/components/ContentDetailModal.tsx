@@ -286,6 +286,13 @@ export function ContentDetailModal({
         }
     }, [isOpen, focusZone, contentType, seasons.length, episodes.length, episodeFocusIndex]);
 
+    // Auto-scroll: mantém o episódio focado visível na lista (quando passa de ~4 episódios)
+    useEffect(() => {
+        if (focusZone !== 'episode') return;
+        const el = document.querySelector('.episode-item.focused') as HTMLElement | null;
+        el?.scrollIntoView({ block: 'nearest' });
+    }, [episodeFocusIndex, focusZone]);
+
     const handleEnter = useCallback(() => {
         if (!isOpen) return;
 
