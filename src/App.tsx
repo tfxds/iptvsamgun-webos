@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from './services/api';
 import { storage } from './services/storage';
+import * as panel from './services/panelService';
+import { getBranding, setBranding, type Branding } from './services/brandingService';
 import { Login } from './pages/Login';
 import { Home } from './pages/Home';
 import { LiveTV } from './pages/LiveTV';
@@ -24,34 +26,66 @@ function App() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [focusZone, setFocusZone] = useState<FocusZone>('content');
   const [showProfileManager, setShowProfileManager] = useState(false);
+  // Carrega a logo persistida na hora (reabrir o app ja mostra a do revendedor).
+  const [branding, setBrandingState] = useState<Branding>(getBranding());
+
+  const applyBranding = useCallback((cfg: panel.AppConfig) => {
+    if (!cfg.imgLogo && !cfg.imgBg) return;
+    const b: Branding = { imgLogo: cfg.imgLogo, imgBg: cfg.imgBg };
+    setBranding(b);
+    setBrandingState(b);
+  }, []);
 
   const checkAuth = useCallback(async () => {
+    // 1) Auto-login pelo painel (device registrado pelo MAC) -> traz creds + logo do revendedor
+    try {
+      const cfg = await panel.getConfig();
+      if (cfg.playlists.length > 0) {
+        const p = cfg.playlists[0];
+        const server = p.dnsId || p.url;
+        await api.authenticate(server, p.username, p.password);
+        storage.saveCredentials({ url: server, username: p.username, password: p.password });
+        applyBranding(cfg);
+        setAuthState('authenticated');
+        return;
+      }
+    } catch (e) {
+      console.warn('Config auto-login indisponivel:', e);
+    }
+    // 2) Fallback: credenciais salvas localmente
     try {
       const credentials = storage.getCredentials();
       if (credentials) {
-        // Auto-login com credenciais salvas
         await api.authenticate(credentials.url, credentials.username, credentials.password);
         setAuthState('authenticated');
-      } else {
-        setAuthState('login');
+        return;
       }
     } catch (err) {
       console.error('Auto-login failed:', err);
       storage.clearCredentials();
-      setAuthState('login');
     }
-  }, []);
+    // 3) Sem device registrado e sem creds -> tela de login
+    setAuthState('login');
+  }, [applyBranding]);
 
   useEffect(() => {
     void Promise.resolve().then(checkAuth);
   }, [checkAuth]);
 
-  const handleLoginSuccess = () => {
+  const handleLoginSuccess = useCallback(async () => {
+    // Apos logar, o device fica registrado sob o revendedor -> busca a logo dele.
+    try {
+      const cfg = await panel.getConfig();
+      applyBranding(cfg);
+    } catch {
+      /* dev/CORS: segue sem branding atualizado */
+    }
     setAuthState('authenticated');
-  };
+  }, [applyBranding]);
 
   const handleLogout = () => {
     api.logout();
+    panel.logout().catch(() => {});
     storage.clearCredentials();
     setAuthState('login');
   };
@@ -89,6 +123,7 @@ function App() {
           onLogout={handleLogout}
           onProfileClick={() => setShowProfileManager(true)}
           focused={focusZone === 'sidebar'}
+          logoUrl={branding.imgLogo}
         />
         <main className="app-content">
           {currentPage === 'home' && <Home onNavigate={handlePageChange} />}

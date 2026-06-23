@@ -21,6 +21,24 @@ export interface LoginResult {
   macAddress?: string;
 }
 
+export interface PlaylistEntry {
+  id: string;
+  dnsId: string;
+  username: string;
+  password: string;
+  url: string;
+  name: string;
+}
+export interface AppConfig {
+  macRegistered: boolean;
+  playlists: PlaylistEntry[];
+  imgLogo: string;
+  imgBg: string;
+  theme: string;
+  appName: string;
+  message?: string;
+}
+
 async function callPanel(payload: Record<string, unknown>): Promise<any> {
   const res = await fetch(AUTH_URL, {
     method: 'POST',
@@ -67,4 +85,39 @@ export async function login(p: {
 
 export async function logout(): Promise<void> {
   await callPanel({ app_device_id: getDeviceId(), app_type: getAppType(), version: 'logout' });
+}
+
+const PANEL_BASE = AUTH_URL.replace(/api\/auth\.php$/, ''); // https://streamapps.dev/saplayer/
+
+function resolveAsset(p: string): string {
+  if (!p) return '';
+  if (/^https?:\/\//i.test(p)) return p;
+  return PANEL_BASE + p.replace(/^\.?\//, '');
+}
+
+// Auto-login + branding: o painel acha a playlist pelo MAC (app_device_id) e devolve
+// as creds (urls) + a logo/bg do revendedor. version != login/reseller_dns/logout.
+export async function getConfig(): Promise<AppConfig> {
+  const d = await callPanel({
+    app_device_id: getDeviceId(),
+    app_type: getAppType(),
+    version: 'config',
+  });
+  const urls = Array.isArray(d.urls) ? d.urls : [];
+  return {
+    macRegistered: !!d.mac_registered,
+    playlists: urls.map((u: any) => ({
+      id: String(u.id ?? ''),
+      dnsId: String(u.dns_id ?? ''),
+      username: String(u.username ?? ''),
+      password: String(u.password ?? ''),
+      url: String(u.url ?? ''),
+      name: String(u.name ?? ''),
+    })),
+    imgLogo: resolveAsset(d.img_logo || ''),
+    imgBg: resolveAsset(d.img_bg || ''),
+    theme: String(d.theme || '1'),
+    appName: String(d.app_name || 'S.A Player'),
+    message: d.message,
+  };
 }

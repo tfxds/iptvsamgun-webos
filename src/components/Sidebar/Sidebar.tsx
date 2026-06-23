@@ -13,6 +13,7 @@ interface SidebarProps {
     onLogout: () => void;
     onProfileClick: () => void;
     focused?: boolean;
+    logoUrl?: string;
 }
 
 interface MenuItem {
@@ -34,7 +35,7 @@ const allMenuItems: MenuItem[] = [
     { id: 'settings', label: 'Configurações', emoji: '⚙️', gradient: 'linear-gradient(135deg, #6b7280, #4b5563)' },
 ];
 
-export function Sidebar({ activeItem, onItemSelect, onLogout, onProfileClick, focused = false }: SidebarProps) {
+export function Sidebar({ activeItem, onItemSelect, onLogout, onProfileClick, focused = false, logoUrl }: SidebarProps) {
     const { setFocusZone } = useFocusZone();
     const { t } = useTranslation();
 
@@ -99,23 +100,27 @@ export function Sidebar({ activeItem, onItemSelect, onLogout, onProfileClick, fo
                     <div className="bg-glow" />
                 </div>
 
-                {/* Logo */}
+                {/* Logo do revendedor (whitelabel) — fallback p/ a logo padrao */}
                 <div className="logo-container">
-                    <div className="logo-wrapper">
-                        <svg className="logo-svg" width="44" height="44" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                            <defs>
-                                <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stopColor="#a855f7" />
-                                    <stop offset="100%" stopColor="#ec4899" />
-                                </linearGradient>
-                            </defs>
-                            <path d="M 10,10 L 10,90 L 90,50 Z" fill="none" stroke="url(#logoGradient)" strokeWidth="6" strokeLinejoin="round" />
-                            <rect className="bar bar-1" x="35" y="35" width="6" height="30" fill="url(#logoGradient)" rx="3" />
-                            <rect className="bar bar-2" x="45" y="25" width="6" height="50" fill="url(#logoGradient)" rx="3" />
-                            <rect className="bar bar-3" x="55" y="40" width="6" height="20" fill="url(#logoGradient)" rx="3" />
-                        </svg>
-                        <div className="logo-ring" />
-                    </div>
+                    {logoUrl ? (
+                        <img className="reseller-logo" src={logoUrl} alt="Logo" />
+                    ) : (
+                        <div className="logo-wrapper">
+                            <svg className="logo-svg" width="44" height="44" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stopColor="#0ea5e9" />
+                                        <stop offset="100%" stopColor="#38bdf8" />
+                                    </linearGradient>
+                                </defs>
+                                <path d="M 10,10 L 10,90 L 90,50 Z" fill="none" stroke="url(#logoGradient)" strokeWidth="6" strokeLinejoin="round" />
+                                <rect className="bar bar-1" x="35" y="35" width="6" height="30" fill="url(#logoGradient)" rx="3" />
+                                <rect className="bar bar-2" x="45" y="25" width="6" height="50" fill="url(#logoGradient)" rx="3" />
+                                <rect className="bar bar-3" x="55" y="40" width="6" height="20" fill="url(#logoGradient)" rx="3" />
+                            </svg>
+                            <div className="logo-ring" />
+                        </div>
+                    )}
                 </div>
 
                 {/* Navigation */}
