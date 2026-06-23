@@ -138,11 +138,11 @@ class StorageService {
         return this.getContinueWatching().find(p => p.id === id && p.type === type) || null;
     }
 
-    // Upsert do progresso. Ignora o comeco (<30s) e remove quando quase termina (>92%).
+    // Upsert do progresso. Ignora o comeco (<10s) e remove quando quase termina (>92%).
     saveProgress(item: Omit<ProgressItem, 'updatedAt'>): void {
         const list = this.getContinueWatching().filter(p => !(p.id === item.id && p.type === item.type));
         const nearEnd = item.duration > 0 && item.position >= item.duration * 0.92;
-        if (item.position >= 30 && !nearEnd) {
+        if (item.position >= 10 && !nearEnd) {
             list.unshift({ ...item, updatedAt: Date.now() });
         }
         localStorage.setItem(STORAGE_KEYS.CONTINUE, JSON.stringify(list.slice(0, 50)));

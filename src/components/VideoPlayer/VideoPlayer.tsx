@@ -1,6 +1,6 @@
 // VideoPlayer Component - Premium player with HLS support for TV
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { FaPlay, FaPause, FaCog, FaStepForward, FaStepBackward } from 'react-icons/fa';
+import { FaPlay, FaPause, FaCog, FaStepForward, FaStepBackward, FaBackward, FaForward } from 'react-icons/fa';
 import { useHls } from '../../hooks/useHls';
 import { useTVNavigation } from '../../hooks/useTVNavigation';
 import './VideoPlayer.css';
@@ -21,8 +21,9 @@ export interface VideoPlayerProps {
     contentType?: 'movie' | 'series' | 'live';
 }
 
-// Control buttons: close, prev, play, next, quality
-type ControlButton = 'close' | 'prev' | 'play' | 'next' | 'quality';
+// Control buttons: close, prev(ep), rewind(-10s), play, forward(+10s), next(ep), quality
+type ControlButton = 'close' | 'prev' | 'rewind' | 'play' | 'forward' | 'next' | 'quality';
+const SEEK_STEP = 10; // segundos por toque em voltar/avancar
 type PlayerFocus = 'controls' | 'quality-menu';
 
 export function VideoPlayer({
@@ -80,13 +81,16 @@ export function VideoPlayer({
 
     // Build list of available control buttons
     const getControlButtons = useCallback((): ControlButton[] => {
+        const isVod = !isLive && contentType !== 'live';
         const buttons: ControlButton[] = ['close'];
         if (canGoPrevious && onPreviousEpisode) buttons.push('prev');
+        if (isVod) buttons.push('rewind');
         buttons.push('play');
+        if (isVod) buttons.push('forward');
         if (canGoNext && onNextEpisode) buttons.push('next');
         if (qualityLevels.length > 0) buttons.push('quality');
         return buttons;
-    }, [canGoPrevious, canGoNext, onPreviousEpisode, onNextEpisode, qualityLevels.length]);
+    }, [canGoPrevious, canGoNext, onPreviousEpisode, onNextEpisode, qualityLevels.length, isLive, contentType]);
 
     // Resume time - apply once when video is ready
     useEffect(() => {
@@ -283,8 +287,14 @@ export function VideoPlayer({
             case 'prev':
                 onPreviousEpisode?.();
                 break;
+            case 'rewind':
+                seek(Math.max(0, (videoRef.current?.currentTime || 0) - SEEK_STEP));
+                break;
             case 'play':
                 togglePlay();
+                break;
+            case 'forward':
+                seek(Math.min(duration || Infinity, (videoRef.current?.currentTime || 0) + SEEK_STEP));
                 break;
             case 'next':
                 onNextEpisode?.();
@@ -293,7 +303,7 @@ export function VideoPlayer({
                 openQualityMenu();
                 break;
         }
-    }, [focusedControl, handleClose, onPreviousEpisode, togglePlay, onNextEpisode, openQualityMenu]);
+    }, [focusedControl, handleClose, onPreviousEpisode, togglePlay, onNextEpisode, openQualityMenu, seek, duration]);
 
     // TV Navigation handler
     const handleNavigate = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
@@ -545,6 +555,17 @@ export function VideoPlayer({
                             </button>
                         )}
 
+                        {/* Voltar 10s (VOD) */}
+                        {!isLive && contentType !== 'live' && (
+                            <button
+                                className={`control-btn ${focusedControl === 'rewind' && playerFocus === 'controls' ? 'focused' : ''}`}
+                                onClick={() => seek(Math.max(0, currentTime - SEEK_STEP))}
+                                title="Voltar 10s"
+                            >
+                                <FaBackward />
+                            </button>
+                        )}
+
                         {/* Play/Pause */}
                         <button
                             className={`control-btn ${focusedControl === 'play' && playerFocus === 'controls' ? 'focused' : ''}`}
@@ -552,6 +573,17 @@ export function VideoPlayer({
                         >
                             {playing ? <FaPause /> : <FaPlay />}
                         </button>
+
+                        {/* Avancar 10s (VOD) */}
+                        {!isLive && contentType !== 'live' && (
+                            <button
+                                className={`control-btn ${focusedControl === 'forward' && playerFocus === 'controls' ? 'focused' : ''}`}
+                                onClick={() => seek(Math.min(duration || Infinity, currentTime + SEEK_STEP))}
+                                title="Avancar 10s"
+                            >
+                                <FaForward />
+                            </button>
+                        )}
 
                         {/* Next Episode */}
                         {canGoNext && onNextEpisode && (
