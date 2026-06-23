@@ -407,22 +407,13 @@ export function ContentDetailModal({
                     X
                 </button>
 
-                {/* Backdrop from TMDB */}
-                {backdropUrl && (
+                {/* HERO banner no topo (backdrop TMDB, fallback poster) */}
+                <div className="modal-hero-banner">
                     <div
-                        className="modal-backdrop-image"
-                        style={{ backgroundImage: `url(${backdropUrl})` }}
+                        className="modal-hero-img"
+                        style={{ backgroundImage: `url(${backdropUrl || posterUrl || contentData.cover})` }}
                     />
-                )}
-
-                {/* Poster */}
-                <div className="modal-poster">
-                    <img
-                        src={posterUrl || contentData.cover}
-                        alt={contentData.name}
-                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                    />
-                    <div className="poster-gradient" />
+                    <div className="modal-hero-fade" />
                     {tmdbLoading && (
                         <div className="tmdb-loading-overlay">
                             <div className="tmdb-loading-spinner" />
@@ -464,6 +455,43 @@ export function ContentDetailModal({
 
                     {/* Overview */}
                     <p className="modal-overview">{overview}</p>
+
+                    {/* Action Buttons (perto do topo, estilo Netflix) */}
+                    <div className="modal-actions">
+                        <button
+                            className={`action-btn play-btn ${focusZone === 'play' ? 'focused' : ''}`}
+                            onClick={() => {
+                                onPlay(
+                                    contentType === 'series' ? selectedSeason : undefined,
+                                    contentType === 'series' ? selectedEpisode : undefined
+                                );
+                            }}
+                        >
+                            <span className="icon">▶</span>
+                            {contentType === 'series' ? `Assistir T${selectedSeason} E${selectedEpisode}` : 'Assistir Filme'}
+                        </button>
+                        <button
+                            className={`action-btn secondary-btn ${watchLaterService.has(contentId, contentType) ? 'active' : ''} ${focusZone === 'watchLater' ? 'focused' : ''}`}
+                            onClick={() => {
+                                watchLaterService.toggle(contentId, contentType, contentData.name, posterUrl || contentData.cover, rating);
+                                setRefresh(r => r + 1);
+                            }}
+                        >
+                            {watchLaterService.has(contentId, contentType) ? '✓' : '+'}
+                            {watchLaterService.has(contentId, contentType) ? 'Salvo' : 'Assistir Depois'}
+                        </button>
+                        <button
+                            className={`action-btn favorite-btn ${favoritesService.has(contentId, contentType) ? 'active' : ''} ${focusZone === 'favorite' ? 'focused' : ''}`}
+                            onClick={() => {
+                                const posterForFav = tmdbData?.poster_path ? getImageUrl(tmdbData.poster_path, 'w500') : contentData.cover;
+                                favoritesService.toggle(contentId, contentType, contentData.name, posterForFav || undefined, tmdbData?.vote_average ? tmdbData.vote_average.toFixed(1) : contentData.rating);
+                                setRefresh(r => r + 1);
+                            }}
+                            title={favoritesService.has(contentId, contentType) ? 'Remover dos Favoritos' : 'Adicionar aos Favoritos'}
+                        >
+                            {favoritesService.has(contentId, contentType) ? '♥' : '♡'}
+                        </button>
+                    </div>
 
                     {/* Series: Season & Episode Selector */}
                     {contentType === 'series' && !loading && seasons.length > 0 && (
@@ -522,62 +550,6 @@ export function ContentDetailModal({
                         </div>
                     )}
 
-                    {/* Action Buttons */}
-                    <div className="modal-actions">
-                        {/* Play Button */}
-                        <button
-                            className={`action-btn play-btn ${focusZone === 'play' ? 'focused' : ''}`}
-                            onClick={() => {
-                                onPlay(
-                                    contentType === 'series' ? selectedSeason : undefined,
-                                    contentType === 'series' ? selectedEpisode : undefined
-                                );
-                            }}
-                        >
-                            <span className="icon">▶</span>
-                            {contentType === 'series'
-                                ? `Assistir T${selectedSeason} E${selectedEpisode}`
-                                : 'Assistir Filme'
-                            }
-                        </button>
-
-                        {/* Watch Later Button */}
-                        <button
-                            className={`action-btn secondary-btn ${watchLaterService.has(contentId, contentType) ? 'active' : ''} ${focusZone === 'watchLater' ? 'focused' : ''}`}
-                            onClick={() => {
-                                watchLaterService.toggle(
-                                    contentId,
-                                    contentType,
-                                    contentData.name,
-                                    posterUrl || contentData.cover,
-                                    rating
-                                );
-                                setRefresh(r => r + 1);
-                            }}
-                        >
-                            {watchLaterService.has(contentId, contentType) ? '✓' : '+'}
-                            {watchLaterService.has(contentId, contentType) ? 'Salvo' : 'Assistir Depois'}
-                        </button>
-
-                        {/* Favorite Button */}
-                        <button
-                            className={`action-btn favorite-btn ${favoritesService.has(contentId, contentType) ? 'active' : ''} ${focusZone === 'favorite' ? 'focused' : ''}`}
-                            onClick={() => {
-                                const posterForFav = tmdbData?.poster_path ? getImageUrl(tmdbData.poster_path, 'w500') : contentData.cover;
-                                favoritesService.toggle(
-                                    contentId,
-                                    contentType,
-                                    contentData.name,
-                                    posterForFav || undefined,
-                                    tmdbData?.vote_average ? tmdbData.vote_average.toFixed(1) : contentData.rating
-                                );
-                                setRefresh(r => r + 1);
-                            }}
-                            title={favoritesService.has(contentId, contentType) ? 'Remover dos Favoritos' : 'Adicionar aos Favoritos'}
-                        >
-                            {favoritesService.has(contentId, contentType) ? '♥' : '♡'}
-                        </button>
-                    </div>
                 </div>
             </div>
         </div>
