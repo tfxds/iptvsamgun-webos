@@ -88,7 +88,8 @@
 
 /* COL 2 — Canais */
 .ch-col {
-    flex: 1;
+    width: 520px;
+    flex-shrink: 0;
     overflow-y: auto;
     padding: 12px;
     scrollbar-width: thin;
@@ -164,8 +165,8 @@
 
 /* COL 3 — Info + EPG */
 .info-col {
-    width: 380px;
-    flex-shrink: 0;
+    flex: 1;
+    min-width: 420px;
     border-left: 1px solid rgba(255, 255, 255, 0.08);
     background: #0a0f1c;
     padding: 20px;
@@ -328,4 +329,46 @@
     font-weight: 800;
     letter-spacing: 0.5px;
     color: #f87171;
+}
+
+/* EPG: No ar agora + sinopse + a seguir */
+.epg-now {
+    margin-bottom: 18px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.epg-now-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    color: #f87171;
+    margin-bottom: 8px;
+}
+.epg-now-prog {
+    font-size: 19px;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin: 0 0 4px;
+}
+.epg-now-time {
+    font-size: 13px;
+    font-weight: 600;
+    color: #38bdf8;
+}
+.epg-now-desc {
+    margin-top: 10px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #94a3b8;
+}
+.epg-next-title {
+    font-size: 13px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #64748b;
+    margin: 0 0 10px;
 }

@@ -264,22 +264,38 @@ export function LiveTV() {
                         >▶ Assistir</button>
 
                         <div className="epg-block">
-                            <h3 className="epg-title">Programação</h3>
                             {epgLoading ? (
-                                <p className="epg-empty">Carregando...</p>
+                                <p className="epg-empty">Carregando programação...</p>
                             ) : epg.length === 0 ? (
-                                <p className="epg-empty">Sem programação no momento.</p>
+                                <p className="epg-empty">Sem programação disponível.</p>
                             ) : (
-                                <ul className="epg-list">
-                                    {epg.map((p, idx) => (
-                                        <li key={idx} className={`epg-item ${idx === 0 ? 'now' : ''}`}>
-                                            <span className="epg-time">{idx === 0 ? 'AGORA' : fmtTime(p.start)}</span>
-                                            <span className="epg-prog">{p.title || 'Programa'}</span>
-                                        </li>
-                                    ))}
-                                </ul>
+                                <>
+                                    {/* No ar agora + sinopse */}
+                                    <div className="epg-now">
+                                        <span className="epg-now-badge"><span className="live-dot" /> NO AR AGORA</span>
+                                        <h3 className="epg-now-prog">{epg[0].title || 'Programa'}</h3>
+                                        {(epg[0].start || epg[0].end) && (
+                                            <span className="epg-now-time">{fmtTime(epg[0].start)}{epg[0].end ? ` – ${fmtTime(epg[0].end)}` : ''}</span>
+                                        )}
+                                        {epg[0].description && <p className="epg-now-desc">{epg[0].description}</p>}
+                                    </div>
+
+                                    {/* A seguir (horários) */}
+                                    {epg.length > 1 && (
+                                        <div className="epg-next">
+                                            <h4 className="epg-next-title">A seguir</h4>
+                                            <ul className="epg-list">
+                                                {epg.slice(1).map((p, idx) => (
+                                                    <li key={idx} className="epg-item">
+                                                        <span className="epg-time">{fmtTime(p.start)}</span>
+                                                        <span className="epg-prog">{p.title || 'Programa'}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                </>
                             )}
-                            {epg[0]?.description && <p className="epg-desc">{epg[0].description}</p>}
                         </div>
                     </>
                 )}
