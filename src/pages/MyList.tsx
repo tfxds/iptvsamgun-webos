@@ -3,6 +3,7 @@
 import { useCallback, useState } from 'react';
 import { storage } from '../services/storage';
 import { useTVNavigation } from '../hooks/useTVNavigation';
+import { useFocusZone } from '../contexts/FocusContext';
 import './MyList.css';
 
 interface WatchLaterItem {
@@ -16,6 +17,7 @@ interface WatchLaterItem {
 }
 
 export function MyList() {
+    const { focusZone, setFocusZone } = useFocusZone();
     const [items, setItems] = useState<WatchLaterItem[]>(() => storage.getWatchLater());
     const [activeTab, setActiveTab] = useState<'all' | 'movies' | 'series'>('all');
     const [removingId, setRemovingId] = useState<string | null>(null);
@@ -56,7 +58,8 @@ export function MyList() {
     const handleNavigate = (direction: 'up' | 'down' | 'left' | 'right') => {
         if (focusArea === 'tabs') {
             if (direction === 'left') {
-                setFocusedTabIndex(prev => Math.max(0, prev - 1));
+                if (focusedTabIndex === 0) setFocusZone('sidebar');
+                else setFocusedTabIndex(prev => Math.max(0, prev - 1));
             } else if (direction === 'right') {
                 setFocusedTabIndex(prev => Math.min(tabs.length - 1, prev + 1));
             } else if (direction === 'down') {
@@ -76,7 +79,8 @@ export function MyList() {
             } else if (direction === 'down') {
                 setFocusedItemIndex(prev => Math.min(total - 1, prev + cols));
             } else if (direction === 'left') {
-                setFocusedItemIndex(prev => Math.max(0, prev - 1));
+                if (focusedItemIndex % cols === 0) setFocusZone('sidebar');
+                else setFocusedItemIndex(prev => Math.max(0, prev - 1));
             } else if (direction === 'right') {
                 setFocusedItemIndex(prev => Math.min(total - 1, prev + 1));
             }
@@ -92,6 +96,7 @@ export function MyList() {
     useTVNavigation({
         onNavigate: handleNavigate,
         onEnter: handleEnter,
+        enabled: focusZone === 'content',
     });
 
     // Empty State

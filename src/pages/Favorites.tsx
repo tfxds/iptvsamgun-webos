@@ -3,6 +3,7 @@
 import { useCallback, useState } from 'react';
 import { storage } from '../services/storage';
 import { useTVNavigation } from '../hooks/useTVNavigation';
+import { useFocusZone } from '../contexts/FocusContext';
 import './Favorites.css';
 
 interface FavoriteItem {
@@ -16,6 +17,7 @@ interface FavoriteItem {
 }
 
 export function Favorites() {
+    const { focusZone, setFocusZone } = useFocusZone();
     const [items, setItems] = useState<FavoriteItem[]>(() => storage.getFavorites());
     const [activeTab, setActiveTab] = useState<'all' | 'movies' | 'series' | 'channels'>('all');
     const [removingId, setRemovingId] = useState<string | null>(null);
@@ -58,7 +60,8 @@ export function Favorites() {
     const handleNavigate = (direction: 'up' | 'down' | 'left' | 'right') => {
         if (focusArea === 'tabs') {
             if (direction === 'left') {
-                setFocusedTabIndex(prev => Math.max(0, prev - 1));
+                if (focusedTabIndex === 0) setFocusZone('sidebar');
+                else setFocusedTabIndex(prev => Math.max(0, prev - 1));
             } else if (direction === 'right') {
                 setFocusedTabIndex(prev => Math.min(tabs.length - 1, prev + 1));
             } else if (direction === 'down') {
@@ -78,7 +81,8 @@ export function Favorites() {
             } else if (direction === 'down') {
                 setFocusedItemIndex(prev => Math.min(total - 1, prev + cols));
             } else if (direction === 'left') {
-                setFocusedItemIndex(prev => Math.max(0, prev - 1));
+                if (focusedItemIndex % cols === 0) setFocusZone('sidebar');
+                else setFocusedItemIndex(prev => Math.max(0, prev - 1));
             } else if (direction === 'right') {
                 setFocusedItemIndex(prev => Math.min(total - 1, prev + 1));
             }
@@ -94,6 +98,7 @@ export function Favorites() {
     useTVNavigation({
         onNavigate: handleNavigate,
         onEnter: handleEnter,
+        enabled: focusZone === 'content',
     });
 
     // Empty State
