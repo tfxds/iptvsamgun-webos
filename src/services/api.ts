@@ -1,6 +1,6 @@
 ﻿// Xtream Codes API Client - Ported from NeoStream IPTV
 
-import type { AuthResponse, LiveStream, VODStream, Series, Category, SeriesInfo, Credentials } from '../types';
+import type { AuthResponse, LiveStream, VODStream, Series, Category, SeriesInfo, Credentials, EPGProgram } from '../types';
 
 type VodMovieData = Record<string, unknown>;
 
@@ -246,6 +246,27 @@ class XtreamAPI {
 
     async getSeriesCategories(): Promise<Category[]> {
         return this.makeRequest<Category[]>('get_series_categories');
+    }
+
+    async getShortEPG(streamId: number, limit = 6): Promise<EPGProgram[]> {
+        try {
+            const data = await this.makeRequest<{ epg_listings?: Array<Record<string, string>> }>(
+                'get_short_epg',
+                { stream_id: String(streamId), limit: String(limit) }
+            );
+            const list = Array.isArray(data?.epg_listings) ? data.epg_listings : [];
+            const dec = (s: string) => {
+                try { return decodeURIComponent(escape(atob(s || ''))); } catch { return s || ''; }
+            };
+            return list.map((e) => ({
+                title: dec(e.title),
+                description: dec(e.description),
+                start: e.start || '',
+                end: e.end || '',
+            }));
+        } catch {
+            return [];
+        }
     }
 
     getLiveStreamUrl(streamId: number): string {

@@ -126,3 +126,10 @@ export interface Credentials {
   username: string;
   password: string;
 }
+
+export interface EPGProgram {
+  title: string;
+  start: string;
+  end: string;
+  description: string;
+}
