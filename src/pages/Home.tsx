@@ -175,7 +175,7 @@ export function Home() {
     useTVNavigation({
         onNavigate: handleNavigate,
         onEnter: handleEnter,
-        enabled: focusZone === 'content',
+        enabled: focusZone === 'content' && !showModal && !showPlayer,
     });
 
     // Auto-scroll: segue o card focado (rola a fileira na horizontal + a secao na vertical)
