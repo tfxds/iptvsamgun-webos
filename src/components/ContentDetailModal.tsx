@@ -368,6 +368,23 @@ export function ContentDetailModal({
 
         return isValidTitle ? cleanTitle : `Episódio ${epNum}`;
     };
+
+    // Duração do episódio: usa duration_secs (preciso) ou o campo duration ("HH:MM:SS")
+    const fmtDuration = (ep: Episode): string => {
+        const secs = ep.info?.duration_secs;
+        if (secs && secs > 0) {
+            const m = Math.round(secs / 60);
+            return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}min` : `${m} min`;
+        }
+        const d = ep.info?.duration || '';
+        const hm = /^(\d{1,2}):(\d{2}):(\d{2})$/.exec(d);
+        if (hm) {
+            const m = Number(hm[1]) * 60 + Number(hm[2]);
+            return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}min` : `${m} min`;
+        }
+        return d;
+    };
+
     if (!isOpen) return null;
 
     // Use TMDB data if available, fallback to IPTV data
@@ -480,7 +497,13 @@ export function ContentDetailModal({
                                             onClick={() => setSelectedEpisode(epNum)}
                                         >
                                             <span className="episode-number default">{epNum}</span>
-                                            <span className="episode-title">{getEpisodeTitle(ep)}</span>
+                                            <div className="episode-body">
+                                                <div className="episode-head">
+                                                    <span className="episode-title">{getEpisodeTitle(ep)}</span>
+                                                    {fmtDuration(ep) && <span className="episode-duration">{fmtDuration(ep)}</span>}
+                                                </div>
+                                                {ep.info?.plot && <p className="episode-plot">{ep.info.plot}</p>}
+                                            </div>
                                             {isSelected && (
                                                 <span className="episode-play-indicator">▶</span>
                                             )}
