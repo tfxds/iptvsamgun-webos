@@ -1,9 +1,8 @@
-// Main App Component - NeoStream TV
+// Main App Component - S.A Player TV
 
 import { useState, useEffect, useCallback } from 'react';
 import { api } from './services/api';
 import { storage } from './services/storage';
-import { Welcome } from './pages/Welcome';
 import { Login } from './pages/Login';
 import { Home } from './pages/Home';
 import { LiveTV } from './pages/LiveTV';
@@ -12,14 +11,13 @@ import { Series } from './pages/Series';
 import { Favorites } from './pages/Favorites';
 import { MyList } from './pages/MyList';
 import { Settings } from './pages/Settings';
-import { LanguageSelection } from './pages/LanguageSelection';
 import { Sidebar } from './components/Sidebar';
 import { ProfileManager } from './components/ProfileManager';
 import { FocusContext, type FocusZone } from './contexts/FocusContext';
 import './index.css';
 
 type Page = 'home' | 'live' | 'movies' | 'series' | 'mylist' | 'favorites' | 'settings';
-type AuthState = 'loading' | 'languageSelection' | 'welcome' | 'login' | 'authenticated';
+type AuthState = 'loading' | 'login' | 'authenticated';
 
 function App() {
   const [authState, setAuthState] = useState<AuthState>('loading');
@@ -28,35 +26,25 @@ function App() {
   const [showProfileManager, setShowProfileManager] = useState(false);
 
   const checkAuth = useCallback(async () => {
-    if (!storage.hasSettings()) {
-      setAuthState('languageSelection');
-      return;
-    }
-
     try {
       const credentials = storage.getCredentials();
       if (credentials) {
-        // Try to authenticate with saved credentials
+        // Auto-login com credenciais salvas
         await api.authenticate(credentials.url, credentials.username, credentials.password);
         setAuthState('authenticated');
       } else {
-        // No credentials saved - show welcome screen
-        setAuthState('welcome');
+        setAuthState('login');
       }
     } catch (err) {
       console.error('Auto-login failed:', err);
       storage.clearCredentials();
-      setAuthState('welcome');
+      setAuthState('login');
     }
   }, []);
 
   useEffect(() => {
     void Promise.resolve().then(checkAuth);
   }, [checkAuth]);
-
-  const handleGoToLogin = () => {
-    setAuthState('login');
-  };
 
   const handleLoginSuccess = () => {
     setAuthState('authenticated');
@@ -65,7 +53,7 @@ function App() {
   const handleLogout = () => {
     api.logout();
     storage.clearCredentials();
-    setAuthState('welcome');
+    setAuthState('login');
   };
 
   const handlePageChange = (page: string) => {
@@ -78,31 +66,17 @@ function App() {
     return (
       <div className="app-loading">
         <div className="app-loading-logo">
-          <svg viewBox="0 0 24 24" fill="none" width="64" height="64">
-            <path d="M4 5C4 4.44772 4.44772 4 5 4H19C19.5523 4 20 4.44772 20 5V15C20 15.5523 19.5523 16 19 16H5C4.44772 16 4 15.5523 4 15V5Z" stroke="currentColor" strokeWidth="2" />
-            <path d="M8 20H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            <path d="M12 16V20" stroke="currentColor" strokeWidth="2" />
-          </svg>
+          <img src="/saplayer-logo.png" alt="S.A Player" style={{ width: 180, maxWidth: '60vw', height: 'auto' }} />
         </div>
         <div className="app-loading-spinner" />
-        <p className="app-loading-text">NeoStream</p>
+        <p className="app-loading-text">S.A Player</p>
       </div>
     );
   }
 
-  // Language selection screen (first time user)
-  if (authState === 'languageSelection') {
-    return <LanguageSelection onComplete={checkAuth} />;
-  }
-
-  // Welcome screen (no playlist configured)
-  if (authState === 'welcome') {
-    return <Welcome onGoToLogin={handleGoToLogin} />;
-  }
-
   // Login screen
   if (authState === 'login') {
-    return <Login onLoginSuccess={handleLoginSuccess} onLanguageSelect={() => setAuthState('languageSelection')} />;
+    return <Login onLoginSuccess={handleLoginSuccess} />;
   }
 
   // Main app with sidebar

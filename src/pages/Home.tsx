@@ -347,7 +347,7 @@ export function Home({ onNavigate }: HomeProps) {
 
             {/* Footer */}
             <footer className="home-footer">
-                <span>NeoStream TV</span>
+                <span>S.A Player</span>
                 <span>v1.0.0</span>
             </footer>
         </div>

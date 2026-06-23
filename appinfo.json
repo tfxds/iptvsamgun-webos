@@ -1,0 +1,11 @@
+{
+  "id": "com.saplayer.tv",
+  "version": "1.0.0",
+  "vendor": "S.A Player",
+  "type": "web",
+  "main": "index.html",
+  "title": "S.A Player",
+  "icon": "icon.png",
+  "largeIcon": "icon-large.png",
+  "bgColor": "#060912"
+}
