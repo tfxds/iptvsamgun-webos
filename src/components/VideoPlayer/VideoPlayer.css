@@ -60,10 +60,10 @@
 }
 
 .video-player-close.focused {
-    background: rgba(168, 85, 247, 0.8);
+    background: rgba(56, 189, 248, 0.8);
     transform: scale(1.15);
-    box-shadow: 0 0 25px rgba(168, 85, 247, 0.7);
-    border: 2px solid #a855f7;
+    box-shadow: 0 0 25px rgba(56, 189, 248, 0.7);
+    border: 2px solid #38bdf8;
 }
 
 /* Title */
@@ -110,7 +110,7 @@
 }
 
 .spinner-ring:nth-child(1) {
-    border-top-color: #a855f7;
+    border-top-color: #38bdf8;
     animation: spinRing 1.2s linear infinite;
 }
 
@@ -119,7 +119,7 @@
     height: 70%;
     top: 15%;
     left: 15%;
-    border-right-color: #ec4899;
+    border-right-color: #0ea5e9;
     animation: spinRing 1s linear infinite reverse;
 }
 
@@ -128,7 +128,7 @@
     height: 40%;
     top: 30%;
     left: 30%;
-    border-bottom-color: #6366f1;
+    border-bottom-color: #0ea5e9;
     animation: spinRing 0.8s linear infinite;
 }
 
@@ -162,7 +162,7 @@
 .central-play-icon {
     width: 100px;
     height: 100px;
-    background: linear-gradient(135deg, rgba(168, 85, 247, 0.9), rgba(236, 72, 153, 0.9));
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.9), rgba(56, 189, 248, 0.9));
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -170,25 +170,25 @@
     font-size: 40px;
     color: white;
     padding-left: 8px;
-    box-shadow: 0 8px 40px rgba(168, 85, 247, 0.5);
+    box-shadow: 0 8px 40px rgba(56, 189, 248, 0.5);
     transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     animation: centralPlayPulse 2s ease-in-out infinite;
 }
 
 .central-play-icon:hover {
     transform: scale(1.15);
-    box-shadow: 0 12px 50px rgba(168, 85, 247, 0.7);
+    box-shadow: 0 12px 50px rgba(56, 189, 248, 0.7);
 }
 
 @keyframes centralPlayPulse {
 
     0%,
     100% {
-        box-shadow: 0 8px 40px rgba(168, 85, 247, 0.5);
+        box-shadow: 0 8px 40px rgba(56, 189, 248, 0.5);
     }
 
     50% {
-        box-shadow: 0 8px 60px rgba(168, 85, 247, 0.8), 0 0 100px rgba(236, 72, 153, 0.3);
+        box-shadow: 0 8px 60px rgba(56, 189, 248, 0.8), 0 0 100px rgba(56, 189, 248, 0.3);
     }
 }
 
@@ -315,7 +315,7 @@
     top: 0;
     left: 0;
     height: 100%;
-    background: linear-gradient(90deg, #a855f7, #ec4899);
+    background: linear-gradient(90deg, #38bdf8, #0ea5e9);
     border-radius: 3px;
     transition: width 0.1s ease;
 }
@@ -343,8 +343,17 @@
 .controls-row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     gap: 12px;
+    position: relative;
+}
+
+/* botao de qualidade na direita sem desbalancear o centro */
+.controls-right {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
 }
 
 .controls-left,
@@ -572,12 +581,12 @@
 
 .quality-menu-item:hover,
 .quality-menu-item.focused {
-    background: linear-gradient(90deg, rgba(168, 85, 247, 0.3), rgba(236, 72, 153, 0.3));
-    border-left: 3px solid #a855f7;
+    background: linear-gradient(90deg, rgba(56, 189, 248, 0.3), rgba(56, 189, 248, 0.3));
+    border-left: 3px solid #38bdf8;
 }
 
 .quality-menu-item.selected {
-    color: #a855f7;
+    color: #38bdf8;
     font-weight: 600;
 }
 
@@ -596,8 +605,8 @@
 /* Control Button Focus States (TV Remote) */
 .control-btn:focus,
 .control-btn.focused {
-    background: rgba(168, 85, 247, 0.4);
-    outline: 2px solid #a855f7;
+    background: rgba(56, 189, 248, 0.4);
+    outline: 2px solid #38bdf8;
     outline-offset: 2px;
     transform: scale(1.1);
 }

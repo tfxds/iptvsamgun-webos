@@ -29,8 +29,17 @@ const STORAGE_KEYS = {
     CONTINUE: 'neostream_continue',
     LAST_CHANNEL: 'neostream_last_channel',
     SETTINGS: 'neostream_settings',
+    PARENTAL: 'neostream_parental',
     TMDB_API_KEY: 'neostream_tmdb_api_key',
 };
+
+export interface ParentalConfig {
+    pin: string;          // 4 digitos (vazio = sem PIN)
+    blockAdult: boolean;  // esconder categorias/conteudo adulto
+}
+
+// Detecta categoria/titulo adulto (compartilhado entre telas)
+export const ADULT_RE = /(adult|adulto|\+\s*18|18\s*\+|xxx|porn|er[óo]tic|sex)/i;
 
 // Continuar Assistindo (resume) — guarda onde parou em filme/serie
 export interface ProgressItem {
@@ -155,6 +164,20 @@ class StorageService {
 
     clearContinueWatching(): void {
         localStorage.setItem(STORAGE_KEYS.CONTINUE, JSON.stringify([]));
+    }
+
+    // Controle Parental
+    getParental(): ParentalConfig {
+        const data = localStorage.getItem(STORAGE_KEYS.PARENTAL);
+        return data ? { pin: '', blockAdult: false, ...JSON.parse(data) } : { pin: '', blockAdult: false };
+    }
+
+    saveParental(cfg: Partial<ParentalConfig>): void {
+        localStorage.setItem(STORAGE_KEYS.PARENTAL, JSON.stringify({ ...this.getParental(), ...cfg }));
+    }
+
+    isAdultBlocked(): boolean {
+        return this.getParental().blockAdult === true;
     }
 
     // Last channel

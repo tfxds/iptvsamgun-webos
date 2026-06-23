@@ -42,7 +42,7 @@
 .pm-orb-1 {
     width: 400px;
     height: 400px;
-    background: radial-gradient(circle, #a855f7 0%, transparent 70%);
+    background: radial-gradient(circle, #38bdf8 0%, transparent 70%);
     top: -100px;
     left: -100px;
 }
@@ -50,7 +50,7 @@
 .pm-orb-2 {
     width: 350px;
     height: 350px;
-    background: radial-gradient(circle, #ec4899 0%, transparent 70%);
+    background: radial-gradient(circle, #0ea5e9 0%, transparent 70%);
     bottom: -50px;
     right: -50px;
     animation-delay: -5s;
@@ -209,8 +209,8 @@
 .pm-profile-card:hover,
 .pm-profile-card.focused {
     transform: translateY(-8px) scale(1.02);
-    border-color: #a855f7;
-    box-shadow: 0 20px 40px rgba(168, 85, 247, 0.3);
+    border-color: #38bdf8;
+    box-shadow: 0 20px 40px rgba(56, 189, 248, 0.3);
 }
 
 .pm-profile-card.active {
@@ -244,7 +244,7 @@
     width: 80px;
     height: 80px;
     border-radius: 50%;
-    background: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(236, 72, 153, 0.3));
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.3), rgba(56, 189, 248, 0.3));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -351,8 +351,8 @@
 
 .pm-add-card:hover,
 .pm-add-card.focused {
-    border-color: #a855f7;
-    background: rgba(168, 85, 247, 0.1);
+    border-color: #38bdf8;
+    background: rgba(56, 189, 248, 0.1);
     transform: scale(1.02);
 }
 
@@ -360,7 +360,7 @@
     width: 60px;
     height: 60px;
     border-radius: 50%;
-    background: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(236, 72, 153, 0.3));
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.3), rgba(56, 189, 248, 0.3));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -455,8 +455,8 @@
 }
 
 .pm-input:focus {
-    border-color: #a855f7;
-    background: rgba(168, 85, 247, 0.1);
+    border-color: #38bdf8;
+    background: rgba(56, 189, 248, 0.1);
 }
 
 .pm-input::placeholder {
@@ -483,7 +483,7 @@
 
 .pm-avatar-option:hover,
 .pm-avatar-option.focused {
-    border-color: #a855f7;
+    border-color: #38bdf8;
     transform: scale(1.1);
 }
 
@@ -511,13 +511,13 @@
 .pm-btn-cancel:hover,
 .pm-btn-cancel.focused {
     background: rgba(255, 255, 255, 0.2);
-    border-color: #a855f7;
-    box-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+    border-color: #38bdf8;
+    box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
     transform: scale(1.05);
 }
 
 .pm-btn-save {
-    background: linear-gradient(135deg, #a855f7, #ec4899);
+    background: linear-gradient(135deg, #38bdf8, #0ea5e9);
     color: white;
     border: none;
     padding: 12px 24px;
@@ -527,7 +527,7 @@
 .pm-btn-save.focused {
     filter: brightness(1.1);
     transform: translateY(-2px) scale(1.05);
-    box-shadow: 0 0 20px rgba(168, 85, 247, 0.5);
+    box-shadow: 0 0 20px rgba(56, 189, 248, 0.5);
 }
 
 .pm-btn-save:disabled {
@@ -610,8 +610,8 @@
 }
 
 .pm-pin-digit.filled {
-    border-color: #a855f7;
-    background: rgba(168, 85, 247, 0.2);
+    border-color: #38bdf8;
+    background: rgba(56, 189, 248, 0.2);
 }
 
 .pm-pin-digit.error {

@@ -164,7 +164,7 @@
     inset: -2px;
     border-radius: 26px;
     padding: 2px;
-    background: linear-gradient(135deg, #0ea5e9, #38bdf8, #38bdf8, #ec4899, #0ea5e9);
+    background: linear-gradient(135deg, #0ea5e9, #38bdf8, #38bdf8, #0ea5e9, #0ea5e9);
     background-size: 300% 300%;
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -431,7 +431,7 @@
 
 .season-tab.active {
     border-color: #38bdf8;
-    background: linear-gradient(135deg, rgba(56, 189, 248, 0.3), rgba(236, 72, 153, 0.2));
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.3), rgba(56, 189, 248, 0.2));
     box-shadow: 0 4px 20px rgba(56, 189, 248, 0.3);
 }
 
@@ -472,7 +472,7 @@
 }
 
 .episode-item.selected {
-    background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(236, 72, 153, 0.15));
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(56, 189, 248, 0.15));
     border-color: rgba(56, 189, 248, 0.4);
 }
 
@@ -513,7 +513,7 @@
     width: 26px;
     height: 26px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #38bdf8, #ec4899);
+    background: linear-gradient(135deg, #38bdf8, #0ea5e9);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -571,7 +571,7 @@
     flex: 1;
     min-width: 200px;
     border: none;
-    background: linear-gradient(135deg, #38bdf8, #ec4899);
+    background: linear-gradient(135deg, #38bdf8, #0ea5e9);
     color: white;
     box-shadow: 0 8px 30px rgba(56, 189, 248, 0.4);
     animation: buttonGlow 2.5s ease-in-out infinite;
@@ -686,7 +686,7 @@
 
 .play-btn.focused {
     animation: none;
-    box-shadow: 0 0 40px rgba(56, 189, 248, 0.8), 0 8px 30px rgba(236, 72, 153, 0.5);
+    box-shadow: 0 0 40px rgba(56, 189, 248, 0.8), 0 8px 30px rgba(56, 189, 248, 0.5);
 }
 
 .secondary-btn.focused {
@@ -701,13 +701,13 @@
 
 .season-tab.focused {
     border-color: #38bdf8 !important;
-    background: linear-gradient(135deg, rgba(56, 189, 248, 0.5), rgba(236, 72, 153, 0.3)) !important;
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.5), rgba(56, 189, 248, 0.3)) !important;
     transform: scale(1.1);
     box-shadow: 0 0 20px rgba(56, 189, 248, 0.5);
 }
 
 .episode-item.focused {
-    background: linear-gradient(135deg, rgba(56, 189, 248, 0.35), rgba(236, 72, 153, 0.25));
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.35), rgba(56, 189, 248, 0.25));
     border-color: #38bdf8;
     transform: scale(1.02);
     box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);

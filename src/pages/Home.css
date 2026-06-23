@@ -34,7 +34,7 @@
     left: -150px;
     width: 400px;
     height: 400px;
-    background: radial-gradient(circle, rgba(139, 92, 246, 0.08) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(56, 189, 248, 0.08) 0%, transparent 70%);
 }
 
 /* Header */
@@ -139,7 +139,7 @@
 
 .stat-card.tv-focused {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.5);
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.5);
 }
 
 .stat-card-live {
@@ -163,13 +163,13 @@
 }
 
 .stat-card-series {
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(139, 92, 246, 0.05) 100%);
-    border: 1px solid rgba(139, 92, 246, 0.2) !important;
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(56, 189, 248, 0.05) 100%);
+    border: 1px solid rgba(56, 189, 248, 0.2) !important;
 }
 
 .stat-card-series:hover,
 .stat-card-series.tv-focused {
-    box-shadow: 0 20px 40px rgba(139, 92, 246, 0.2);
+    box-shadow: 0 20px 40px rgba(56, 189, 248, 0.2);
 }
 
 .stat-icon {
@@ -198,7 +198,7 @@
 }
 
 .stat-card-series .stat-label {
-    color: rgba(139, 92, 246, 0.9);
+    color: rgba(56, 189, 248, 0.9);
 }
 
 /* Content Sections */
@@ -258,7 +258,7 @@
 
 .content-card.tv-focused {
     outline: none;
-    border-color: rgba(168, 85, 247, 0.5);
+    border-color: rgba(56, 189, 248, 0.5);
 }
 
 .card-image {
@@ -317,7 +317,7 @@
 
 .quick-item.tv-focused {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.5);
+    box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.5);
 }
 
 .quick-icon {

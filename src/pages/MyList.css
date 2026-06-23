@@ -13,8 +13,8 @@
     position: absolute;
     inset: 0;
     background:
-        radial-gradient(ellipse at 20% 20%, rgba(20, 184, 166, 0.15) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 80%, rgba(8, 145, 178, 0.12) 0%, transparent 50%);
+        radial-gradient(ellipse at 20% 20%, rgba(14, 165, 233, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(2, 132, 199, 0.12) 0%, transparent 50%);
     animation: backdropPulse 8s ease-in-out infinite;
     pointer-events: none;
 }
@@ -53,10 +53,10 @@
     align-items: center;
     justify-content: center;
     font-size: 28px;
-    background: linear-gradient(135deg, rgba(20, 184, 166, 0.2), rgba(8, 145, 178, 0.2));
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(2, 132, 199, 0.2));
     border-radius: 16px;
-    border: 1px solid rgba(20, 184, 166, 0.3);
-    box-shadow: 0 8px 24px rgba(20, 184, 166, 0.2);
+    border: 1px solid rgba(14, 165, 233, 0.3);
+    box-shadow: 0 8px 24px rgba(14, 165, 233, 0.2);
 }
 
 .mylist-header h1 {
@@ -118,22 +118,22 @@
 }
 
 .tab:hover {
-    background: rgba(20, 184, 166, 0.15);
-    border-color: rgba(20, 184, 166, 0.3);
+    background: rgba(14, 165, 233, 0.15);
+    border-color: rgba(14, 165, 233, 0.3);
     color: white;
 }
 
 .tab.active {
-    background: linear-gradient(135deg, rgba(20, 184, 166, 0.25), rgba(8, 145, 178, 0.2));
-    border-color: rgba(20, 184, 166, 0.5);
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.25), rgba(2, 132, 199, 0.2));
+    border-color: rgba(14, 165, 233, 0.5);
     color: white;
-    box-shadow: 0 4px 20px rgba(20, 184, 166, 0.2);
+    box-shadow: 0 4px 20px rgba(14, 165, 233, 0.2);
 }
 
 .tab.tv-focused {
-    outline: 3px solid rgba(20, 184, 166, 0.8);
+    outline: 3px solid rgba(14, 165, 233, 0.8);
     outline-offset: 2px;
-    box-shadow: 0 0 30px rgba(20, 184, 166, 0.3);
+    box-shadow: 0 0 30px rgba(14, 165, 233, 0.3);
 }
 
 .tab-count {
@@ -144,7 +144,7 @@
 }
 
 .tab.active .tab-count {
-    background: rgba(20, 184, 166, 0.3);
+    background: rgba(14, 165, 233, 0.3);
 }
 
 /* Cards Grid */
@@ -180,16 +180,16 @@
 
 .mylist-page .card:hover {
     transform: translateY(-8px) scale(1.02);
-    border-color: rgba(20, 184, 166, 0.4);
+    border-color: rgba(14, 165, 233, 0.4);
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4),
-        0 0 40px rgba(20, 184, 166, 0.15);
+        0 0 40px rgba(14, 165, 233, 0.15);
 }
 
 .mylist-page .card.tv-focused {
-    outline: 3px solid rgba(20, 184, 166, 0.8);
+    outline: 3px solid rgba(14, 165, 233, 0.8);
     outline-offset: 2px;
     transform: scale(1.05);
-    box-shadow: 0 0 40px rgba(20, 184, 166, 0.3);
+    box-shadow: 0 0 40px rgba(14, 165, 233, 0.3);
 }
 
 .mylist-page .card.removing {
@@ -226,7 +226,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, rgba(20, 184, 166, 0.2), rgba(8, 145, 178, 0.2));
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(2, 132, 199, 0.2));
     font-size: 48px;
 }
 
@@ -281,9 +281,9 @@
 .mylist-page .play-btn {
     width: 56px;
     height: 56px;
-    background: linear-gradient(135deg, #14b8a6, #0891b2);
+    background: linear-gradient(135deg, #0ea5e9, #0284c7);
     border: none;
-    box-shadow: 0 4px 20px rgba(20, 184, 166, 0.4);
+    box-shadow: 0 4px 20px rgba(14, 165, 233, 0.4);
 }
 
 .mylist-page .remove-btn:hover {
@@ -294,7 +294,7 @@
 
 .mylist-page .play-btn:hover {
     transform: scale(1.15);
-    box-shadow: 0 8px 30px rgba(20, 184, 166, 0.5);
+    box-shadow: 0 8px 30px rgba(14, 165, 233, 0.5);
 }
 
 .mylist-page .card-info {
@@ -341,15 +341,15 @@
     align-items: center;
     justify-content: center;
     font-size: 56px;
-    background: linear-gradient(135deg, rgba(20, 184, 166, 0.15), rgba(8, 145, 178, 0.1));
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(2, 132, 199, 0.1));
     border-radius: 32px;
-    border: 1px solid rgba(20, 184, 166, 0.2);
+    border: 1px solid rgba(14, 165, 233, 0.2);
 }
 
 .mylist-page .empty-icon-glow {
     position: absolute;
     inset: -20px;
-    background: radial-gradient(circle, rgba(20, 184, 166, 0.3) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(14, 165, 233, 0.3) 0%, transparent 70%);
     animation: glowPulse 3s ease-in-out infinite;
     border-radius: 50%;
     z-index: -1;
@@ -398,8 +398,8 @@
     align-items: center;
     gap: 10px;
     padding: 14px 24px;
-    background: rgba(20, 184, 166, 0.15);
-    border: 1px solid rgba(20, 184, 166, 0.3);
+    background: rgba(14, 165, 233, 0.15);
+    border: 1px solid rgba(14, 165, 233, 0.3);
     border-radius: 12px;
     color: #5eead4;
     font-size: 14px;
@@ -409,10 +409,10 @@
 }
 
 .mylist-page .suggestion-btn:hover {
-    background: rgba(20, 184, 166, 0.25);
-    border-color: #14b8a6;
+    background: rgba(14, 165, 233, 0.25);
+    border-color: #0ea5e9;
     transform: translateY(-3px);
-    box-shadow: 0 8px 24px rgba(20, 184, 166, 0.2);
+    box-shadow: 0 8px 24px rgba(14, 165, 233, 0.2);
 }
 
 /* Footer Hints */
@@ -448,6 +448,6 @@
 }
 .card-progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, #6366f1, #a855f7);
+    background: linear-gradient(90deg, #0ea5e9, #38bdf8);
     transition: width 0.3s ease;
 }

@@ -9,9 +9,9 @@
   --bg-hover: #1e1e2a;
   
   /* Accent Colors */
-  --accent-primary: #6366f1;
-  --accent-secondary: #8b5cf6;
-  --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  --accent-primary: #0ea5e9;
+  --accent-secondary: #38bdf8;
+  --accent-gradient: linear-gradient(135deg, #0ea5e9 0%, #38bdf8 100%);
   
   /* Text Colors */
   --text-primary: #ffffff;
@@ -19,8 +19,8 @@
   --text-muted: rgba(255, 255, 255, 0.4);
   
   /* Focus Colors */
-  --focus-ring: #6366f1;
-  --focus-glow: rgba(99, 102, 241, 0.5);
+  --focus-ring: #0ea5e9;
+  --focus-glow: rgba(14, 165, 233, 0.5);
   
   /* Borders */
   --border-color: rgba(255, 255, 255, 0.08);
@@ -150,7 +150,7 @@ body {
 .tv-button:hover,
 .tv-button.tv-focused {
   transform: scale(1.05);
-  box-shadow: var(--shadow-focus), 0 8px 24px rgba(99, 102, 241, 0.3);
+  box-shadow: var(--shadow-focus), 0 8px 24px rgba(14, 165, 233, 0.3);
 }
 
 .tv-button-secondary {

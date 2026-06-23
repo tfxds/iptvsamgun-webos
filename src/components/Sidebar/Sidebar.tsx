@@ -27,10 +27,10 @@ interface MenuItem {
 
 const allMenuItems: MenuItem[] = [
     { id: 'home', label: 'Início', emoji: '🏠', gradient: 'linear-gradient(135deg, #f59e0b, #d97706)' },
-    { id: 'live', label: 'TV ao Vivo', emoji: '📺', gradient: 'linear-gradient(135deg, #a855f7, #7c3aed)', requiresTV: true },
+    { id: 'live', label: 'TV ao Vivo', emoji: '📺', gradient: 'linear-gradient(135deg, #38bdf8, #0284c7)', requiresTV: true },
     { id: 'movies', label: 'Filmes', emoji: '🎬', gradient: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', requiresVOD: true },
-    { id: 'series', label: 'Séries', emoji: '🎭', gradient: 'linear-gradient(135deg, #ec4899, #db2777)', requiresVOD: true },
-    { id: 'mylist', label: 'Continuar', emoji: '▶️', gradient: 'linear-gradient(135deg, #14b8a6, #0891b2)' },
+    { id: 'series', label: 'Séries', emoji: '🎭', gradient: 'linear-gradient(135deg, #0ea5e9, #0284c7)', requiresVOD: true },
+    { id: 'mylist', label: 'Continuar', emoji: '▶️', gradient: 'linear-gradient(135deg, #0ea5e9, #0284c7)' },
     { id: 'favorites', label: 'Favoritos', emoji: '❤️', gradient: 'linear-gradient(135deg, #ef4444, #dc2626)' },
     { id: 'settings', label: 'Configurações', emoji: '⚙️', gradient: 'linear-gradient(135deg, #6b7280, #4b5563)' },
 ];
@@ -188,8 +188,8 @@ export function Sidebar({ activeItem, onItemSelect, onLogout, onProfileClick, fo
                             <svg width="26" height="26" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
                                 <defs>
                                     <linearGradient id="profileGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                        <stop offset="0%" stopColor="#a855f7" />
-                                        <stop offset="100%" stopColor="#ec4899" />
+                                        <stop offset="0%" stopColor="#38bdf8" />
+                                        <stop offset="100%" stopColor="#0ea5e9" />
                                     </linearGradient>
                                 </defs>
                                 <circle cx="50" cy="35" r="14" fill="none" stroke="url(#profileGrad)" strokeWidth="6" />
