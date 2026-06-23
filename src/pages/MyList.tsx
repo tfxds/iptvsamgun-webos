@@ -78,7 +78,7 @@ export function MyList() {
                 setFocusedItemIndex(0);
             }
         } else if (focusArea === 'items') {
-            const cols = 6;
+            const cols = 8;
             const total = displayItems.length;
             if (direction === 'up') {
                 if (focusedItemIndex < cols) setFocusArea('tabs');
