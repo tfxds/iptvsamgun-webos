@@ -81,6 +81,12 @@ class XtreamAPI {
     private baseUrl: string = '';
     private username: string = '';
     private password: string = '';
+    // Cache das listas grandes (esquentado pelo Preloader pos-login -> paginas abrem instantaneo)
+    private listCache: { live?: LiveStream[]; vod?: VODStream[]; series?: Series[] } = {};
+
+    clearListCache(): void {
+        this.listCache = {};
+    }
 
     private async makeRequest<T>(action: string, params: Record<string, string> = {}): Promise<T> {
         const url = buildApiUrl(this.baseUrl, this.username, this.password, action, params);
@@ -145,6 +151,7 @@ class XtreamAPI {
         this.baseUrl = normalizeServerUrl(credentials.url);
         this.username = credentials.username;
         this.password = credentials.password;
+        this.clearListCache();
     }
 
     getCredentials(): Credentials | null {
@@ -177,6 +184,7 @@ class XtreamAPI {
                     this.baseUrl = candidateUrl;
                     this.username = username;
                     this.password = password;
+                    this.clearListCache();
 
                     return data;
                 } catch (error: unknown) {
@@ -217,15 +225,21 @@ class XtreamAPI {
     }
 
     async getLiveStreams(): Promise<LiveStream[]> {
-        return this.makeRequest<LiveStream[]>('get_live_streams');
+        if (this.listCache.live) return this.listCache.live;
+        this.listCache.live = await this.makeRequest<LiveStream[]>('get_live_streams');
+        return this.listCache.live;
     }
 
     async getVODStreams(): Promise<VODStream[]> {
-        return this.makeRequest<VODStream[]>('get_vod_streams');
+        if (this.listCache.vod) return this.listCache.vod;
+        this.listCache.vod = await this.makeRequest<VODStream[]>('get_vod_streams');
+        return this.listCache.vod;
     }
 
     async getSeries(): Promise<Series[]> {
-        return this.makeRequest<Series[]>('get_series');
+        if (this.listCache.series) return this.listCache.series;
+        this.listCache.series = await this.makeRequest<Series[]>('get_series');
+        return this.listCache.series;
     }
 
     async getSeriesInfo(seriesId: number): Promise<SeriesInfo> {
@@ -289,6 +303,7 @@ class XtreamAPI {
         this.baseUrl = '';
         this.username = '';
         this.password = '';
+        this.clearListCache();
     }
 }
 

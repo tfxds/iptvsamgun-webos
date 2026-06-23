@@ -15,11 +15,12 @@ import { MyList } from './pages/MyList';
 import { Settings } from './pages/Settings';
 import { Sidebar } from './components/Sidebar';
 import { ProfileManager } from './components/ProfileManager';
+import { Preloader } from './components/Preloader/Preloader';
 import { FocusContext, type FocusZone } from './contexts/FocusContext';
 import './index.css';
 
 type Page = 'home' | 'live' | 'movies' | 'series' | 'mylist' | 'favorites' | 'settings';
-type AuthState = 'loading' | 'login' | 'authenticated';
+type AuthState = 'loading' | 'login' | 'preloading' | 'authenticated';
 
 function App() {
   const [authState, setAuthState] = useState<AuthState>('loading');
@@ -46,7 +47,7 @@ function App() {
         await api.authenticate(server, p.username, p.password);
         storage.saveCredentials({ url: server, username: p.username, password: p.password });
         applyBranding(cfg);
-        setAuthState('authenticated');
+        setAuthState('preloading');
         return;
       }
     } catch (e) {
@@ -57,7 +58,7 @@ function App() {
       const credentials = storage.getCredentials();
       if (credentials) {
         await api.authenticate(credentials.url, credentials.username, credentials.password);
-        setAuthState('authenticated');
+        setAuthState('preloading');
         return;
       }
     } catch (err) {
@@ -80,7 +81,7 @@ function App() {
     } catch {
       /* dev/CORS: segue sem branding atualizado */
     }
-    setAuthState('authenticated');
+    setAuthState('preloading');
   }, [applyBranding]);
 
   const handleLogout = () => {
@@ -111,6 +112,11 @@ function App() {
   // Login screen
   if (authState === 'login') {
     return <Login onLoginSuccess={handleLoginSuccess} />;
+  }
+
+  // Preloader pos-login: carrega canais/filmes/series (esquenta cache) -> Home
+  if (authState === 'preloading') {
+    return <Preloader logoUrl={branding.imgLogo} onReady={() => setAuthState('authenticated')} />;
   }
 
   // Main app with sidebar
