@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
-import { storage, ADULT_RE } from '../services/storage';
+import { storage } from '../services/storage';
 import type { LiveStream, Category, EPGProgram } from '../types';
 import { useTVNavigation } from '../hooks/useTVNavigation';
 import { useFocusZone } from '../contexts/FocusContext';
@@ -58,16 +58,15 @@ export function LiveTV() {
         fetchData();
     }, []);
 
-    // Controle parental: esconde categorias/canais adultos quando ligado
-    const adultBlocked = storage.isAdultBlocked();
-    const adultCatIds = new Set(categories.filter(c => ADULT_RE.test(c.category_name || '')).map(c => c.category_id));
-    const cats = adultBlocked ? categories.filter(c => !ADULT_RE.test(c.category_name || '')) : categories;
+    // Controle parental: esconde categorias/canais adultos quando ligado (helpers em storage)
+    const adultCatIds = storage.adultCategoryIds(categories);
+    const cats = storage.filterAdultCategories(categories);
 
     const filteredStreams = streams.filter((s) => {
         const name = (s.name || '').toLowerCase();
         const matchesSearch = name.includes(searchQuery.toLowerCase());
         const matchesCategory = selectedCategory === 'all' || s.category_id === selectedCategory;
-        const allowed = !adultBlocked || (!adultCatIds.has(s.category_id) && !ADULT_RE.test(s.name || ''));
+        const allowed = storage.isContentAllowed(s.name || '', s.category_id, adultCatIds);
         return matchesSearch && matchesCategory && allowed;
     });
 

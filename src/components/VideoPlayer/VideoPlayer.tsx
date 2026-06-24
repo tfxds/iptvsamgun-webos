@@ -104,9 +104,12 @@ export function VideoPlayer({
         return buttons;
     }, [canGoPrevious, canGoNext, onPreviousEpisode, onNextEpisode, qualityLevels.length, isLive, contentType]);
 
-    // Resume time - apply once when video is ready
+    // Resume time - apply once when video is ready.
+    // Reseta o latch a cada troca de src (episodio seguinte/anterior numa serie usa o
+    // MESMO player montado), senao o resume era pulado do 2o episodio em diante.
     useEffect(() => {
-        if (!resumeTime || !videoRef.current || resumeAppliedRef.current) return;
+        resumeAppliedRef.current = false;
+        if (!resumeTime || !videoRef.current) return;
 
         const video = videoRef.current;
 
@@ -162,6 +165,8 @@ export function VideoPlayer({
         const video = videoRef.current;
         return () => {
             cleanup();
+            // cancela o seek do scrub pendente (600ms): senao dispara num video ja desmontado
+            if (scrubCommitRef.current) clearTimeout(scrubCommitRef.current);
             if (video) {
                 video.pause();
                 video.src = '';
@@ -407,11 +412,14 @@ export function VideoPlayer({
 
     // Teclas de mídia do controle remoto (play/pause/stop/avançar/voltar)
     const handleMediaAction = useCallback((action: 'enter' | 'back' | 'play' | 'pause' | 'stop' | 'forward' | 'rewind') => {
+        // Em AO VIVO nao ha seek: duration e 0/Inf, o seek jogaria pra fora da janela ao vivo
+        // e travaria o canal. So play/pause/stop valem pra live.
+        const liveContent = isLive || contentType === 'live';
         if (action === 'play' || action === 'pause') { resetHideControlsTimer(); togglePlay(); }
         else if (action === 'stop') handleClose();
-        else if (action === 'forward') { resetHideControlsTimer(); scrubBy(SEEK_STEP); }
-        else if (action === 'rewind') { resetHideControlsTimer(); scrubBy(-SEEK_STEP); }
-    }, [togglePlay, handleClose, scrubBy, resetHideControlsTimer]);
+        else if (action === 'forward') { if (liveContent) return; resetHideControlsTimer(); scrubBy(SEEK_STEP); }
+        else if (action === 'rewind') { if (liveContent) return; resetHideControlsTimer(); scrubBy(-SEEK_STEP); }
+    }, [togglePlay, handleClose, scrubBy, resetHideControlsTimer, isLive, contentType]);
 
     // TV Navigation hook
     useTVNavigation({

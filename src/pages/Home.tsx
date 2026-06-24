@@ -40,12 +40,12 @@ export function Home() {
                     api.getSeriesCategories(),
                 ]);
 
-                // Filtra conteudo adulto (por categoria + por nome) — nunca aparece na Home
-                const adultRe = /(adult|adulto|\+\s*18|18\s*\+|xxx|porn|er[óo]tic|sex)/i;
-                const adultVodIds = new Set(vodCats.filter(c => adultRe.test(c.category_name || '')).map(c => c.category_id));
-                const adultSeriesIds = new Set(seriesCats.filter(c => adultRe.test(c.category_name || '')).map(c => c.category_id));
-                const cleanMovies = movies.filter(m => !adultVodIds.has(m.category_id) && !adultRe.test(m.name || ''));
-                const cleanSeries = series.filter(s => !adultSeriesIds.has(s.category_id) && !adultRe.test(s.name || ''));
+                // Filtra conteudo adulto SO quando o controle parental esta ligado (mesmo
+                // criterio das telas de catalogo — antes a Home escondia incondicionalmente)
+                const adultVodIds = storage.adultCategoryIds(vodCats);
+                const adultSeriesIds = storage.adultCategoryIds(seriesCats);
+                const cleanMovies = movies.filter(m => storage.isContentAllowed(m.name || '', m.category_id, adultVodIds));
+                const cleanSeries = series.filter(s => storage.isContentAllowed(s.name || '', s.category_id, adultSeriesIds));
 
                 const sortedMovies = [...cleanMovies].sort((a, b) =>
                     parseInt(b.added || '0') - parseInt(a.added || '0')

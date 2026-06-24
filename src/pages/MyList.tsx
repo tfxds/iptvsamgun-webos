@@ -36,9 +36,11 @@ export function MyList() {
         loadItems();
     };
 
-    const movies = items.filter(item => item.type === 'movie');
-    const series = items.filter(item => item.type === 'series');
-    const displayItems = activeTab === 'all' ? items : activeTab === 'movies' ? movies : series;
+    // Controle parental: esconde titulos adultos tambem no "continuar assistindo"
+    const visible = items.filter(item => !storage.isAdultTitle(item.title));
+    const movies = visible.filter(item => item.type === 'movie');
+    const series = visible.filter(item => item.type === 'series');
+    const displayItems = activeTab === 'all' ? visible : activeTab === 'movies' ? movies : series;
     const tabs = ['all', 'movies', 'series'] as const;
 
     // Retoma de onde parou
@@ -119,7 +121,7 @@ export function MyList() {
     const pct = (p: ProgressItem) => p.duration > 0 ? Math.min(100, Math.round((p.position / p.duration) * 100)) : 0;
 
     // Empty State
-    if (items.length === 0) {
+    if (visible.length === 0) {
         return (
             <div className="mylist-page">
                 <div className="mylist-backdrop" />
@@ -147,7 +149,7 @@ export function MyList() {
                     <div className="title-icon">▶️</div>
                     <div>
                         <h1>Continuar Assistindo</h1>
-                        <p className="subtitle">{items.length} em andamento</p>
+                        <p className="subtitle">{visible.length} em andamento</p>
                     </div>
                 </div>
                 <button className={`clear-btn ${focusArea === 'clear' ? 'tv-focused' : ''}`} onClick={clearAll}>
@@ -158,7 +160,7 @@ export function MyList() {
 
             <div className="tabs-container">
                 <button className={`tab ${activeTab === 'all' ? 'active' : ''} ${focusArea === 'tabs' && focusedTabIndex === 0 ? 'tv-focused' : ''}`} onClick={() => setActiveTab('all')}>
-                    <span>Todos</span><span className="tab-count">{items.length}</span>
+                    <span>Todos</span><span className="tab-count">{visible.length}</span>
                 </button>
                 <button className={`tab ${activeTab === 'movies' ? 'active' : ''} ${focusArea === 'tabs' && focusedTabIndex === 1 ? 'tv-focused' : ''}`} onClick={() => setActiveTab('movies')}>
                     <span>🎬 Filmes</span><span className="tab-count">{movies.length}</span>

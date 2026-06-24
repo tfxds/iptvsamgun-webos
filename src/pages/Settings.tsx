@@ -17,7 +17,7 @@ export function Settings() {
     const { focusZone, setFocusZone } = useFocusZone();
     const [parental, setParental] = useState<ParentalConfig>(() => storage.getParental());
     const [focused, setFocused] = useState(0);
-    const [askPin, setAskPin] = useState<null | 'set' | 'unlock'>(null);
+    const [askPin, setAskPin] = useState<null | 'set' | 'unlock' | 'clear'>(null);
     const [pinInput, setPinInput] = useState('');
     const [pinError, setPinError] = useState('');
     const [confirmClear, setConfirmClear] = useState(false);
@@ -40,7 +40,9 @@ export function Settings() {
         } else if (row === 'pin') {
             setPinError(''); setPinInput(''); setAskPin('set');
         } else if (row === 'clear') {
-            setConfirmClear(true);
+            // Limpar apaga o PIN/bloqueio: se ha PIN, exige o PIN antes (senao crianca burla o controle)
+            if (parental.pin) { setPinError(''); setPinInput(''); setAskPin('clear'); }
+            else setConfirmClear(true);
         } else if (row === 'privacy') {
             setShowPrivacy(p => !p);
         } else if (row === 'diag') {
@@ -57,6 +59,12 @@ export function Settings() {
             if (pinInput === parental.pin) {
                 storage.saveParental({ blockAdult: false }); refresh();
                 setAskPin(null); setPinInput('');
+            } else {
+                setPinError('PIN incorreto.'); setPinInput('');
+            }
+        } else if (askPin === 'clear') {
+            if (pinInput === parental.pin) {
+                setAskPin(null); setPinInput(''); setConfirmClear(true);
             } else {
                 setPinError('PIN incorreto.'); setPinInput('');
             }
@@ -114,7 +122,7 @@ export function Settings() {
 
                     {askPin && (
                         <div className="settings-pinbox">
-                            <span className="settings-pin-label">{askPin === 'set' ? 'Digite um PIN de 4 dígitos' : 'Digite o PIN para desbloquear'}</span>
+                            <span className="settings-pin-label">{askPin === 'set' ? 'Digite um PIN de 4 dígitos' : askPin === 'clear' ? 'Digite o PIN para limpar os dados' : 'Digite o PIN para desbloquear'}</span>
                             <input
                                 ref={pinRef}
                                 className="settings-pin-input"

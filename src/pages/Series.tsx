@@ -1,8 +1,8 @@
 // Series Page - S.A Player (categorias na lateral | grid de séries, estilo Canais)
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { api } from '../services/api';
-import { storage, ADULT_RE } from '../services/storage';
+import { storage } from '../services/storage';
 import type { Series as SeriesType, Category, SeriesInfo } from '../types';
 import { useTVNavigation } from '../hooks/useTVNavigation';
 import { useFocusZone } from '../contexts/FocusContext';
@@ -54,17 +54,16 @@ export function Series() {
         fetchData();
     }, []);
 
-    // Controle parental: esconde categorias/titulos adultos quando ligado
-    const adultBlocked = storage.isAdultBlocked();
-    const adultCatIds = new Set(categories.filter(c => ADULT_RE.test(c.category_name || '')).map(c => c.category_id));
-    const cats = adultBlocked ? categories.filter(c => !ADULT_RE.test(c.category_name || '')) : categories;
+    // Controle parental: esconde categorias/titulos adultos quando ligado (helpers em storage)
+    const adultCatIds = storage.adultCategoryIds(categories);
+    const cats = storage.filterAdultCategories(categories);
 
     // Filter series
     const filteredSeries = series.filter((s) => {
         const seriesName = s.name || '';
         const matchesSearch = seriesName.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesCategory = selectedCategory === 'all' || s.category_id === selectedCategory;
-        const allowed = !adultBlocked || (!adultCatIds.has(s.category_id) && !ADULT_RE.test(seriesName));
+        const allowed = storage.isContentAllowed(seriesName, s.category_id, adultCatIds);
         return matchesSearch && matchesCategory && allowed;
     });
 
@@ -193,6 +192,13 @@ export function Series() {
         }
         return null;
     };
+
+    // Calcula proximo/anterior UMA vez por episodio (em vez de 2x a cada render do player)
+    const epNav = useMemo(
+        () => ({ next: !!adjacentEpisode(1), prev: !!adjacentEpisode(-1) }),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [playerInfo]
+    );
 
     const goToEpisode = (delta: number) => {
         const next = adjacentEpisode(delta);
@@ -351,8 +357,8 @@ export function Series() {
                     })}
                     onNextEpisode={() => goToEpisode(1)}
                     onPreviousEpisode={() => goToEpisode(-1)}
-                    canGoNext={!!adjacentEpisode(1)}
-                    canGoPrevious={!!adjacentEpisode(-1)}
+                    canGoNext={epNav.next}
+                    canGoPrevious={epNav.prev}
                     onClose={() => { setShowPlayer(false); setPlayerInfo(null); }}
                 />
             )}

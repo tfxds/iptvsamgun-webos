@@ -46,11 +46,13 @@ export function Favorites() {
         loadItems();
     };
 
-    const movies = items.filter(item => item.type === 'movie');
-    const series = items.filter(item => item.type === 'series');
-    const channels = items.filter(item => item.type === 'channel');
+    // Controle parental: esconde titulos adultos tambem nos favoritos salvos
+    const visible = items.filter(item => !storage.isAdultTitle(item.title));
+    const movies = visible.filter(item => item.type === 'movie');
+    const series = visible.filter(item => item.type === 'series');
+    const channels = visible.filter(item => item.type === 'channel');
 
-    const displayItems = activeTab === 'all' ? items :
+    const displayItems = activeTab === 'all' ? visible :
         activeTab === 'movies' ? movies :
             activeTab === 'series' ? series : channels;
 
@@ -109,7 +111,7 @@ export function Favorites() {
     });
 
     // Empty State
-    if (items.length === 0) {
+    if (visible.length === 0) {
         return (
             <div className="favorites-page">
                 <div className="favorites-backdrop" />
@@ -148,10 +150,10 @@ export function Favorites() {
                     <div className="title-icon">♥</div>
                     <div>
                         <h1>Meus Favoritos</h1>
-                        <p className="subtitle">{items.length} itens salvos</p>
+                        <p className="subtitle">{visible.length} itens salvos</p>
                     </div>
                 </div>
-                {items.length > 0 && (
+                {visible.length > 0 && (
                     <button className={`clear-btn ${focusArea === 'clear' ? 'tv-focused' : ''}`} onClick={clearAll}>
                         <span>Excluir</span>
                         <span>Limpar Tudo</span>
@@ -166,7 +168,7 @@ export function Favorites() {
                     onClick={() => setActiveTab('all')}
                 >
                     <span>Todos</span>
-                    <span className="tab-count">{items.length}</span>
+                    <span className="tab-count">{visible.length}</span>
                 </button>
                 <button
                     className={`tab ${activeTab === 'movies' ? 'active' : ''} ${focusArea === 'tabs' && focusedTabIndex === 1 ? 'tv-focused' : ''}`}

@@ -180,6 +180,27 @@ class StorageService {
         return this.getParental().blockAdult === true;
     }
 
+    // Controle parental — helpers compartilhados (evita repetir a logica em cada tela)
+    // IDs das categorias adultas (pra esconder canais/titulos dessas categorias)
+    adultCategoryIds(categories: { category_id: string; category_name?: string | null }[]): Set<string> {
+        return new Set(categories.filter(c => ADULT_RE.test(c.category_name || '')).map(c => c.category_id));
+    }
+
+    // Remove categorias adultas da lista (so quando o bloqueio esta ligado)
+    filterAdultCategories<T extends { category_name?: string | null }>(categories: T[]): T[] {
+        return this.isAdultBlocked() ? categories.filter(c => !ADULT_RE.test(c.category_name || '')) : categories;
+    }
+
+    // true = conteudo pode aparecer; false = bloqueado (categoria adulta OU nome adulto)
+    isContentAllowed(name: string, categoryId: string, adultCatIds: Set<string>): boolean {
+        return !this.isAdultBlocked() || (!adultCatIds.has(categoryId) && !ADULT_RE.test(name || ''));
+    }
+
+    // Para listas salvas (favoritos / continuar assistindo) onde so temos o titulo
+    isAdultTitle(title: string): boolean {
+        return this.isAdultBlocked() && ADULT_RE.test(title || '');
+    }
+
     // Last channel
     setLastChannel(streamId: number): void {
         localStorage.setItem(STORAGE_KEYS.LAST_CHANNEL, String(streamId));

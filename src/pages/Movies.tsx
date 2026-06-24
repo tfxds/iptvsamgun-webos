@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
-import { storage, ADULT_RE } from '../services/storage';
+import { storage } from '../services/storage';
 import type { VODStream, Category } from '../types';
 import { useTVNavigation } from '../hooks/useTVNavigation';
 import { useFocusZone } from '../contexts/FocusContext';
@@ -54,17 +54,16 @@ export function Movies() {
         fetchData();
     }, []);
 
-    // Controle parental: esconde categorias/titulos adultos quando ligado
-    const adultBlocked = storage.isAdultBlocked();
-    const adultCatIds = new Set(categories.filter(c => ADULT_RE.test(c.category_name || '')).map(c => c.category_id));
-    const cats = adultBlocked ? categories.filter(c => !ADULT_RE.test(c.category_name || '')) : categories;
+    // Controle parental: esconde categorias/titulos adultos quando ligado (helpers em storage)
+    const adultCatIds = storage.adultCategoryIds(categories);
+    const cats = storage.filterAdultCategories(categories);
 
     // Filter streams
     const filteredStreams = streams.filter((stream) => {
         const streamName = stream.name || '';
         const matchesSearch = streamName.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesCategory = selectedCategory === 'all' || stream.category_id === selectedCategory;
-        const allowed = !adultBlocked || (!adultCatIds.has(stream.category_id) && !ADULT_RE.test(streamName));
+        const allowed = storage.isContentAllowed(streamName, stream.category_id, adultCatIds);
         return matchesSearch && matchesCategory && allowed;
     });
 
