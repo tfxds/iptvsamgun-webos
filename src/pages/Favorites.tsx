@@ -5,6 +5,7 @@ import { storage } from '../services/storage';
 import { api } from '../services/api';
 import { VideoPlayer } from '../components/VideoPlayer';
 import { SeriesPlayer } from '../components/SeriesPlayer';
+import { ContentDetailModal } from '../components/ContentDetailModal';
 import { useTVNavigation } from '../hooks/useTVNavigation';
 import { useFocusZone } from '../contexts/FocusContext';
 import './Favorites.css';
@@ -24,7 +25,8 @@ export function Favorites() {
     const [items, setItems] = useState<FavoriteItem[]>(() => storage.getFavorites());
     const [activeTab, setActiveTab] = useState<'all' | 'movies' | 'series' | 'channels'>('all');
     const [removingId, setRemovingId] = useState<string | null>(null);
-    const [playing, setPlaying] = useState<FavoriteItem | null>(null);
+    const [playing, setPlaying] = useState<{ kind: 'movie' | 'series' | 'channel'; item: FavoriteItem; season?: number; episode?: number } | null>(null);
+    const [detail, setDetail] = useState<FavoriteItem | null>(null);
 
     // Focus states for TV navigation
     const [focusArea, setFocusArea] = useState<'tabs' | 'items' | 'clear'>('items');
@@ -100,6 +102,18 @@ export function Favorites() {
         }
     };
 
+    // Canal toca direto; filme/serie abrem o modal de detalhes (escolher temporada/episodio)
+    const openItem = (it: FavoriteItem) => {
+        if (it.type === 'channel') setPlaying({ kind: 'channel', item: it });
+        else setDetail(it);
+    };
+    const handlePlay = (season?: number, episode?: number) => {
+        if (!detail) return;
+        if (detail.type === 'series') setPlaying({ kind: 'series', item: detail, season: season || 1, episode: episode || 1 });
+        else setPlaying({ kind: 'movie', item: detail });
+        setDetail(null);
+    };
+
     const handleEnter = () => {
         if (focusArea === 'clear') {
             clearAll();
@@ -107,14 +121,14 @@ export function Favorites() {
             setActiveTab(tabs[focusedTabIndex]);
         } else if (focusArea === 'items') {
             const it = displayItems[focusedItemIndex];
-            if (it) setPlaying(it);
+            if (it) openItem(it);
         }
     };
 
     useTVNavigation({
         onNavigate: handleNavigate,
         onEnter: handleEnter,
-        enabled: focusZone === 'content' && !playing,
+        enabled: focusZone === 'content' && !playing && !detail,
     });
 
     // Empty State
@@ -207,7 +221,7 @@ export function Favorites() {
                         key={item.id}
                         className={`card ${removingId === item.id ? 'removing' : ''} ${focusArea === 'items' && focusedItemIndex === index ? 'tv-focused' : ''}`}
                         style={{ animationDelay: `${index * 0.05}s` }}
-                        onClick={() => setPlaying(item)}
+                        onClick={() => openItem(item)}
                     >
                         <div className="card-poster">
                             {item.poster ? (
@@ -243,36 +257,48 @@ export function Favorites() {
                 ))}
             </div>
 
-            {playing && playing.type === 'series' && (() => {
-                const r = storage.getProgress(playing.id, 'series');
+            {(detail && (detail.type === 'movie' || detail.type === 'series')) && (
+                <ContentDetailModal
+                    isOpen={true}
+                    onClose={() => setDetail(null)}
+                    contentId={detail.id}
+                    contentType={detail.type}
+                    contentData={{ name: detail.title, cover: detail.poster || '', rating: detail.rating }}
+                    onPlay={handlePlay}
+                />
+            )}
+            {playing?.kind === 'series' && (() => {
+                const it = playing.item;
+                const r = storage.getProgress(it.id, 'series');
+                const resume = (r && r.season === playing.season && r.episode === playing.episode) ? r.position : null;
                 return (
                     <SeriesPlayer
-                        seriesId={Number(playing.id)}
-                        name={playing.title}
-                        poster={playing.poster || ''}
-                        startSeason={r?.season || 1}
-                        startEpisode={r?.episode || 1}
-                        resumeTime={r?.position || null}
+                        seriesId={Number(it.id)}
+                        name={it.title}
+                        poster={it.poster || ''}
+                        startSeason={playing.season || 1}
+                        startEpisode={playing.episode || 1}
+                        resumeTime={resume}
                         onClose={() => setPlaying(null)}
                     />
                 );
             })()}
-            {playing && playing.type === 'movie' && (
+            {playing?.kind === 'movie' && (
                 <VideoPlayer
-                    src={api.getVodStreamUrl(Number(playing.id), 'mp4')}
-                    title={playing.title}
-                    poster={playing.poster || ''}
+                    src={api.getVodStreamUrl(Number(playing.item.id), 'mp4')}
+                    title={playing.item.title}
+                    poster={playing.item.poster || ''}
                     contentType="movie"
-                    resumeTime={storage.getProgress(playing.id, 'movie')?.position || null}
-                    onTimeUpdate={(t, d) => storage.saveProgress({ id: playing.id, type: 'movie', title: playing.title, poster: playing.poster, position: t, duration: d })}
+                    resumeTime={storage.getProgress(playing.item.id, 'movie')?.position || null}
+                    onTimeUpdate={(t, d) => storage.saveProgress({ id: playing.item.id, type: 'movie', title: playing.item.title, poster: playing.item.poster, position: t, duration: d })}
                     onClose={() => setPlaying(null)}
                 />
             )}
-            {playing && playing.type === 'channel' && (
+            {playing?.kind === 'channel' && (
                 <VideoPlayer
-                    src={api.getLiveStreamUrl(Number(playing.id))}
-                    title={playing.title}
-                    poster={playing.poster || ''}
+                    src={api.getLiveStreamUrl(Number(playing.item.id))}
+                    title={playing.item.title}
+                    poster={playing.item.poster || ''}
                     contentType="live"
                     isLive
                     onClose={() => setPlaying(null)}
