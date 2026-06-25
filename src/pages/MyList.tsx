@@ -6,6 +6,7 @@ import { storage, type ProgressItem } from '../services/storage';
 import { useTVNavigation } from '../hooks/useTVNavigation';
 import { useFocusZone } from '../contexts/FocusContext';
 import { VideoPlayer } from '../components/VideoPlayer';
+import { SeriesPlayer } from '../components/SeriesPlayer';
 import './MyList.css';
 
 export function MyList() {
@@ -13,7 +14,7 @@ export function MyList() {
     const [items, setItems] = useState<ProgressItem[]>(() => storage.getContinueWatching());
     const [activeTab, setActiveTab] = useState<'all' | 'movies' | 'series'>('all');
     const [removingId, setRemovingId] = useState<string | null>(null);
-    const [player, setPlayer] = useState<{ src: string; title: string; poster: string; resume: number; item: ProgressItem } | null>(null);
+    const [player, setPlayer] = useState<ProgressItem | null>(null);
 
     // Focus states for TV navigation
     const [focusArea, setFocusArea] = useState<'tabs' | 'items' | 'clear'>('items');
@@ -44,27 +45,9 @@ export function MyList() {
     const tabs = ['all', 'movies', 'series'] as const;
 
     // Retoma de onde parou
-    const resumeItem = useCallback(async (item: ProgressItem) => {
-        try {
-            if (item.type === 'movie') {
-                setPlayer({
-                    src: api.getVodStreamUrl(Number(item.id), item.containerExtension || 'mp4'),
-                    title: item.title, poster: item.poster || '', resume: item.position, item,
-                });
-            } else {
-                const info = await api.getSeriesInfo(Number(item.id));
-                const eps = info?.episodes?.[item.season || 1] || [];
-                const ep = eps.find(e => e.episode_num === item.episode) || eps[0];
-                if (!ep) return;
-                setPlayer({
-                    src: api.getSeriesStreamUrl(ep.id, ep.container_extension || 'mp4'),
-                    title: `${item.title} - T${item.season} E${item.episode}`,
-                    poster: item.poster || '', resume: item.position, item,
-                });
-            }
-        } catch (e) {
-            console.error('Erro ao retomar:', e);
-        }
+    // Filme abre no VideoPlayer; série abre no SeriesPlayer (com próximo/anterior episódio)
+    const resumeItem = useCallback((item: ProgressItem) => {
+        setPlayer(item);
     }, []);
 
     // TV Navigation
@@ -209,14 +192,25 @@ export function MyList() {
                 <span>← Voltar</span>
             </div>
 
-            {player && (
+            {player && player.type === 'movie' && (
                 <VideoPlayer
-                    src={player.src}
+                    src={api.getVodStreamUrl(Number(player.id), player.containerExtension || 'mp4')}
                     title={player.title}
-                    poster={player.poster}
-                    contentType={player.item.type}
-                    resumeTime={player.resume || null}
-                    onTimeUpdate={(t, d) => storage.saveProgress({ ...player.item, position: t, duration: d })}
+                    poster={player.poster || ''}
+                    contentType="movie"
+                    resumeTime={player.position || null}
+                    onTimeUpdate={(t, d) => storage.saveProgress({ ...player, position: t, duration: d })}
+                    onClose={() => { setPlayer(null); loadItems(); }}
+                />
+            )}
+            {player && player.type === 'series' && (
+                <SeriesPlayer
+                    seriesId={Number(player.id)}
+                    name={player.title}
+                    poster={player.poster || ''}
+                    startSeason={player.season || 1}
+                    startEpisode={player.episode || 1}
+                    resumeTime={player.position || null}
                     onClose={() => { setPlayer(null); loadItems(); }}
                 />
             )}

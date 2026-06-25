@@ -8,6 +8,7 @@ import { useTVNavigation } from '../hooks/useTVNavigation';
 import { useFocusZone } from '../contexts/FocusContext';
 import { ContentDetailModal } from '../components/ContentDetailModal';
 import { VideoPlayer } from '../components/VideoPlayer';
+import { SeriesPlayer } from '../components/SeriesPlayer';
 import './Home.css';
 
 export function Home() {
@@ -312,7 +313,18 @@ export function Home() {
             )}
 
             {/* Video Player */}
-            {showPlayer && playerInfo && (
+            {showPlayer && playerInfo && playerInfo.save.type === 'series' && (
+                <SeriesPlayer
+                    seriesId={Number(playerInfo.save.id)}
+                    name={playerInfo.save.title}
+                    poster={playerInfo.poster}
+                    startSeason={playerInfo.save.season || 1}
+                    startEpisode={playerInfo.save.episode || 1}
+                    resumeTime={playerInfo.resume || null}
+                    onClose={() => { setShowPlayer(false); setPlayerInfo(null); }}
+                />
+            )}
+            {showPlayer && playerInfo && playerInfo.save.type !== 'series' && (
                 <VideoPlayer
                     src={playerInfo.url}
                     title={playerInfo.title}
