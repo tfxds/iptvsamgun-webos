@@ -2,6 +2,9 @@
 
 import { useCallback, useState } from 'react';
 import { storage } from '../services/storage';
+import { api } from '../services/api';
+import { VideoPlayer } from '../components/VideoPlayer';
+import { SeriesPlayer } from '../components/SeriesPlayer';
 import { useTVNavigation } from '../hooks/useTVNavigation';
 import { useFocusZone } from '../contexts/FocusContext';
 import './Favorites.css';
@@ -21,6 +24,7 @@ export function Favorites() {
     const [items, setItems] = useState<FavoriteItem[]>(() => storage.getFavorites());
     const [activeTab, setActiveTab] = useState<'all' | 'movies' | 'series' | 'channels'>('all');
     const [removingId, setRemovingId] = useState<string | null>(null);
+    const [playing, setPlaying] = useState<FavoriteItem | null>(null);
 
     // Focus states for TV navigation
     const [focusArea, setFocusArea] = useState<'tabs' | 'items' | 'clear'>('items');
@@ -101,13 +105,16 @@ export function Favorites() {
             clearAll();
         } else if (focusArea === 'tabs') {
             setActiveTab(tabs[focusedTabIndex]);
+        } else if (focusArea === 'items') {
+            const it = displayItems[focusedItemIndex];
+            if (it) setPlaying(it);
         }
     };
 
     useTVNavigation({
         onNavigate: handleNavigate,
         onEnter: handleEnter,
-        enabled: focusZone === 'content',
+        enabled: focusZone === 'content' && !playing,
     });
 
     // Empty State
@@ -200,6 +207,7 @@ export function Favorites() {
                         key={item.id}
                         className={`card ${removingId === item.id ? 'removing' : ''} ${focusArea === 'items' && focusedItemIndex === index ? 'tv-focused' : ''}`}
                         style={{ animationDelay: `${index * 0.05}s` }}
+                        onClick={() => setPlaying(item)}
                     >
                         <div className="card-poster">
                             {item.poster ? (
@@ -234,6 +242,42 @@ export function Favorites() {
                     </div>
                 ))}
             </div>
+
+            {playing && playing.type === 'series' && (() => {
+                const r = storage.getProgress(playing.id, 'series');
+                return (
+                    <SeriesPlayer
+                        seriesId={Number(playing.id)}
+                        name={playing.title}
+                        poster={playing.poster || ''}
+                        startSeason={r?.season || 1}
+                        startEpisode={r?.episode || 1}
+                        resumeTime={r?.position || null}
+                        onClose={() => setPlaying(null)}
+                    />
+                );
+            })()}
+            {playing && playing.type === 'movie' && (
+                <VideoPlayer
+                    src={api.getVodStreamUrl(Number(playing.id), 'mp4')}
+                    title={playing.title}
+                    poster={playing.poster || ''}
+                    contentType="movie"
+                    resumeTime={storage.getProgress(playing.id, 'movie')?.position || null}
+                    onTimeUpdate={(t, d) => storage.saveProgress({ id: playing.id, type: 'movie', title: playing.title, poster: playing.poster, position: t, duration: d })}
+                    onClose={() => setPlaying(null)}
+                />
+            )}
+            {playing && playing.type === 'channel' && (
+                <VideoPlayer
+                    src={api.getLiveStreamUrl(Number(playing.id))}
+                    title={playing.title}
+                    poster={playing.poster || ''}
+                    contentType="live"
+                    isLive
+                    onClose={() => setPlaying(null)}
+                />
+            )}
 
             {/* Footer Hints */}
             <div className="favorites-hints">
